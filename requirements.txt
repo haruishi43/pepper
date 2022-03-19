@@ -1,0 +1,13 @@
+Cython
+gdown
+imageio
+numpy
+opencv-python
+opencv-contrib-python
+pandas
+progress
+scipy
+tabulate
+termcolor
+tqdm
+yacs
