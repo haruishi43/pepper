@@ -89,10 +89,10 @@ def parse_market1501(image_paths, relabel=False, ignores=[-1]):
     pid2label = {pid: label for label, pid in enumerate(pid_container)}
 
     if relabel:
-        print('relabeling')
+        print("relabeling")
         for p in persons:
-            pid = pid2label[p['pid']]
-            p['pid'] = pid
+            pid = pid2label[p["pid"]]
+            p["pid"] = pid
 
     return persons
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     for split, split_path in split_paths.items():
         # NOTE: generators can only iterate once
         img_paths = scandir(split_path, suffix=img_suffix)
-        relabel = split == 'train'
+        relabel = split == "train"
         data = parse_market1501(img_paths, relabel=relabel)
 
         print(f">>> parsed {split}, contains {len(data)} samples")

@@ -25,8 +25,10 @@ from tqdm import tqdm
 
 from mmcv.utils import mkdir_or_exist
 
-DATASET_DIR = 'dukemtmc-vidreid/DukeMTMC-VideoReID'
-DATASET_URL = "http://vision.cs.duke.edu/DukeMTMC/data/misc/DukeMTMC-VideoReID.zip"
+DATASET_DIR = "dukemtmc-vidreid/DukeMTMC-VideoReID"
+DATASET_URL = (
+    "http://vision.cs.duke.edu/DukeMTMC/data/misc/DukeMTMC-VideoReID.zip"
+)
 
 
 def parse_args():
@@ -58,9 +60,7 @@ def process_dir(dir_path, relabel=False, min_seq_len=0):
 
     pdirs = glob.glob(osp.join(dir_path, "*"))  # avoid .DS_Store
     print(
-        'Processing "{}" with {} person identities'.format(
-            dir_path, len(pdirs)
-        )
+        'Processing "{}" with {} person identities'.format(dir_path, len(pdirs))
     )
     pid_container = set()
     for pdir in pdirs:
@@ -86,9 +86,7 @@ def process_dir(dir_path, relabel=False, min_seq_len=0):
             for img_idx in range(num_imgs):
                 # some tracklet starts from 0002 instead of 0001
                 img_idx_name = "F" + str(img_idx + 1).zfill(4)
-                res = glob.glob(
-                    osp.join(tdir, "*" + img_idx_name + "*.jpg")
-                )
+                res = glob.glob(osp.join(tdir, "*" + img_idx_name + "*.jpg"))
                 if len(res) == 0:
                     warnings.warn(
                         "Index name {} in {} is missing, skip".format(
@@ -122,9 +120,9 @@ if __name__ == "__main__":
 
     assert osp.exists(args.root)
 
-    train_dir = osp.join(args.root, 'train')
-    query_dir = osp.join(args.root, 'query')
-    gallery_dir = osp.join(args.root, 'gallery')
+    train_dir = osp.join(args.root, "train")
+    query_dir = osp.join(args.root, "query")
+    gallery_dir = osp.join(args.root, "gallery")
 
     assert osp.exists(train_dir)
     assert osp.exists(query_dir)

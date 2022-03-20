@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
+from collections import defaultdict
 import copy
-from typing import List
 
 import mmcv
 import numpy as np

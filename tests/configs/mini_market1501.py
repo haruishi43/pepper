@@ -2,13 +2,12 @@ img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True
 )
 train_pipeline = [
-    dict(type="LoadMultiImagesFromFile", to_float32=True),
+    dict(type="LoadImageFromFile", to_float32=True),
     dict(
         type="Resize",
         img_scale=(128, 256),
         share_params=False,
         keep_ratio=False,
-        bbox_clip_border=False,
         override=False,
     ),
     dict(
@@ -19,7 +18,7 @@ train_pipeline = [
     ),
     dict(type="Normalize", **img_norm_cfg),
     dict(type="Collect", keys=["img", "gt_label"]),
-    dict(type="ReIDFormatBundle"),
+    dict(type="FormatBundle"),
 ]
 test_pipeline = [
     dict(type="LoadImageFromFile"),
@@ -34,19 +33,19 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         type="Market1501",
-        data_prefix=data_root + "",
+        data_prefix=data_root + "bounding_box_train",
         ann_file=data_root + "gtPepper/train.json",
         pipeline=train_pipeline,
     ),
     query=dict(
         type="Market1501",
-        data_prefix=data_root + "",
+        data_prefix=data_root + "query",
         ann_file=data_root + "gtPepper/query.json",
         pipeline=test_pipeline,
     ),
     test=dict(
         type="Market1501",
-        data_prefix=data_root + "gtPepper/gallery.json",
+        data_prefix=data_root + "bounding_box_test",
         ann_file=data_root + "gtPepper/gallery.json",
         pipeline=test_pipeline,
     ),

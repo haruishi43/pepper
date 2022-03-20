@@ -27,9 +27,7 @@ BACKGROUND_PID = 0
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Convert/format mars dataset"
-    )
+    parser = argparse.ArgumentParser(description="Convert/format mars dataset")
     parser.add_argument(
         "--root",
         type=str,
@@ -92,7 +90,9 @@ def parse_mars(names, img_dir, meta_data, relabel=False, min_seq_len=0):
         assert len(set(camnames)) == 1
 
         # append image names with directory information
-        img_paths = [osp.join(img_dir, img_name[:4], img_name) for img_name in img_names]
+        img_paths = [
+            osp.join(img_dir, img_name[:4], img_name) for img_name in img_names
+        ]
         if len(img_paths) >= min_seq_len:
             tracklets.append(
                 dict(
@@ -111,16 +111,16 @@ if __name__ == "__main__":
     args = parse_args()
 
     # Hard-coded variables:
-    train_dir = 'bbox_train'
-    test_dir = 'bbox_test'
+    train_dir = "bbox_train"
+    test_dir = "bbox_test"
 
     assert osp.exists(args.root)
 
-    train_name_path = osp.join(args.root, 'info', 'train_name.txt')
-    test_name_path = osp.join(args.root, 'info', 'test_name.txt')
-    tracks_train_path = osp.join(args.root, 'info', 'tracks_train_info.mat')
-    tracks_test_path = osp.join(args.root, 'info', 'tracks_test_info.mat')
-    query_idx_path = osp.join(args.root, 'info', 'query_IDX.mat')
+    train_name_path = osp.join(args.root, "info", "train_name.txt")
+    test_name_path = osp.join(args.root, "info", "test_name.txt")
+    tracks_train_path = osp.join(args.root, "info", "tracks_train_info.mat")
+    tracks_test_path = osp.join(args.root, "info", "tracks_test_info.mat")
+    query_idx_path = osp.join(args.root, "info", "query_IDX.mat")
 
     assert osp.exists(train_name_path)
     assert osp.exists(test_name_path)
@@ -134,11 +134,11 @@ if __name__ == "__main__":
 
     # load .mat
     # (8298, 4)
-    tracks_train = loadmat(tracks_train_path)['track_train_info']
+    tracks_train = loadmat(tracks_train_path)["track_train_info"]
     # (12180, 4)
-    tracks_test = loadmat(tracks_test_path)['track_test_info']
+    tracks_test = loadmat(tracks_test_path)["track_test_info"]
     # (1980,)
-    query_idx = loadmat(query_idx_path)['query_IDX'].squeeze()
+    query_idx = loadmat(query_idx_path)["query_IDX"].squeeze()
     query_idx -= 1  # index from 0
     gallery_idx = [i for i in range(tracks_test.shape[0]) if i not in query_idx]
 
@@ -147,7 +147,9 @@ if __name__ == "__main__":
 
     train_data = parse_mars(train_names, train_dir, tracks_train, relabel=True)
     query_data = parse_mars(test_names, test_dir, tracks_query, relabel=False)
-    gallery_data = parse_mars(test_names, test_dir, tracks_gallery, relabel=False)
+    gallery_data = parse_mars(
+        test_names, test_dir, tracks_gallery, relabel=False
+    )
 
     # for this dataset, there are no preprocessing for the images,
     # just getting an annotation file for unified loading

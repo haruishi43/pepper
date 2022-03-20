@@ -21,7 +21,7 @@ import re
 
 from mmcv.utils import scandir, mkdir_or_exist
 
-DATASET_DIR = 'dukemtmc-reid/DukeMTMC-reID'
+DATASET_DIR = "dukemtmc-reid/DukeMTMC-reID"
 DATASET_URL = "http://vision.cs.duke.edu/DukeMTMC/data/misc/DukeMTMC-reID.zip"
 JUNK_PIDS = []
 
@@ -80,10 +80,10 @@ def parse_dukemtmcreid(image_paths, relabel=False):
     pid2label = {pid: label for label, pid in enumerate(pid_container)}
 
     if relabel:
-        print('relabeling')
+        print("relabeling")
         for p in persons:
-            pid = pid2label[p['pid']]
-            p['pid'] = pid
+            pid = pid2label[p["pid"]]
+            p["pid"] = pid
 
     return persons
 
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     for split, split_path in split_paths.items():
         # NOTE: generators can only iterate once
         img_paths = scandir(split_path, suffix=img_suffix)
-        relabel = split == 'train'
+        relabel = split == "train"
         data = parse_dukemtmcreid(img_paths, relabel=relabel)
 
         print(f">>> parsed {split}, contains {len(data)} samples")
