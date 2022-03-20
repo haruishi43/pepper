@@ -11,6 +11,7 @@ EXTRA: `<https://www.kaggle.com/drmatters/distractors-500k>`
 Dataset statistics:
     - identities: 1501 (+1 for background).
     - images: 12936 (train) + 3368 (query) + 15913 (gallery).
+    - junk identities are included, but are ignored (id: -1)
 """
 
 import argparse
@@ -23,7 +24,8 @@ from mmcv.utils import scandir, mkdir_or_exist
 DATASET_DIR = "market1501/Market-1501-v15.09.15"
 DATASET_URL = "http://188.138.127.15:81/Datasets/Market-1501-v15.09.15.zip"
 EXTRA_DATASET_URL = "http://188.138.127.15:81/Datasets/distractors_500k.zip"
-JUNK_PIDS = [0, -1]
+JUNK_PIDS = [-1]
+BACKGROUND_PID = 0
 
 
 def parse_args():
@@ -44,12 +46,6 @@ def parse_args():
         help="where to save the processed gts (`gtPepper`)",
     )
     parser.add_argument(
-        "--nproc",
-        default=4,
-        type=int,
-        help="number of processes",
-    )
-    parser.add_argument(
         "--extra",
         action="store_true",
     )
@@ -61,7 +57,7 @@ def parse_args():
     return args
 
 
-def parse_market1501(image_paths):
+def parse_market1501(image_paths, ignores=[-1]):
 
     pattern = re.compile(r"([-\d]+)_c(\d)")
 
@@ -70,16 +66,28 @@ def parse_market1501(image_paths):
         return _pid, _camid
 
     persons = []
+    ignored = []
 
     for img_path in image_paths:
         pid, camid = _split(img_path)
-        persons.append(
-            dict(
-                pid=pid,
-                camid=camid,
-                img_path=img_path,
+        if pid in ignores:
+            ignored.append(
+                dict(
+                    pid=pid,
+                    camid=camid,
+                    img_path=img_path,
+                )
             )
-        )
+        else:
+            persons.append(
+                dict(
+                    pid=pid,
+                    camid=camid,
+                    img_path=img_path,
+                )
+            )
+
+    print(">>> ignored:", len(ignored))
 
     return persons
 
@@ -126,7 +134,7 @@ if __name__ == "__main__":
         if not args.test_mode:
             # save data as json file
             save_fp = osp.join(save_root, f"{split}.json")
-            with open(save_fp, 'w') as f:
+            with open(save_fp, "w") as f:
                 json.dump(data, f, indent=4)
         else:
             print(">>> skipped save")
