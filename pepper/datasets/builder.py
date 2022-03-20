@@ -2,7 +2,6 @@
 
 import copy
 import random
-import warnings
 from functools import partial
 
 import numpy as np
@@ -11,15 +10,7 @@ from torch.utils.data import DataLoader
 
 from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
-from mmcv.utils import TORCH_VERSION, Registry, build_from_cfg, digit_version
-
-from .samplers import (
-    DistributedGroupSampler,
-    DistributedSampler,
-    GroupSampler,
-    InfiniteBatchSampler,
-    InfiniteGroupBatchSampler,
-)
+from mmcv.utils import Registry, build_from_cfg, digit_version
 
 DATASETS = Registry("dataset")
 PIPELINES = Registry("pipeline")
@@ -97,9 +88,11 @@ def build_dataloader(
     num_gpus=1,
     dist=True,
     shuffle=True,
+    round_up=True,
     seed=None,
-    runner_type="EpochBasedRunner",
+    pin_memory=True,
     persistent_workers=False,
+    sampler_cfg=None,
     **kwargs
 ):
     """Build PyTorch DataLoader.
@@ -115,62 +108,58 @@ def build_dataloader(
         dist (bool): Distributed training/test or not. Default: True.
         shuffle (bool): Whether to shuffle the data at every epoch.
             Default: True.
-        seed (int, Optional): Seed to be used. Default: None.
-        runner_type (str): Type of runner. Default: `EpochBasedRunner`
+        round_up (bool): Whether to round up the length of dataset by adding
+            extra samples to make it evenly divisible. Default: True.
+        pin_memory (bool): Whether to use pin_memory in DataLoader.
+            Default: True
         persistent_workers (bool): If True, the data loader will not shutdown
             the worker processes after a dataset has been consumed once.
-            This allows to maintain the workers `Dataset` instances alive.
-            This argument is only valid when PyTorch>=1.7.0. Default: False.
+            This allows to maintain the workers Dataset instances alive.
+            The argument also has effect in PyTorch>=1.7.0.
+            Default: True
+        sampler_cfg (dict): sampler configuration to override the default
+            sampler
         kwargs: any keyword argument to be used to initialize DataLoader
     Returns:
         DataLoader: A PyTorch dataloader.
     """
     rank, world_size = get_dist_info()
 
+    # Custom sampler logic
+    if sampler_cfg:
+        # shuffle=False when val and test
+        sampler_cfg.update(shuffle=shuffle)
+        sampler = build_sampler(
+            sampler_cfg,
+            default_args=dict(
+                dataset=dataset, num_replicas=world_size, rank=rank
+            ),
+        )
+    # Default sampler logic
+    elif dist:
+        sampler = build_sampler(
+            dict(
+                type="DistributedSampler",
+                dataset=dataset,
+                num_replicas=world_size,
+                rank=rank,
+                shuffle=shuffle,
+                round_up=round_up,
+            )
+        )
+    else:
+        sampler = None
+
+    # If sampler exists, turn off dataloader shuffle
+    if sampler is not None:
+        shuffle = False
+
     if dist:
-        # When model is :obj:`DistributedDataParallel`,
-        # `batch_size` of :obj:`dataloader` is the
-        # number of training samples on each GPU.
         batch_size = samples_per_gpu
         num_workers = workers_per_gpu
     else:
-        # When model is obj:`DataParallel`
-        # the batch size is samples on all the GPUS
         batch_size = num_gpus * samples_per_gpu
         num_workers = num_gpus * workers_per_gpu
-
-    if runner_type == "IterBasedRunner":
-        # this is a batch sampler, which can yield
-        # a mini-batch indices each time.
-        # it can be used in both `DataParallel` and
-        # `DistributedDataParallel`
-        if shuffle:
-            batch_sampler = InfiniteGroupBatchSampler(
-                dataset, batch_size, world_size, rank, seed=seed
-            )
-        else:
-            batch_sampler = InfiniteBatchSampler(
-                dataset, batch_size, world_size, rank, seed=seed, shuffle=False
-            )
-        batch_size = 1
-        sampler = None
-    else:
-        if dist:
-            # DistributedGroupSampler will definitely shuffle the data to
-            # satisfy that images on each GPU are in the same group
-            if shuffle:
-                sampler = DistributedGroupSampler(
-                    dataset, samples_per_gpu, world_size, rank, seed=seed
-                )
-            else:
-                sampler = DistributedSampler(
-                    dataset, world_size, rank, shuffle=False, seed=seed
-                )
-        else:
-            sampler = (
-                GroupSampler(dataset, samples_per_gpu) if shuffle else None
-            )
-        batch_sampler = None
 
     init_fn = (
         partial(worker_init_fn, num_workers=num_workers, rank=rank, seed=seed)
@@ -178,22 +167,17 @@ def build_dataloader(
         else None
     )
 
-    if digit_version(TORCH_VERSION) >= digit_version("1.7.0"):
+    if digit_version(torch.__version__) >= digit_version("1.8.0"):
         kwargs["persistent_workers"] = persistent_workers
-    elif persistent_workers is True:
-        warnings.warn(
-            "persistent_workers is invalid because your pytorch "
-            "version is lower than 1.7.0"
-        )
 
     data_loader = DataLoader(
         dataset,
         batch_size=batch_size,
         sampler=sampler,
         num_workers=num_workers,
-        batch_sampler=batch_sampler,
         collate_fn=partial(collate, samples_per_gpu=samples_per_gpu),
-        pin_memory=False,
+        pin_memory=pin_memory,
+        shuffle=shuffle,
         worker_init_fn=init_fn,
         **kwargs
     )

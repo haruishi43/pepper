@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
 
 import bisect
-import collections
-import copy
 import math
 from collections import defaultdict
 
 import numpy as np
+from mmcv.utils import print_log
 from torch.utils.data.dataset import ConcatDataset as _ConcatDataset
 
-from mmcv.utils import build_from_cfg, print_log
-
-from .builder import DATASETS, PIPELINES
+from .builder import DATASETS
 
 
 @DATASETS.register_module()
 class ConcatDataset(_ConcatDataset):
     """A wrapper of concatenated dataset.
     Same as :obj:`torch.utils.data.dataset.ConcatDataset`, but
-    concat the group flag for image aspect ratio.
+    add `get_cat_ids` function.
     Args:
         datasets (list[:obj:`Dataset`]): A list of datasets.
         separate_eval (bool): Whether to evaluate the results
@@ -28,37 +25,24 @@ class ConcatDataset(_ConcatDataset):
 
     def __init__(self, datasets, separate_eval=True):
         super(ConcatDataset, self).__init__(datasets)
-        self.CLASSES = datasets[0].CLASSES
-        self.PALETTE = getattr(datasets[0], "PALETTE", None)
         self.separate_eval = separate_eval
+
+        self.CLASSES = datasets[0].CLASSES
+
         if not separate_eval:
             if len(set([type(ds) for ds in datasets])) != 1:
                 raise NotImplementedError(
-                    "All the datasets should have same types"
+                    "To evaluate a concat dataset non-separately, "
+                    "all the datasets should have same types"
                 )
 
-        if hasattr(datasets[0], "flag"):
-            flags = []
-            for i in range(0, len(datasets)):
-                flags.append(datasets[i].flag)
-            self.flag = np.concatenate(flags)
-
     def get_cat_ids(self, idx):
-        """Get category ids of concatenated dataset by index.
-        Args:
-            idx (int): Index of data.
-        Returns:
-            list[int]: All categories in the image of specified index.
-        """
-
         if idx < 0:
             if -idx > len(self):
                 raise ValueError(
                     "absolute value of index should not exceed dataset length"
                 )
             idx = len(self) + idx
-
-        # NOTE: bisect_right returns the index inside the list
         dataset_idx = bisect.bisect_right(self.cumulative_sizes, idx)
         if dataset_idx == 0:
             sample_idx = idx
@@ -66,76 +50,60 @@ class ConcatDataset(_ConcatDataset):
             sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
         return self.datasets[dataset_idx].get_cat_ids(sample_idx)
 
-    def get_ann_info(self, idx):
-        """Get annotation of concatenated dataset by index.
-        Args:
-            idx (int): Index of data.
-        Returns:
-            dict: Annotation info of specified index.
-        """
-
-        if idx < 0:
-            if -idx > len(self):
-                raise ValueError(
-                    "absolute value of index should not exceed dataset length"
-                )
-            idx = len(self) + idx
-        dataset_idx = bisect.bisect_right(self.cumulative_sizes, idx)
-        if dataset_idx == 0:
-            sample_idx = idx
-        else:
-            sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
-        return self.datasets[dataset_idx].get_ann_info(sample_idx)
-
-    def evaluate(self, results, logger=None, **kwargs):
+    def evaluate(self, results, *args, indices=None, logger=None, **kwargs):
         """Evaluate the results.
         Args:
             results (list[list | tuple]): Testing results of the dataset.
-            logger (logging.Logger | str | None): Logger used for printing
-                related information during evaluation. Default: None.
+            indices (list, optional): The indices of samples corresponding to
+                the results. It's unavailable on ConcatDataset.
+                Defaults to None.
+            logger (logging.Logger | str, optional): Logger used for printing
+                related information during evaluation. Defaults to None.
         Returns:
             dict[str: float]: AP results of the total dataset or each separate
             dataset if `self.separate_eval=True`.
         """
-        assert len(results) == self.cumulative_sizes[-1], (
+        if indices is not None:
+            raise NotImplementedError(
+                "Use indices to evaluate speific samples in a ConcatDataset "
+                "is not supported by now."
+            )
+
+        assert len(results) == len(self), (
             "Dataset and results have different sizes: "
-            f"{self.cumulative_sizes[-1]} v.s. {len(results)}"
+            f"{len(self)} v.s. {len(results)}"
         )
 
         # Check whether all the datasets support evaluation
         for dataset in self.datasets:
             assert hasattr(
                 dataset, "evaluate"
-            ), f"{type(dataset)} does not implement evaluate function"
+            ), f"{type(dataset)} haven't implemented the evaluate function."
 
         if self.separate_eval:
-            dataset_idx = -1
             total_eval_results = dict()
-            for size, dataset in zip(self.cumulative_sizes, self.datasets):
+            for dataset_idx, dataset in enumerate(self.datasets):
                 start_idx = (
                     0
-                    if dataset_idx == -1
-                    else self.cumulative_sizes[dataset_idx]
+                    if dataset_idx == 0
+                    else self.cumulative_sizes[dataset_idx - 1]
                 )
-                end_idx = self.cumulative_sizes[dataset_idx + 1]
+                end_idx = self.cumulative_sizes[dataset_idx]
 
                 results_per_dataset = results[start_idx:end_idx]
                 print_log(
-                    f"\nEvaluateing {dataset.ann_file} with "
+                    f"Evaluateing dataset-{dataset_idx} with "
                     f"{len(results_per_dataset)} images now",
                     logger=logger,
                 )
 
                 eval_results_per_dataset = dataset.evaluate(
-                    results_per_dataset, logger=logger, **kwargs
+                    results_per_dataset, *args, logger=logger, **kwargs
                 )
-                dataset_idx += 1
                 for k, v in eval_results_per_dataset.items():
                     total_eval_results.update({f"{dataset_idx}_{k}": v})
 
             return total_eval_results
-        elif len(set([type(ds) for ds in self.datasets])) != 1:
-            raise NotImplementedError("All the datasets should have same types")
         else:
             original_data_infos = self.datasets[0].data_infos
             self.datasets[0].data_infos = sum(
@@ -149,7 +117,7 @@ class ConcatDataset(_ConcatDataset):
 
 
 @DATASETS.register_module()
-class RepeatDataset:
+class RepeatDataset(object):
     """A wrapper of repeated dataset.
     The length of repeated dataset will be `times` larger than the original
     dataset. This is useful when the data loading time is long but the dataset
@@ -164,9 +132,6 @@ class RepeatDataset:
         self.dataset = dataset
         self.times = times
         self.CLASSES = dataset.CLASSES
-        self.PALETTE = getattr(dataset, "PALETTE", None)
-        if hasattr(self.dataset, "flag"):
-            self.flag = np.tile(self.dataset.flag, times)
 
         self._ori_len = len(self.dataset)
 
@@ -174,75 +139,70 @@ class RepeatDataset:
         return self.dataset[idx % self._ori_len]
 
     def get_cat_ids(self, idx):
-        """Get category ids of repeat dataset by index.
-        Args:
-            idx (int): Index of data.
-        Returns:
-            list[int]: All categories in the image of specified index.
-        """
-
         return self.dataset.get_cat_ids(idx % self._ori_len)
 
-    def get_ann_info(self, idx):
-        """Get annotation of repeat dataset by index.
-        Args:
-            idx (int): Index of data.
-        Returns:
-            dict: Annotation info of specified index.
-        """
-
-        return self.dataset.get_ann_info(idx % self._ori_len)
-
     def __len__(self):
-        """Length after repetition."""
         return self.times * self._ori_len
+
+    def evaluate(self, *args, **kwargs):
+        raise NotImplementedError(
+            "evaluate results on a repeated dataset is weird. "
+            "Please inference and evaluate on the original dataset."
+        )
+
+    def __repr__(self):
+        """Print the number of instance number."""
+        dataset_type = "Test" if self.test_mode else "Train"
+        result = (
+            f"\n{self.__class__.__name__} ({self.dataset.__class__.__name__}) "
+            f"{dataset_type} dataset with total number of samples {len(self)}."
+        )
+        return result
 
 
 # Modified from https://github.com/facebookresearch/detectron2/blob/41d475b75a230221e21d9cac5d69655e3415e3a4/detectron2/data/samplers/distributed_sampler.py#L57 # noqa
 @DATASETS.register_module()
-class ClassBalancedDataset:
-    """A wrapper of repeated dataset with repeat factor.
+class ClassBalancedDataset(object):
+    r"""A wrapper of repeated dataset with repeat factor.
     Suitable for training on class imbalanced datasets like LVIS. Following
-    the sampling strategy in the `paper <https://arxiv.org/abs/1908.03195>`_,
-    in each epoch, an image may appear multiple times based on its
-    "repeat factor".
+    the sampling strategy in [#1]_, in each epoch, an image may appear multiple
+    times based on its "repeat factor".
     The repeat factor for an image is a function of the frequency the rarest
     category labeled in that image. The "frequency of category c" in [0, 1]
     is defined by the fraction of images in the training set (without repeats)
     in which category c appears.
-    The dataset needs to instantiate :func:`self.get_cat_ids` to support
+    The dataset needs to implement :func:`self.get_cat_ids` to support
     ClassBalancedDataset.
     The repeat factor is computed as followed.
-    1. For each category c, compute the fraction # of images
-       that contain it: :math:`f(c)`
-    2. For each category c, compute the category-level repeat factor:
-       :math:`r(c) = max(1, sqrt(t/f(c)))`
-    3. For each image I, compute the image-level repeat factor:
-       :math:`r(I) = max_{c in I} r(c)`
+    1. For each category c, compute the fraction :math:`f(c)` of images that
+       contain it.
+    2. For each category c, compute the category-level repeat factor
+        .. math::
+            r(c) = \max(1, \sqrt{\frac{t}{f(c)}})
+    3. For each image I and its labels :math:`L(I)`, compute the image-level
+       repeat factor
+        .. math::
+            r(I) = \max_{c \in L(I)} r(c)
+    References:
+        .. [#1]  https://arxiv.org/pdf/1908.03195.pdf
     Args:
         dataset (:obj:`CustomDataset`): The dataset to be repeated.
         oversample_thr (float): frequency threshold below which data is
-            repeated. For categories with ``f_c >= oversample_thr``, there is
-            no oversampling. For categories with ``f_c < oversample_thr``, the
+            repeated. For categories with `f_c` >= `oversample_thr`, there is
+            no oversampling. For categories with `f_c` < `oversample_thr`, the
             degree of oversampling following the square-root inverse frequency
             heuristic above.
-        filter_empty_gt (bool, optional): If set true, images without bounding
-            boxes will not be oversampled. Otherwise, they will be categorized
-            as the pure background class and involved into the oversampling.
-            Default: True.
     """
 
-    def __init__(self, dataset, oversample_thr, filter_empty_gt=True):
+    def __init__(self, dataset, oversample_thr):
         self.dataset = dataset
         self.oversample_thr = oversample_thr
-        self.filter_empty_gt = filter_empty_gt
         self.CLASSES = dataset.CLASSES
-        self.PALETTE = getattr(dataset, "PALETTE", None)
 
         repeat_factors = self._get_repeat_factors(dataset, oversample_thr)
         repeat_indices = []
-        for dataset_idx, repeat_factor in enumerate(repeat_factors):
-            repeat_indices.extend([dataset_idx] * math.ceil(repeat_factor))
+        for dataset_index, repeat_factor in enumerate(repeat_factors):
+            repeat_indices.extend([dataset_index] * math.ceil(repeat_factor))
         self.repeat_indices = repeat_indices
 
         flags = []
@@ -253,27 +213,16 @@ class ClassBalancedDataset:
         self.flag = np.asarray(flags, dtype=np.uint8)
 
     def _get_repeat_factors(self, dataset, repeat_thr):
-        """Get repeat factor for each images in the dataset.
-        Args:
-            dataset (:obj:`CustomDataset`): The dataset
-            repeat_thr (float): The threshold of frequency. If an image
-                contains the categories whose frequency below the threshold,
-                it would be repeated.
-        Returns:
-            list[float]: The repeat factors for each images in the dataset.
-        """
-
         # 1. For each category c, compute the fraction # of images
         #   that contain it: f(c)
         category_freq = defaultdict(int)
         num_images = len(dataset)
         for idx in range(num_images):
             cat_ids = set(self.dataset.get_cat_ids(idx))
-            if len(cat_ids) == 0 and not self.filter_empty_gt:
-                cat_ids = set([len(self.CLASSES)])
             for cat_id in cat_ids:
                 category_freq[cat_id] += 1
         for k, v in category_freq.items():
+            assert v > 0, f"caterogy {k} does not contain any images"
             category_freq[k] = v / num_images
 
         # 2. For each category c, compute the category-level repeat factor:
@@ -283,18 +232,13 @@ class ClassBalancedDataset:
             for cat_id, cat_freq in category_freq.items()
         }
 
-        # 3. For each image I, compute the image-level repeat factor:
-        #    r(I) = max_{c in I} r(c)
+        # 3. For each image I and its labels L(I), compute the image-level
+        # repeat factor:
+        #    r(I) = max_{c in L(I)} r(c)
         repeat_factors = []
         for idx in range(num_images):
             cat_ids = set(self.dataset.get_cat_ids(idx))
-            if len(cat_ids) == 0 and not self.filter_empty_gt:
-                cat_ids = set([len(self.CLASSES)])
-            repeat_factor = 1
-            if len(cat_ids) > 0:
-                repeat_factor = max(
-                    {category_repeat[cat_id] for cat_id in cat_ids}
-                )
+            repeat_factor = max({category_repeat[cat_id] for cat_id in cat_ids})
             repeat_factors.append(repeat_factor)
 
         return repeat_factors
@@ -303,112 +247,68 @@ class ClassBalancedDataset:
         ori_index = self.repeat_indices[idx]
         return self.dataset[ori_index]
 
-    def get_ann_info(self, idx):
-        """Get annotation of dataset by index.
-        Args:
-            idx (int): Index of data.
-        Returns:
-            dict: Annotation info of specified index.
-        """
-        ori_index = self.repeat_indices[idx]
-        return self.dataset.get_ann_info(ori_index)
-
     def __len__(self):
-        """Length after repetition."""
         return len(self.repeat_indices)
+
+    def evaluate(self, *args, **kwargs):
+        raise NotImplementedError(
+            "evaluate results on a class-balanced dataset is weird. "
+            "Please inference and evaluate on the original dataset."
+        )
+
+    def __repr__(self):
+        """Print the number of instance number."""
+        dataset_type = "Test" if self.test_mode else "Train"
+        result = (
+            f"\n{self.__class__.__name__} ({self.dataset.__class__.__name__}) "
+            f"{dataset_type} dataset with total number of samples {len(self)}."
+        )
+        return result
 
 
 @DATASETS.register_module()
-class MultiImageMixDataset:
-    """A wrapper of multiple images mixed dataset.
-    Suitable for training on multiple images mixed data augmentation like
-    mosaic and mixup. For the augmentation pipeline of mixed image data,
-    the `get_indexes` method needs to be provided to obtain the image
-    indexes, and you can set `skip_flags` to change the pipeline running
-    process. At the same time, we provide the `dynamic_scale` parameter
-    to dynamically change the output image size.
+class KFoldDataset:
+    """A wrapper of dataset for K-Fold cross-validation.
+    K-Fold cross-validation divides all the samples in groups of samples,
+    called folds, of almost equal sizes. And we use k-1 of folds to do training
+    and use the fold left to do validation.
     Args:
-        dataset (:obj:`CustomDataset`): The dataset to be mixed.
-        pipeline (Sequence[dict]): Sequence of transform object or
-            config dict to be composed.
-        dynamic_scale (tuple[int], optional): The image scale can be changed
-            dynamically. Default to None. It is deprecated.
-        skip_type_keys (list[str], optional): Sequence of type string to
-            be skip pipeline. Default to None.
+        dataset (:obj:`CustomDataset`): The dataset to be divided.
+        fold (int): The fold used to do validation. Defaults to 0.
+        num_splits (int): The number of all folds. Defaults to 5.
+        test_mode (bool): Use the training dataset or validation dataset.
+            Defaults to False.
+        seed (int, optional): The seed to shuffle the dataset before splitting.
+            If None, not shuffle the dataset. Defaults to None.
     """
 
     def __init__(
-        self, dataset, pipeline, dynamic_scale=None, skip_type_keys=None
+        self, dataset, fold=0, num_splits=5, test_mode=False, seed=None
     ):
-        if dynamic_scale is not None:
-            raise RuntimeError(
-                "dynamic_scale is deprecated. Please use Resize pipeline "
-                "to achieve similar functions"
-            )
-        assert isinstance(pipeline, collections.abc.Sequence)
-        if skip_type_keys is not None:
-            assert all(
-                [
-                    isinstance(skip_type_key, str)
-                    for skip_type_key in skip_type_keys
-                ]
-            )
-        self._skip_type_keys = skip_type_keys
-
-        self.pipeline = []
-        self.pipeline_types = []
-        for transform in pipeline:
-            if isinstance(transform, dict):
-                self.pipeline_types.append(transform["type"])
-                transform = build_from_cfg(transform, PIPELINES)
-                self.pipeline.append(transform)
-            else:
-                raise TypeError("pipeline must be a dict")
-
         self.dataset = dataset
         self.CLASSES = dataset.CLASSES
-        self.PALETTE = getattr(dataset, "PALETTE", None)
-        if hasattr(self.dataset, "flag"):
-            self.flag = dataset.flag
-        self.num_samples = len(dataset)
+        self.test_mode = test_mode
+        self.num_splits = num_splits
 
-    def __len__(self):
-        return self.num_samples
+        length = len(dataset)
+        indices = list(range(length))
+        if isinstance(seed, int):
+            rng = np.random.default_rng(seed)
+            rng.shuffle(indices)
+
+        test_start = length * fold // num_splits
+        test_end = length * (fold + 1) // num_splits
+        if test_mode:
+            self.indices = indices[test_start:test_end]
+        else:
+            self.indices = indices[:test_start] + indices[test_end:]
 
     def __getitem__(self, idx):
-        results = copy.deepcopy(self.dataset[idx])
-        for (transform, transform_type) in zip(
-            self.pipeline, self.pipeline_types
-        ):
-            if (
-                self._skip_type_keys is not None
-                and transform_type in self._skip_type_keys
-            ):
-                continue
+        return self.dataset[self.indices[idx]]
 
-            if hasattr(transform, "get_indexes"):
-                indexes = transform.get_indexes(self.dataset)
-                if not isinstance(indexes, collections.abc.Sequence):
-                    indexes = [indexes]
-                mix_results = [
-                    copy.deepcopy(self.dataset[index]) for index in indexes
-                ]
-                results["mix_results"] = mix_results
+    def __len__(self):
+        return len(self.indices)
 
-            results = transform(results)
-
-            if "mix_results" in results:
-                results.pop("mix_results")
-
-        return results
-
-    def update_skip_type_keys(self, skip_type_keys):
-        """Update skip_type_keys. It is called by an external hook.
-        Args:
-            skip_type_keys (list[str], optional): Sequence of type
-                string to be skip pipeline.
-        """
-        assert all(
-            [isinstance(skip_type_key, str) for skip_type_key in skip_type_keys]
-        )
-        self._skip_type_keys = skip_type_keys
+    def evaluate(self, *args, **kwargs):
+        kwargs["indices"] = self.indices
+        return self.dataset.evaluate(*args, **kwargs)
