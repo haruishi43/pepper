@@ -5,46 +5,49 @@ train_pipeline = [
     dict(type="LoadImageFromFile", to_float32=True),
     dict(
         type="Resize",
-        img_scale=(128, 256),
-        share_params=False,
-        keep_ratio=False,
-        override=False,
+        size=(256, 128),  # (h, w)
+        interpolation="bilinear",
     ),
     dict(
         type="RandomFlip",
-        share_params=False,
-        flip_ratio=0.5,
+        flip_prob=0.5,
         direction="horizontal",
     ),
     dict(type="Normalize", **img_norm_cfg),
+    dict(type='ImageToTensor', keys=['img']),
+    dict(type='ToTensor', keys=['gt_label']),
     dict(type="Collect", keys=["img", "gt_label"]),
-    dict(type="FormatBundle"),
 ]
 test_pipeline = [
     dict(type="LoadImageFromFile"),
-    dict(type="Resize", img_scale=(128, 256), keep_ratio=False),
+    dict(
+        type="Resize",
+        size=(256, 128),  # (h, w)
+        interpolation="bilinear",
+    ),
     dict(type="Normalize", **img_norm_cfg),
     dict(type="ImageToTensor", keys=["img"]),
     dict(type="Collect", keys=["img"], meta_keys=[]),
 ]
-data_root = "tests/data/mini_market1501"
+data_type = "BaseDataset"
+data_root = "tests/data/mini_market1501/"
 data = dict(
     samples_per_gpu=1,
     workers_per_gpu=2,
     train=dict(
-        type="Market1501",
+        type=data_type,
         data_prefix=data_root + "bounding_box_train",
         ann_file=data_root + "gtPepper/train.json",
         pipeline=train_pipeline,
     ),
     query=dict(
-        type="Market1501",
+        type=data_type,
         data_prefix=data_root + "query",
         ann_file=data_root + "gtPepper/query.json",
         pipeline=test_pipeline,
     ),
     test=dict(
-        type="Market1501",
+        type=data_type,
         data_prefix=data_root + "bounding_box_test",
         ann_file=data_root + "gtPepper/gallery.json",
         pipeline=test_pipeline,

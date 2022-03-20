@@ -2,14 +2,19 @@
 
 from collections import defaultdict
 import copy
+import json
 
-import mmcv
 import numpy as np
+import torch
 from torch.utils.data import Dataset
 
+import mmcv
+
+from .builder import DATASETS
 from .pipelines import Compose
 
 
+@DATASETS.register_module()
 class BaseDataset(Dataset):
 
     CLASSES = None
@@ -35,19 +40,32 @@ class BaseDataset(Dataset):
         """
         assert isinstance(self.ann_file, str)
 
+        with open(self.ann_file, "r") as f:
+            tmp_data = json.load(f)
+
+        assert isinstance(tmp_data, list)
         data_infos = []
-        with open(self.ann_file) as f:
-            samples = [x.strip().split(" ") for x in f.readlines()]
-            for filename, gt_label in samples:
-                info = dict(img_prefix=self.data_prefix)
-                info["img_info"] = dict(filename=filename)
-                info["gt_label"] = np.array(gt_label, dtype=np.int64)
-                data_infos.append(info)
+        for d in tmp_data:
+            pid = d["pid"]
+            camid = d["camid"]
+            img_path = d["img_path"]
+            info = dict(
+                filename=img_path,
+                img_prefix=self.data_prefix,
+                camid=camid,
+            )
+            info["gt_label"] = np.array(pid, dtype=np.int64)
+            data_infos.append(info)
+
+        del tmp_data
         self._parse_ann_info(data_infos)
         return data_infos
 
     def _parse_ann_info(self, data_infos):
         """Parse person id annotations."""
+
+        # relabel?
+
         index_tmp_dic = defaultdict(list)
         self.index_dic = dict()
         for idx, info in enumerate(data_infos):
