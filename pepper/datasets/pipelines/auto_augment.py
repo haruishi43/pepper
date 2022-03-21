@@ -121,14 +121,6 @@ class RandAugment(object):
         hparams (dict): Configs of hyperparameters. Hyperparameters will be
             used in policies that require these arguments if these arguments
             are not set in policy dicts. Defaults to use _HPARAMS_DEFAULT.
-    Note:
-        `magnitude_std` will introduce some randomness to policy, modified by
-        https://github.com/rwightman/pytorch-image-models.
-        When magnitude_std=0, we calculate the magnitude as follows:
-        .. math::
-            \text{magnitude} = \frac{\text{magnitude\_level}}
-            {\text{total\_level}} \times (\text{val2} - \text{val1})
-            + \text{val1}
     """
 
     def __init__(

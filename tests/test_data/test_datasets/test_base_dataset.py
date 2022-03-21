@@ -12,3 +12,11 @@ def test_mini_market1501():
     print(cfg.pretty_text)
 
     dataset = build_from_cfg(cfg.data.train, DATASETS)
+
+
+def test_mini_mars():
+    cfg = Config.fromfile("tests/configs/mini_mars.py")
+
+    print(cfg.pretty_text)
+
+    dataset = build_from_cfg(cfg.data.train, DATASETS)

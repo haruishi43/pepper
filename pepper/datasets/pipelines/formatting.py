@@ -295,7 +295,9 @@ class FormatBundle(object):
             inputs["gt_label"] = np.stack(
                 [_results["gt_label"] for _results in results], axis=0
             )
-            inputs["img_metas"] = [_results["img_metas"] for _results in results]
+            inputs["img_metas"] = [
+                _results["img_metas"] for _results in results
+            ]
         elif isinstance(results, dict):  # image
             inputs["img"] = results["img"]
             inputs["gt_label"] = results["gt_label"]
