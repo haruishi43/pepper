@@ -88,7 +88,6 @@ class VideoDataset(Dataset):
         data_info = copy.deepcopy(self.data_infos[idx])
 
         # make a list of dicts
-        # TODO: sample number of frames here?
         filenames = data_info["img_info"]["filenames"]
         results = []
         for i, fn in enumerate(filenames):
