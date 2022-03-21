@@ -50,9 +50,9 @@ class BaseDataset(Dataset):
             camid = d["camid"]
             img_path = d["img_path"]
             info = dict(
-                filename=img_path,
                 img_prefix=self.data_prefix,
                 camid=camid,
+                img_info=dict(filename=img_path),
             )
             info["gt_label"] = np.array(pid, dtype=np.int64)
             data_infos.append(info)
@@ -85,13 +85,7 @@ class BaseDataset(Dataset):
     def prepare_data(self, idx):
         """Prepare results for image (e.g. the annotation information, ...)."""
         data_info = self.data_infos[idx]
-        if self.triplet_sampler is not None:
-            img_infos = self.triplet_sampling(
-                data_info["gt_label"], **self.triplet_sampler
-            )
-            results = copy.deepcopy(img_infos)
-        else:
-            results = copy.deepcopy(data_info)
+        results = copy.deepcopy(data_info)
         return self.pipeline(results)
 
     def evaluate(self, results, metric="mAP", metric_options=None, logger=None):

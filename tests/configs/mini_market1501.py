@@ -14,8 +14,8 @@ train_pipeline = [
         direction="horizontal",
     ),
     dict(type="Normalize", **img_norm_cfg),
-    dict(type='ImageToTensor', keys=['img']),
-    dict(type='ToTensor', keys=['gt_label']),
+    dict(type="ImageToTensor", keys=["img"]),
+    dict(type="ToTensor", keys=["gt_label"]),
     dict(type="Collect", keys=["img", "gt_label"]),
 ]
 test_pipeline = [

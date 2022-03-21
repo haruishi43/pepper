@@ -73,3 +73,30 @@ class LoadImageFromFile(object):
             f"file_client_args={self.file_client_args})"
         )
         return repr_str
+
+
+@PIPELINES.register_module()
+class LoadMultiImagesFromFile(LoadImageFromFile):
+    """Load multi images from file.
+    Please refer to `mmdet.datasets.pipelines.loading.py:LoadImageFromFile`
+    for detailed docstring.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __call__(self, results):
+        """Call function.
+        For each dict in `results`, call the call function of
+        `LoadImageFromFile` to load image.
+        Args:
+            results (list[dict]): List of dict from
+                :obj:`mmtrack.CocoVideoDataset`.
+        Returns:
+            list[dict]: List of dict that contains loaded image.
+        """
+        outs = []
+        for _results in results:
+            _results = super().__call__(_results)
+            outs.append(_results)
+        return outs
