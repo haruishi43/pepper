@@ -232,7 +232,7 @@ class VideoCollect(object):
                 img_meta[key] = results[key]
             elif key in results["img_info"]:
                 img_meta[key] = results["img_info"][key]
-        data["img_metas"] = img_meta
+        data["img_metas"] = DC(img_meta, cpu_only=True)
         for key in self.keys:
             data[key] = results[key]
         return data
@@ -295,7 +295,7 @@ class FormatBundle(object):
             inputs["gt_label"] = np.stack(
                 [_results["gt_label"] for _results in results], axis=0
             )
-            inputs["img_metas"] = results["img_metas"]
+            inputs["img_metas"] = [_results["img_metas"] for _results in results]
         elif isinstance(results, dict):  # image
             inputs["img"] = results["img"]
             inputs["gt_label"] = results["gt_label"]

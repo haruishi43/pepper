@@ -586,7 +586,7 @@ class SeqRandomFlip(RandomFlip):
             Defaults to True.
     """
 
-    def __init__(self, share_params, *args, **kwargs):
+    def __init__(self, share_params=True, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.share_params = share_params
 

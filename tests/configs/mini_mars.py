@@ -34,19 +34,19 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         type=data_type,
-        data_prefix=data_root + "bbox_train",
+        data_prefix=data_root,
         ann_file=data_root + "gtPepper/train.json",
         pipeline=train_pipeline,
     ),
     query=dict(
         type=data_type,
-        data_prefix=data_root + "bbox_test",
+        data_prefix=data_root,
         ann_file=data_root + "gtPepper/query.json",
         pipeline=test_pipeline,
     ),
     test=dict(
         type=data_type,
-        data_prefix=data_root + "bbox_test",
+        data_prefix=data_root,
         ann_file=data_root + "gtPepper/gallery.json",
         pipeline=test_pipeline,
     ),
