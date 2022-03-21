@@ -58,13 +58,14 @@ class ImageDataset(Dataset):
             data_infos.append(info)
 
         del tmp_data
-        self._parse_ann_info(data_infos)
+
+        if not self.test_mode:
+            # relabel
+            self._parse_ann_info(data_infos)
         return data_infos
 
     def _parse_ann_info(self, data_infos):
         """Parse person id annotations."""
-
-        # relabel?
 
         index_tmp_dic = defaultdict(list)
         self.index_dic = dict()

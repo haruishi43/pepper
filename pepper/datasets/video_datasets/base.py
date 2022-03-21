@@ -45,30 +45,27 @@ class VideoDataset(Dataset):
 
         assert isinstance(tmp_data, list)
         data_infos = []
-        for i, d in enumerate(tmp_data):
+        for d in tmp_data:
             pid = d["pid"]
             camid = d["camid"]
             img_paths = d["img_paths"]
             info = dict(
                 img_prefix=self.data_prefix,
                 camid=camid,
-                img_info=dict(
-                    filenames=sorted(img_paths),
-                    frame_id=i,
-                    is_video_data=True,
-                ),
+                img_info=dict(filenames=sorted(img_paths)),
             )
             info["gt_label"] = np.array(pid, dtype=np.int64)
             data_infos.append(info)
 
         del tmp_data
-        self._parse_ann_info(data_infos)
+
+        if not self.test_mode:
+            # relabel
+            self._parse_ann_info(data_infos)
         return data_infos
 
     def _parse_ann_info(self, data_infos):
         """Parse person id annotations."""
-
-        # relabel?
 
         index_tmp_dic = defaultdict(list)
         self.index_dic = dict()
@@ -94,12 +91,16 @@ class VideoDataset(Dataset):
         # TODO: sample number of frames here?
         filenames = data_info["img_info"]["filenames"]
         results = []
-        for fn in filenames:
+        for i, fn in enumerate(filenames):
             camid = data_info["camid"]
             info = dict(
                 img_prefix=self.data_prefix,
                 camid=camid,
-                img_info=dict(filename=fn),
+                img_info=dict(
+                    filename=fn,
+                    frame_id=i,
+                    is_video_data=True,
+                ),
             )
             info["gt_label"] = copy.deepcopy(data_info["gt_label"])
             results.append(info)
