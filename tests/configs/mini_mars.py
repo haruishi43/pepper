@@ -14,8 +14,8 @@ train_pipeline = [
         direction="horizontal",
     ),
     dict(type="SeqNormalize", **img_norm_cfg),
-    dict(type='VideoCollect', keys=['img', 'gt_label']),
-    dict(type='FormatBundle')
+    dict(type="VideoCollect", keys=["img", "gt_label"]),
+    dict(type="FormatBundle"),
 ]
 test_pipeline = [
     dict(type="LoadMultiImageFromFile"),
@@ -27,7 +27,7 @@ test_pipeline = [
     dict(type="SeqNormalize", **img_norm_cfg),
     dict(type="VideoCollect", keys=["img"], meta_keys=[]),
 ]
-data_type = "BaseDataset"
+data_type = "VideoDataset"
 data_root = "tests/data/mini_mars/"
 data = dict(
     samples_per_gpu=1,

@@ -284,7 +284,7 @@ class FormatBundle(object):
             ReID bundle.
         """
         inputs = dict()
-        if isinstance(results, list):
+        if isinstance(results, list):  # video
             assert len(results) > 1, (
                 "the 'results' only have one item, "
                 "please directly use normal pipeline not 'Seq' pipeline."
@@ -295,9 +295,11 @@ class FormatBundle(object):
             inputs["gt_label"] = np.stack(
                 [_results["gt_label"] for _results in results], axis=0
             )
-        elif isinstance(results, dict):
+            inputs["img_metas"] = results["img_metas"]
+        elif isinstance(results, dict):  # image
             inputs["img"] = results["img"]
             inputs["gt_label"] = results["gt_label"]
+            inputs["img_metas"] = results["img_metas"]
         else:
             raise TypeError("results must be a list or a dict.")
         outs = self.reid_format_bundle(inputs)
@@ -316,14 +318,20 @@ class FormatBundle(object):
             if key == "img":
                 img = results[key]
                 if img.ndim == 3:
+                    # image
+                    # reorder (c, h, w)
                     img = np.ascontiguousarray(img.transpose(2, 0, 1))
                 else:
+                    # video
+                    # reorder (f, c, h, w)
                     img = np.ascontiguousarray(img.transpose(3, 2, 0, 1))
                 results["img"] = DC(to_tensor(img), stack=True)
             elif key == "gt_label":
                 results[key] = DC(
                     to_tensor(results[key]), stack=True, pad_dims=None
                 )
+            elif key == "img_metas":
+                continue
             else:
                 raise KeyError(f"key {key} is not supported")
         return results

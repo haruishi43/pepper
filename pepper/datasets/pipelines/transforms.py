@@ -156,8 +156,8 @@ class RandomCrop(object):
 
 
 @PIPELINES.register_module()
-class SeqRandomCrop(object):
-    """Sequentially random crop the images & bboxes & masks.
+class SeqRandomCrop(RandomCrop):
+    """Sequentially random crop the images.
     The absolute `crop_size` is sampled based on `crop_type` and `image_size`,
     then the cropped results are generated.
     Args:
@@ -167,120 +167,14 @@ class SeqRandomCrop(object):
             not contain any bbox area. Default False.
         share_params (bool, optional): Whether share the cropping parameters
             for the images.
-        bbox_clip_border (bool, optional): Whether clip the objects outside
-            the border of the image. Defaults to True.
-    Note:
-        - If the image is smaller than the absolute crop size, return the
-            original image.
-        - The keys for bboxes, labels and masks must be aligned. That is,
-          `gt_bboxes` corresponds to `gt_labels` and `gt_masks`, and
-          `gt_bboxes_ignore` corresponds to `gt_labels_ignore` and
-          `gt_masks_ignore`.
-        - If the crop does not contain any gt-bbox region and
-          `allow_negative_crop` is set to False, skip this image.
     """
 
-    def __init__(
-        self,
-        crop_size,
-        allow_negative_crop=False,
-        share_params=False,
-        bbox_clip_border=False,
-    ):
-        assert crop_size[0] > 0 and crop_size[1] > 0
-        self.crop_size = crop_size
-        self.allow_negative_crop = allow_negative_crop
+    def __init__(self, share_params=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.share_params = share_params
-        self.bbox_clip_border = bbox_clip_border
-        # The key correspondence from bboxes to labels and masks.
-        self.bbox2label = {
-            "gt_bboxes": ["gt_labels", "gt_instance_ids"],
-            "gt_bboxes_ignore": ["gt_labels_ignore", "gt_instance_ids_ignore"],
-        }
-        self.bbox2mask = {
-            "gt_bboxes": "gt_masks",
-            "gt_bboxes_ignore": "gt_masks_ignore",
-        }
-
-    def get_offsets(self, img):
-        """Random generate the offsets for cropping."""
-        margin_h = max(img.shape[0] - self.crop_size[0], 0)
-        margin_w = max(img.shape[1] - self.crop_size[1], 0)
-        offset_h = np.random.randint(0, margin_h + 1)
-        offset_w = np.random.randint(0, margin_w + 1)
-        return offset_h, offset_w
-
-    def random_crop(self, results, offsets=None):
-        """Call function to randomly crop images, bounding boxes, masks,
-        semantic segmentation maps.
-        Args:
-            results (dict): Result dict from loading pipeline.
-            offsets (tuple, optional): Pre-defined offsets for cropping.
-                Default to None.
-        Returns:
-            dict: Randomly cropped results, 'img_shape' key in result dict is
-            updated according to crop size.
-        """
-
-        for key in results.get("img_fields", ["img"]):
-            img = results[key]
-            if offsets is not None:
-                offset_h, offset_w = offsets
-            else:
-                offset_h, offset_w = self.get_offsets(img)
-            results["img_info"]["crop_offsets"] = (offset_h, offset_w)
-            crop_y1, crop_y2 = offset_h, offset_h + self.crop_size[0]
-            crop_x1, crop_x2 = offset_w, offset_w + self.crop_size[1]
-
-            # crop the image
-            img = img[crop_y1:crop_y2, crop_x1:crop_x2, ...]
-            img_shape = img.shape
-            results[key] = img
-        results["img_shape"] = img_shape
-
-        # crop bboxes accordingly and clip to the image boundary
-        for key in results.get("bbox_fields", []):
-            # e.g. gt_bboxes and gt_bboxes_ignore
-            bbox_offset = np.array(
-                [offset_w, offset_h, offset_w, offset_h], dtype=np.float32
-            )
-            bboxes = results[key] - bbox_offset
-            if self.bbox_clip_border:
-                bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
-                bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
-            valid_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
-                bboxes[:, 3] > bboxes[:, 1]
-            )
-            # If the crop does not contain any gt-bbox area and
-            # self.allow_negative_crop is False, skip this image.
-            if (
-                key == "gt_bboxes"
-                and not valid_inds.any()
-                and not self.allow_negative_crop
-            ):
-                return None
-            results[key] = bboxes[valid_inds, :]
-            # label fields. e.g. gt_labels and gt_labels_ignore
-            label_keys = self.bbox2label.get(key)
-            for label_key in label_keys:
-                if label_key in results:
-                    results[label_key] = results[label_key][valid_inds]
-
-            # mask fields, e.g. gt_masks and gt_masks_ignore
-            mask_key = self.bbox2mask.get(key)
-            if mask_key in results:
-                results[mask_key] = results[mask_key][
-                    valid_inds.nonzero()[0]
-                ].crop(np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
-
-        # crop semantic seg
-        for key in results.get("seg_fields", []):
-            results[key] = results[key][crop_y1:crop_y2, crop_x1:crop_x2]
-        return results
 
     def __call__(self, results):
-        """Call function to sequentially randomly crop images, bounding boxes,
-        masks, semantic segmentation maps.
+        """Call function to sequentially randomly crop images.
         Args:
             results (dict): Result dict from loading pipeline.
         Returns:
@@ -288,13 +182,13 @@ class SeqRandomCrop(object):
             updated according to crop size.
         """
         if self.share_params:
-            offsets = self.get_offsets(results[0]["img"])
+            offsets = self.get_params(results[0]["img"], self.size)
         else:
             offsets = None
 
         outs = []
         for _results in results:
-            _results = self.random_crop(_results, offsets)
+            _results = self.__call__(_results, offsets)
             if _results is None:
                 return None
             outs.append(_results)
@@ -586,6 +480,15 @@ class RandomGrayscale(object):
     def __init__(self, gray_prob=0.1):
         self.gray_prob = gray_prob
 
+    def _cvt_gray(self, img):
+
+        num_output_channels = img.shape[2]
+        if num_output_channels > 1:
+            img = mmcv.rgb2gray(img)[:, :, None]
+            img = np.dstack([img for _ in range(num_output_channels)])
+
+        return img
+
     def __call__(self, results):
         """
         Args:
@@ -594,16 +497,9 @@ class RandomGrayscale(object):
             ndarray: Randomly grayscaled image.
         """
         for key in results.get("img_fields", ["img"]):
-            img = results[key]
-            num_output_channels = img.shape[2]
             if random.random() < self.gray_prob:
-                if num_output_channels > 1:
-                    img = mmcv.rgb2gray(img)[:, :, None]
-                    results[key] = np.dstack(
-                        [img for _ in range(num_output_channels)]
-                    )
-                    return results
-            results[key] = img
+                img = self._cvt_gray(results[key])
+                results[key] = img
         return results
 
     def __repr__(self):
@@ -611,36 +507,32 @@ class RandomGrayscale(object):
 
 
 @PIPELINES.register_module()
-class SeqGrayAug(object):
-    """Gray augmention for images.
-    Args:
-        prob (float): The probability to perform gray augmention.
-            Defaults to 0..
-    """
+class SeqRandomGrayscale(RandomGrayscale):
+    """Gray augmention for images."""
 
-    def __init__(self, prob=0.0):
-        self.prob = prob
+    def __init__(self, *args, **kwargs):
+        super().__init__(self, *args, **kwargs)
 
     def __call__(self, results):
         """Call function.
         For each dict in results, perform gray augmention for image in the
         dict.
         Args:
-            results (list[dict]): List of dict that from
-                :obj:`mmtrack.CocoVideoDataset`.
+            results (list[dict]): List of dict
         Returns:
             list[dict]: List of dict that contains augmented gray image.
         """
-        outs = []
-        gray_prob = np.random.random()
-        for _results in results:
-            if self.prob > gray_prob:
-                grayed = cv2.cvtColor(_results["img"], cv2.COLOR_BGR2GRAY)
-                image = cv2.cvtColor(grayed, cv2.COLOR_GRAY2BGR)
-                _results["img"] = image
 
-            outs.append(_results)
-        return outs
+        if np.random.random() < self.gray_prob:
+            outs = []
+            for _results in results:
+                for key in _results.get("img_fields", ["img"]):
+                    img = self._cvt_gray(_results[key])
+                    _results[key] = img
+                    outs.append(_results)
+            return outs
+        else:
+            return results
 
 
 @PIPELINES.register_module()
@@ -667,9 +559,13 @@ class RandomFlip(object):
             dict: Flipped results, 'flip', 'flip_direction' keys are added into
                 result dict.
         """
-        flip = True if np.random.rand() < self.flip_prob else False
-        results["flip"] = flip
-        results["flip_direction"] = self.direction
+        if "flip" not in results:
+            results["flip"] = (
+                True if np.random.rand() < self.flip_prob else False
+            )
+        if "flip_direction" not in results:
+            results["flip_direction"] = self.direction
+
         if results["flip"]:
             # flip image
             for key in results.get("img_fields", ["img"]):
@@ -704,31 +600,10 @@ class SeqRandomFlip(RandomFlip):
             'flip_direction' keys are added into the dict.
         """
         if self.share_params:
-            if isinstance(self.direction, list):
-                # None means non-flip
-                direction_list = self.direction + [None]
-            else:
-                # None means non-flip
-                direction_list = [self.direction, None]
-
-            if isinstance(self.flip_ratio, list):
-                non_flip_ratio = 1 - sum(self.flip_ratio)
-                flip_ratio_list = self.flip_ratio + [non_flip_ratio]
-            else:
-                non_flip_ratio = 1 - self.flip_ratio
-                # exclude non-flip
-                single_ratio = self.flip_ratio / (len(direction_list) - 1)
-                flip_ratio_list = [single_ratio] * (len(direction_list) - 1) + [
-                    non_flip_ratio
-                ]
-
-            cur_dir = np.random.choice(direction_list, p=flip_ratio_list)
-            flip = cur_dir is not None
-            flip_direction = cur_dir
-
+            flip = True if np.random.rand() < self.flip_prob else False
             for _results in results:
                 _results["flip"] = flip
-                _results["flip_direction"] = flip_direction
+                _results["flip_direction"] = self.direction
 
         outs = []
         for _results in results:
@@ -884,6 +759,68 @@ class RandomErasing(object):
         repr_str += f"fill_color={self.fill_color}, "
         repr_str += f"fill_std={self.fill_std})"
         return repr_str
+
+
+@PIPELINES.register_module()
+class SeqRandomErasing(RandomErasing):
+    """Sequential Random Erasing images."""
+
+    def __init__(self, share_params=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.share_params = share_params
+
+    def __call__(self, results):
+        if self.share_params:
+            erase_prob = np.random.rand()
+            # NOTE: assumes that all images are the same size (after Resize)
+            img = results[0]["img"]
+            img_h, img_w = img.shape[:2]
+            # convert to log aspect to ensure equal probability of aspect ratio
+            log_aspect_range = np.log(
+                np.array(self.aspect_range, dtype=np.float32)
+            )
+            aspect_ratio = np.exp(np.random.uniform(*log_aspect_range))
+            area = img_h * img_w
+            area *= np.random.uniform(self.min_area_ratio, self.max_area_ratio)
+
+            h = min(int(round(np.sqrt(area * aspect_ratio))), img_h)
+            w = min(int(round(np.sqrt(area / aspect_ratio))), img_w)
+            top = np.random.randint(0, img_h - h) if img_h > h else 0
+            left = np.random.randint(0, img_w - w) if img_w > w else 0
+
+        outs = []
+        for _results in results:
+            for key in _results.get("img_fields", ["img"]):
+                if not self.share_params:
+                    erase_prob = np.random.rand()
+
+                if erase_prob > self.erase_prob:
+                    continue
+
+                if not self.share_params:
+                    img = results[key]
+                    img_h, img_w = img.shape[:2]
+                    # convert to log aspect to ensure equal probability of aspect ratio
+                    log_aspect_range = np.log(
+                        np.array(self.aspect_range, dtype=np.float32)
+                    )
+                    aspect_ratio = np.exp(np.random.uniform(*log_aspect_range))
+                    area = img_h * img_w
+                    area *= np.random.uniform(
+                        self.min_area_ratio, self.max_area_ratio
+                    )
+
+                    h = min(int(round(np.sqrt(area * aspect_ratio))), img_h)
+                    w = min(int(round(np.sqrt(area / aspect_ratio))), img_w)
+                    top = np.random.randint(0, img_h - h) if img_h > h else 0
+                    left = np.random.randint(0, img_w - w) if img_w > w else 0
+
+                img = self._fill_pixels(img, top, left, h, w)
+                _results[key] = img
+
+            outs.append(_results)
+
+        return outs
 
 
 @PIPELINES.register_module()
@@ -1108,13 +1045,9 @@ class SeqResize(Resize):
             'img_shape', 'pad_shape', 'scale_factor', 'keep_ratio' keys
             are added into result dict.
         """
-        outs, scale = [], None
+        outs = []
         for i, _results in enumerate(results):
-            if self.share_params and i > 0:
-                _results["scale"] = scale
             _results = super().__call__(_results)
-            if self.share_params and i == 0:
-                scale = _results["scale"]
             outs.append(_results)
         return outs
 
@@ -1343,6 +1276,46 @@ class ColorJitter(object):
         repr_str += f"contrast={self.contrast}, "
         repr_str += f"saturation={self.saturation})"
         return repr_str
+
+
+@PIPELINES.register_module()
+class SeqColorJitter(ColorJitter):
+    def __init__(self, share_params=True, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.share_params = share_params
+
+    def __call__(self, results):
+        brightness_factor = random.uniform(0, self.brightness)
+        contrast_factor = random.uniform(0, self.contrast)
+        saturation_factor = random.uniform(0, self.saturation)
+        color_jitter_transforms = [
+            dict(
+                type="Brightness",
+                magnitude=brightness_factor,
+                prob=1.0,
+                random_negative_prob=0.5,
+            ),
+            dict(
+                type="Contrast",
+                magnitude=contrast_factor,
+                prob=1.0,
+                random_negative_prob=0.5,
+            ),
+            dict(
+                type="ColorTransform",
+                magnitude=saturation_factor,
+                prob=1.0,
+                random_negative_prob=0.5,
+            ),
+        ]
+        random.shuffle(color_jitter_transforms)
+        transform = Compose(color_jitter_transforms)
+
+        outs = []
+        for i, _results in enumerate(results):
+            _results = transform(_results)
+            outs.append(_results)
+        return outs
 
 
 @PIPELINES.register_module()

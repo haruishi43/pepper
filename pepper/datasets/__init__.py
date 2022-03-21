@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from .base_dataset import BaseDataset
 from .builder import (
     DATASETS,
     PIPELINES,
@@ -9,6 +8,9 @@ from .builder import (
     build_dataloader,
     build_sampler,
 )
+
+from .image_datasets import *  # noqa: F401, F403
+from .video_datasets import *  # noqa: F401, F403
 
 __all__ = [
     "DATASETS",

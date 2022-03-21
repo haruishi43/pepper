@@ -77,10 +77,7 @@ class LoadImageFromFile(object):
 
 @PIPELINES.register_module()
 class LoadMultiImagesFromFile(LoadImageFromFile):
-    """Load multi images from file.
-    Please refer to `mmdet.datasets.pipelines.loading.py:LoadImageFromFile`
-    for detailed docstring.
-    """
+    """Load multi images from file."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -10,12 +10,12 @@ from torch.utils.data import Dataset
 
 import mmcv
 
-from .builder import DATASETS
-from .pipelines import Compose
+from ..builder import DATASETS
+from ..pipelines import Compose
 
 
 @DATASETS.register_module()
-class BaseDataset(Dataset):
+class ImageDataset(Dataset):
 
     CLASSES = None
 
@@ -26,7 +26,7 @@ class BaseDataset(Dataset):
         ann_file=None,
         test_mode=False,
     ):
-        super(BaseDataset, self).__init__()
+        super(ImageDataset, self).__init__()
         self.ann_file = ann_file
         self.data_prefix = data_prefix
         self.test_mode = test_mode
