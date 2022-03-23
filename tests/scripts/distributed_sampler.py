@@ -35,7 +35,7 @@ def build_dataloader(
     workers_per_gpu,
     num_gpus=1,
     dist=True,
-    shuffle=True,
+    shuffle=False,  # FIXME: unshuffle for debugging
     round_up=True,
     seed=None,
     pin_memory=True,
@@ -84,16 +84,17 @@ def build_dataloader(
         )
     # Default sampler logic
     elif dist:
-        sampler = build_sampler(
-            dict(
-                type="DistributedSampler",
-                dataset=dataset,
-                num_replicas=world_size,
-                rank=rank,
-                shuffle=shuffle,
-                round_up=round_up,
-            )
-        )
+        # sampler = build_sampler(
+        #     dict(
+        #         type="DistributedSampler",
+        #         dataset=dataset,
+        #         num_replicas=world_size,
+        #         rank=rank,
+        #         shuffle=shuffle,
+        #         round_up=round_up,
+        #     )
+        # )
+        sampler = None
     else:
         sampler = None
 
@@ -164,7 +165,12 @@ def iterate_dataset(
     dataset = data_loaders[0]
 
     for i, data in enumerate(dataset):
-        logger.info(f">>> {i}:")
+        meta = data['img_metas'].data[0]
+        # print(meta)
+        cam_ids = [m['cam_id'] for m in meta]
+        debug_idx = [m['debug_index'] for m in meta]
+        # logger.info(f">>> {i}: {debug_idx}")  # logger only logs in rank 0
+        print(f">>> {i}: {debug_idx}")
 
 
 def parse_args():

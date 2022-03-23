@@ -47,11 +47,11 @@ class VideoDataset(Dataset):
         data_infos = []
         for d in tmp_data:
             pid = d["pid"]
-            camid = d["camid"]
+            cam_id = d["camid"]
             img_paths = d["img_paths"]
             info = dict(
                 img_prefix=self.data_prefix,
-                camid=camid,
+                cam_id=cam_id,
                 img_info=dict(filenames=sorted(img_paths)),
             )
             info["gt_label"] = np.array(pid, dtype=np.int64)
@@ -91,12 +91,12 @@ class VideoDataset(Dataset):
         filenames = data_info["img_info"]["filenames"]
         results = []
         for i, fn in enumerate(filenames):
-            camid = data_info["camid"]
+            cam_id = data_info["cam_id"]
             info = dict(
                 img_prefix=self.data_prefix,
-                camid=camid,
                 img_info=dict(
                     filename=fn,
+                    cam_id=cam_id,
                     frame_id=i,
                     is_video_data=True,
                 ),

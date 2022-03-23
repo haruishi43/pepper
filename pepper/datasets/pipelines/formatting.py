@@ -130,6 +130,8 @@ class Collect(object):
             "flip",
             "flip_direction",
             "img_norm_cfg",
+            "cam_id",
+            "debug_index",
         ),
     ):
         self.keys = keys
@@ -141,6 +143,8 @@ class Collect(object):
         for key in self.meta_keys:
             if key in results:
                 img_meta[key] = results[key]
+            if key in results["img_info"]:
+                img_meta[key] = results["img_info"][key]
         data["img_metas"] = DC(img_meta, cpu_only=True)
         for key in self.keys:
             data[key] = results[key]
@@ -181,6 +185,7 @@ class VideoCollect(object):
             "flip",
             "flip_direction",
             "img_norm_cfg",
+            "cam_id",
             "frame_id",
             "is_video_data",
         ),

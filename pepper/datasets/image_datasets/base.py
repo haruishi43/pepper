@@ -45,14 +45,17 @@ class ImageDataset(Dataset):
 
         assert isinstance(tmp_data, list)
         data_infos = []
-        for d in tmp_data:
+        for i, d in enumerate(tmp_data):
             pid = d["pid"]
-            camid = d["camid"]
+            cam_id = d["camid"]
             img_path = d["img_path"]
             info = dict(
                 img_prefix=self.data_prefix,
-                camid=camid,
-                img_info=dict(filename=img_path),
+                img_info=dict(
+                    filename=img_path,
+                    cam_id=cam_id,
+                    debug_index=i,  # FIXME: debugging
+                ),
             )
             info["gt_label"] = np.array(pid, dtype=np.int64)
             data_infos.append(info)
