@@ -63,7 +63,7 @@ def build_dataloader(
     round_up=True,
     seed=None,
     pin_memory=True,
-    persistent_workers=False,
+    persistent_workers=True,
     sampler_cfg=None,
     **kwargs
 ):

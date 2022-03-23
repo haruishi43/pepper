@@ -18,8 +18,8 @@ from mmcv.runner import (
     get_dist_info,
 )
 
-from mmdet.datasets import build_dataset, replace_ImageToTensor
-from mmdet.utils import find_latest_checkpoint
+from pepper.datasets import build_dataset, replace_ImageToTensor
+from pepper.utils import find_latest_checkpoint
 
 from pepper.core import DistEvalHook, EvalHook
 from pepper.datasets import build_dataloader
@@ -56,7 +56,7 @@ def init_random_seed(seed=None, device="cuda"):
     return random_num.item()
 
 
-def set_random_seed(seed=None, deterministic=False):
+def set_random_seed(seed, deterministic=False):
     """Set random seed.
     Args:
         seed (int): Seed to be used.
@@ -65,11 +65,6 @@ def set_random_seed(seed=None, deterministic=False):
             to True and `torch.backends.cudnn.benchmark` to False.
             Default: False.
     """
-
-    if seed is None:
-        logger = get_root_logger()
-        seed = init_random_seed()
-        logger.info(f"Setting random seed: {seed}")
 
     random.seed(seed)
     np.random.seed(seed)
@@ -80,7 +75,7 @@ def set_random_seed(seed=None, deterministic=False):
         torch.backends.cudnn.benchmark = False
 
 
-def train_detector(
+def train_model(
     model,
     dataset,
     cfg,
@@ -93,27 +88,9 @@ def train_detector(
 
     # prepare data loaders
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
-    if "imgs_per_gpu" in cfg.data:
-        logger.warning(
-            '"imgs_per_gpu" is deprecated in MMDet V2.0. '
-            'Please use "samples_per_gpu" instead'
-        )
-        if "samples_per_gpu" in cfg.data:
-            logger.warning(
-                f'Got "imgs_per_gpu"={cfg.data.imgs_per_gpu} and '
-                f'"samples_per_gpu"={cfg.data.samples_per_gpu}, "imgs_per_gpu"'
-                f"={cfg.data.imgs_per_gpu} is used in this experiments"
-            )
-        else:
-            logger.warning(
-                'Automatically set "samples_per_gpu"="imgs_per_gpu"='
-                f"{cfg.data.imgs_per_gpu} in this experiments"
-            )
-        cfg.data.samples_per_gpu = cfg.data.imgs_per_gpu
 
-    runner_type = (
-        "EpochBasedRunner" if "runner" not in cfg else cfg.runner["type"]
-    )
+    sampler_cfg = cfg.data.get("sampler", None)
+
     data_loaders = [
         build_dataloader(
             ds,
@@ -122,9 +99,9 @@ def train_detector(
             # `num_gpus` will be ignored if distributed
             num_gpus=len(cfg.gpu_ids),
             dist=distributed,
+            round_up=True,
             seed=cfg.seed,
-            runner_type=runner_type,
-            persistent_workers=cfg.data.get("persistent_workers", False),
+            sampler_cfg=sampler_cfg,
         )
         for ds in dataset
     ]
@@ -146,14 +123,14 @@ def train_detector(
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
 
-    if "runner" not in cfg:
+    if cfg.get("runner") is None:
         cfg.runner = {
             "type": "EpochBasedRunner",
             "max_epochs": cfg.total_epochs,
         }
         warnings.warn(
             "config is now expected to have a `runner` section, "
-            "please set `runner` in your config.",
+            "place set `runner` in your config.",
             UserWarning,
         )
     else:
@@ -164,6 +141,7 @@ def train_detector(
         cfg.runner,
         default_args=dict(
             model=model,
+            batch_processor=None,  # NOTE: deprecated
             optimizer=optimizer,
             work_dir=cfg.work_dir,
             logger=logger,
@@ -213,6 +191,7 @@ def train_detector(
             workers_per_gpu=cfg.data.workers_per_gpu,
             dist=distributed,
             shuffle=False,
+            round_up=True,
         )
         eval_cfg = cfg.get("evaluation", {})
         eval_cfg["by_epoch"] = cfg.runner["type"] != "IterBasedRunner"

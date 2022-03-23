@@ -1,18 +1,26 @@
 #!/usr/bin/env python3
 
-import multiprocessing as mp
 import os
 import platform
 import warnings
 
 import cv2
+import torch.multiprocessing as mp
 
 
 def setup_multi_processes(cfg):
     # set multi-process start method as `fork` to speed up the training
     if platform.system() != "Windows":
         mp_start_method = cfg.get("mp_start_method", "fork")
-        mp.set_start_method(mp_start_method)
+        current_method = mp.get_start_method(allow_none=True)
+        if current_method is not None and current_method != mp_start_method:
+            warnings.warn(
+                f"Multi-processing start method `{mp_start_method}` is "
+                f"different from the previous setting `{current_method}`."
+                f"It will be force set to `{mp_start_method}`. You can change "
+                f"this behavior by changing `mp_start_method` in your config."
+            )
+        mp.set_start_method(mp_start_method, force=True)
 
     # disable opencv multithreading to avoid system being overloaded
     opencv_num_threads = cfg.get("opencv_num_threads", 0)
