@@ -1,120 +1,71 @@
 #!/usr/bin/env python3
 
-import os
 import os.path as osp
+import pickle
 import shutil
 import tempfile
 import time
-from collections import defaultdict
 
 import mmcv
+import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.image import tensor2imgs
 from mmcv.runner import get_dist_info
-from mmdet.core import encode_mask_results
 
 
 def single_gpu_test(
-    model, data_loader, show=False, out_dir=None, fps=3, show_score_thr=0.3
+    model, data_loader, show=False, out_dir=None, **show_kwargs
 ):
-    """Test model with single gpu.
-    Args:
-        model (nn.Module): Model to be tested.
-        data_loader (nn.Dataloader): Pytorch data loader.
-        show (bool, optional): If True, visualize the prediction results.
-            Defaults to False.
-        out_dir (str, optional): Path of directory to save the
-            visualization results. Defaults to None.
-        fps (int, optional): FPS of the output video.
-            Defaults to 3.
-        show_score_thr (float, optional): The score threshold of visualization
-            (Only used in VID for now). Defaults to 0.3.
-    Returns:
-        dict[str, list]: The prediction results.
-    """
     model.eval()
-    results = defaultdict(list)
+    results = []
     dataset = data_loader.dataset
-    prev_img_meta = None
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
         with torch.no_grad():
-            result = model(return_loss=False, rescale=True, **data)
+            result = model(return_loss=False, **data)
 
-        batch_size = data["img"][0].size(0)
+        batch_size = len(result)
+        results.extend(result)
+
         if show or out_dir:
-            assert batch_size == 1, "Only support batch_size=1 when testing."
-            img_tensor = data["img"][0]
-            img_meta = data["img_metas"][0].data[0][0]
-            img = tensor2imgs(img_tensor, **img_meta["img_norm_cfg"])[0]
+            scores = np.vstack(result)
+            pred_score = np.max(scores, axis=1)
+            pred_label = np.argmax(scores, axis=1)
+            pred_class = [model.CLASSES[lb] for lb in pred_label]
 
-            h, w, _ = img_meta["img_shape"]
-            img_show = img[:h, :w, :]
+            img_metas = data["img_metas"].data[0]
+            imgs = tensor2imgs(data["img"], **img_metas[0]["img_norm_cfg"])
+            assert len(imgs) == len(img_metas)
 
-            ori_h, ori_w = img_meta["ori_shape"][:-1]
-            img_show = mmcv.imresize(img_show, (ori_w, ori_h))
+            for i, (img, img_meta) in enumerate(zip(imgs, img_metas)):
+                h, w, _ = img_meta["img_shape"]
+                img_show = img[:h, :w, :]
 
-            if out_dir:
-                out_file = osp.join(out_dir, img_meta["ori_filename"])
-            else:
-                out_file = None
+                ori_h, ori_w = img_meta["ori_shape"][:-1]
+                img_show = mmcv.imresize(img_show, (ori_w, ori_h))
 
-            model.module.show_result(
-                img_show,
-                result,
-                show=show,
-                out_file=out_file,
-                score_thr=show_score_thr,
-            )
+                if out_dir:
+                    out_file = osp.join(out_dir, img_meta["ori_filename"])
+                else:
+                    out_file = None
 
-            # Whether need to generate a video from images.
-            # The frame_id == 0 means the model starts processing
-            # a new video, therefore we can write the previous video.
-            # There are two corner cases.
-            # Case 1: prev_img_meta == None means there is no previous video.
-            # Case 2: i == len(dataset) means processing the last video
-            need_write_video = (
-                prev_img_meta is not None
-                and img_meta["frame_id"] == 0
-                or i == len(dataset)
-            )
-            if out_dir and need_write_video:
-                prev_img_prefix, prev_img_name = prev_img_meta[
-                    "ori_filename"
-                ].rsplit(os.sep, 1)
-                prev_img_idx, prev_img_type = prev_img_name.split(".")
-                prev_filename_tmpl = (
-                    "{:0" + str(len(prev_img_idx)) + "d}." + prev_img_type
-                )
-                prev_img_dirs = f"{out_dir}/{prev_img_prefix}"
-                prev_img_names = sorted(os.listdir(prev_img_dirs))
-                prev_start_frame_id = int(prev_img_names[0].split(".")[0])
-                prev_end_frame_id = int(prev_img_names[-1].split(".")[0])
-
-                mmcv.frames2video(
-                    prev_img_dirs,
-                    f"{prev_img_dirs}/out_video.mp4",
-                    fps=fps,
-                    fourcc="mp4v",
-                    filename_tmpl=prev_filename_tmpl,
-                    start=prev_start_frame_id,
-                    end=prev_end_frame_id,
-                    show_progress=False,
+                result_show = {
+                    "pred_score": pred_score[i],
+                    "pred_label": pred_label[i],
+                    "pred_class": pred_class[i],
+                }
+                model.module.show_result(
+                    img_show,
+                    result_show,
+                    show=show,
+                    out_file=out_file,
+                    **show_kwargs,
                 )
 
-            prev_img_meta = img_meta
-
-        for key in result:
-            if "mask" in key:
-                result[key] = encode_mask_results(result[key])
-
-        for k, v in result.items():
-            results[k].append(v)
-
+        batch_size = data["img"].size(0)
         for _ in range(batch_size):
             prog_bar.update()
-
     return results
 
 
@@ -124,60 +75,55 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     under two different modes: gpu and cpu modes. By setting 'gpu_collect=True'
     it encodes results to gpu tensors and use gpu communication for results
     collection. On cpu mode it saves the results on different gpus to 'tmpdir'
-    and collects them by the rank 0 worker. 'gpu_collect=True' is not
-    supported for now.
+    and collects them by the rank 0 worker.
     Args:
         model (nn.Module): Model to be tested.
         data_loader (nn.Dataloader): Pytorch data loader.
         tmpdir (str): Path of directory to save the temporary results from
-            different gpus under cpu mode. Defaults to None.
+            different gpus under cpu mode.
         gpu_collect (bool): Option to use either gpu or cpu to collect results.
-            Defaults to False.
     Returns:
-        dict[str, list]: The prediction results.
+        list: The prediction results.
     """
     model.eval()
-    results = defaultdict(list)
+    results = []
     dataset = data_loader.dataset
     rank, world_size = get_dist_info()
     if rank == 0:
+        # Check if tmpdir is valid for cpu_collect
+        if (not gpu_collect) and (tmpdir is not None and osp.exists(tmpdir)):
+            raise OSError(
+                (
+                    f"The tmpdir {tmpdir} already exists.",
+                    " Since tmpdir will be deleted after testing,",
+                    " please make sure you specify an empty one.",
+                )
+            )
         prog_bar = mmcv.ProgressBar(len(dataset))
-    time.sleep(2)  # This line can prevent deadlock problem in some cases.
+    time.sleep(2)
+    dist.barrier()
     for i, data in enumerate(data_loader):
         with torch.no_grad():
-            result = model(return_loss=False, rescale=True, **data)
-        for key in result:
-            if "mask" in key:
-                result[key] = encode_mask_results(result[key])
-
-        for k, v in result.items():
-            results[k].append(v)
+            result = model(return_loss=False, **data)
+        if isinstance(result, list):
+            results.extend(result)
+        else:
+            results.append(result)
 
         if rank == 0:
-            batch_size = data["img"][0].size(0)
+            batch_size = data["img"].size(0)
             for _ in range(batch_size * world_size):
                 prog_bar.update()
 
     # collect results from all ranks
     if gpu_collect:
-        raise NotImplementedError
+        results = collect_results_gpu(results, len(dataset))
     else:
-        results = collect_results_cpu(results, tmpdir)
+        results = collect_results_cpu(results, len(dataset), tmpdir)
     return results
 
 
-def collect_results_cpu(result_part, tmpdir=None):
-    """Collect results on cpu mode.
-    Saves the results on different gpus to 'tmpdir' and collects them by the
-    rank 0 worker.
-    Args:
-        result_part (dict[list]): The part of prediction results.
-        tmpdir (str): Path of directory to save the temporary results from
-            different gpus under cpu mode. If is None, use `tempfile.mkdtemp()`
-            to make a temporary path. Defaults to None.
-    Returns:
-        dict[str, list]: The prediction results.
-    """
+def collect_results_cpu(result_part, size, tmpdir=None):
     rank, world_size = get_dist_info()
     # create a tmp dir if it is not specified
     if tmpdir is None:
@@ -187,7 +133,8 @@ def collect_results_cpu(result_part, tmpdir=None):
             (MAX_LEN,), 32, dtype=torch.uint8, device="cuda"
         )
         if rank == 0:
-            tmpdir = tempfile.mkdtemp()
+            mmcv.mkdir_or_exist(".dist_test")
+            tmpdir = tempfile.mkdtemp(dir=".dist_test")
             tmpdir = torch.tensor(
                 bytearray(tmpdir.encode()), dtype=torch.uint8, device="cuda"
             )
@@ -204,11 +151,51 @@ def collect_results_cpu(result_part, tmpdir=None):
         return None
     else:
         # load results of all parts from tmp dir
-        part_list = defaultdict(list)
+        part_list = []
         for i in range(world_size):
             part_file = osp.join(tmpdir, f"part_{i}.pkl")
-            part_file = mmcv.load(part_file)
-            for k, v in part_file.items():
-                part_list[k].extend(v)
+            part_result = mmcv.load(part_file)
+            part_list.append(part_result)
+        # sort the results
+        ordered_results = []
+        for res in zip(*part_list):
+            ordered_results.extend(list(res))
+        # the dataloader may pad some samples
+        ordered_results = ordered_results[:size]
+        # remove tmp dir
         shutil.rmtree(tmpdir)
-        return part_list
+        return ordered_results
+
+
+def collect_results_gpu(result_part, size):
+    rank, world_size = get_dist_info()
+    # dump result part to tensor with pickle
+    part_tensor = torch.tensor(
+        bytearray(pickle.dumps(result_part)), dtype=torch.uint8, device="cuda"
+    )
+    # gather all result part tensor shape
+    shape_tensor = torch.tensor(part_tensor.shape, device="cuda")
+    shape_list = [shape_tensor.clone() for _ in range(world_size)]
+    dist.all_gather(shape_list, shape_tensor)
+    # padding result part tensor to max length
+    shape_max = torch.tensor(shape_list).max()
+    part_send = torch.zeros(shape_max, dtype=torch.uint8, device="cuda")
+    part_send[: shape_tensor[0]] = part_tensor
+    part_recv_list = [
+        part_tensor.new_zeros(shape_max) for _ in range(world_size)
+    ]
+    # gather all result part
+    dist.all_gather(part_recv_list, part_send)
+
+    if rank == 0:
+        part_list = []
+        for recv, shape in zip(part_recv_list, shape_list):
+            part_result = pickle.loads(recv[: shape[0]].cpu().numpy().tobytes())
+            part_list.append(part_result)
+        # sort the results
+        ordered_results = []
+        for res in zip(*part_list):
+            ordered_results.extend(list(res))
+        # the dataloader may pad some samples
+        ordered_results = ordered_results[:size]
+        return ordered_results
