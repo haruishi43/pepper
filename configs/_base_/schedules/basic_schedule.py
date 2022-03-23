@@ -13,7 +13,4 @@ lr_config = dict(
 )
 
 # runner settings
-total_epochs = 6  # NOTE: only 6 epochs
-runner = dict(type="IterBasedRunner", max_iters=80000)
-checkpoint_config = dict(by_epoch=False, interval=8000)
-evaluation = dict(interval=8000, metric="mIoU", pre_eval=True)
+runner = dict(type="EpochBasedRunner", max_epochs=6)

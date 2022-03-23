@@ -17,9 +17,8 @@ from mmcv.parallel import collate
 from mmcv.runner import init_dist, get_dist_info
 
 from pepper.apis import init_random_seed, set_random_seed
-from pepper.core import setup_multi_processes
 from pepper.datasets import build_dataset, build_sampler
-from pepper.utils import collect_env, get_root_logger
+from pepper.utils import collect_env, get_root_logger, setup_multi_processes
 
 
 def worker_init_fn(worker_id, num_workers, rank, seed):
@@ -142,7 +141,30 @@ def iterate_dataset(
     # prepare data loaders
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
 
-    ...
+    # prepare data loaders
+    dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
+
+    sampler_cfg = cfg.data.get("sampler", None)
+
+    data_loaders = [
+        build_dataloader(
+            ds,
+            cfg.data.samples_per_gpu,
+            cfg.data.workers_per_gpu,
+            # `num_gpus` will be ignored if distributed
+            num_gpus=len(cfg.gpu_ids),
+            dist=distributed,
+            round_up=True,
+            seed=cfg.seed,
+            sampler_cfg=sampler_cfg,
+        )
+        for ds in dataset
+    ]
+
+    dataset = data_loaders[0]
+
+    for i, data in enumerate(dataset):
+        logger.info(f">>> {i}:")
 
 
 def parse_args():

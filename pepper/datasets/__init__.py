@@ -12,6 +12,9 @@ from .utils import replace_ImageToTensor
 
 from .image_datasets import *  # noqa: F401, F403
 from .video_datasets import *  # noqa: F401, F403
+from .dataset_wrappers import *  # noqa: F401, F403
+from .pipelines import *  # noqa: F401, F403
+from .samplers import *  # noqa: F401, F403
 
 
 __all__ = [
