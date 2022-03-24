@@ -84,17 +84,17 @@ def build_dataloader(
         )
     # Default sampler logic
     elif dist:
-        # sampler = build_sampler(
-        #     dict(
-        #         type="DistributedSampler",
-        #         dataset=dataset,
-        #         num_replicas=world_size,
-        #         rank=rank,
-        #         shuffle=shuffle,
-        #         round_up=round_up,
-        #     )
-        # )
-        sampler = None
+        sampler = build_sampler(
+            dict(
+                type="DistributedSampler",
+                dataset=dataset,
+                num_replicas=world_size,
+                rank=rank,
+                shuffle=shuffle,
+                round_up=round_up,
+            )
+        )
+        # sampler = None
     else:
         sampler = None
 
@@ -169,6 +169,8 @@ def iterate_dataset(
         # print(meta)
         cam_ids = [m['cam_id'] for m in meta]
         debug_idx = [m['debug_index'] for m in meta]
+
+        # FIXME: need help flushing
         # logger.info(f">>> {i}: {debug_idx}")  # logger only logs in rank 0
         print(f">>> {i}: {debug_idx}")
 
