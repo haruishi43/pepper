@@ -55,6 +55,7 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
         shuffle=True,
         batch_size=32,
         num_instances=4,
+        round_up=True,
     ):
         super().__init__(
             dataset,
@@ -65,13 +66,13 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
             drop_last=False,
         )
         assert not (batch_size > len(dataset))
-        assert not (batch_size % 2), "batch_size needs to be even"
         assert not (
             batch_size % num_instances
         ), "batch_size needs be divisible by num_instances"
         self.num_instances = num_instances
         self.num_pids_per_batch = batch_size // self.num_instances
         self.batch_size = batch_size
+        self.round_up = round_up
 
         # avoid having to run pipelines
         data_infos = copy.deepcopy(
@@ -87,8 +88,16 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
         self.pids = sorted(list(self.pid_index.keys()))
         self.num_identities = len(self.pids)
 
+        if self.round_up and self.num_identities % self.num_pids_per_batch != 0:
+            self.num_iterations = self.num_identities // self.num_pids_per_batch + 1
+        else:
+            self.num_iterations = self.num_identities // self.num_pids_per_batch
+
+        self.total_size = self.num_iterations * self.num_pids_per_batch * self.num_instances
+
     def __iter__(self):
         available_pids = copy.deepcopy(self.pids)
+        removed_pids = []
 
         if self.shuffle:
             g = torch.Generator()
@@ -100,8 +109,14 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
 
         batch_idxs_dict = {}
         indices = []
-        while len(available_pids) >= self.num_pids_per_batch:
+        for _ in range(self.num_iterations):
             batch_indices = []
+
+            if len(available_pids) < self.num_pids_per_batch:
+                # we need to add extra pids from `removed`
+                num_add = self.num_pids_per_batch - len(available_pids)
+                # shuffle?
+                available_pids.extend(removed_pids[:num_add])
 
             if self.shuffle:
                 selected_pids = np.random.choice(
@@ -132,9 +147,13 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
 
                 if len(avl_idxs) < self.num_instances:
                     available_pids.remove(pid)
+                    batch_idxs_dict.pop(pid)
+                    removed_pids.append(pid)
 
             assert len(batch_indices) == self.batch_size
             indices += batch_indices
+
+        assert len(indices) == self.total_size, f"indices={len(indices)}, should be {self.total_size}"
 
         # print("before:", len(indices), indices)
         indices = reorder_index(indices, self.num_replicas)

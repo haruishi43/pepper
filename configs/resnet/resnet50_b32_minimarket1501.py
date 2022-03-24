@@ -39,8 +39,8 @@ model = dict(
 data = dict(
     sampler=dict(
         type="NaiveIdentityDistributedSampler",
-        batch_size=12,
-        num_instances=3,
+        batch_size=32,
+        num_instances=4,
         shuffle=True,
     ),
 )

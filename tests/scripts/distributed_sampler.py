@@ -35,7 +35,7 @@ def build_dataloader(
     workers_per_gpu,
     num_gpus=1,
     dist=True,
-    shuffle=False,  # FIXME: unshuffle for debugging
+    shuffle=True,  # FIXME: unshuffle for debugging
     round_up=False,
     seed=None,
     pin_memory=True,
