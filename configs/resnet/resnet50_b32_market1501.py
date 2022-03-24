@@ -3,6 +3,8 @@ _base_ = [
     "../_base_/schedules/basic_schedule.py",
     "../_base_/default_runtime.py",
 ]
+
+
 model = dict(
     reid=dict(
         type="BaseReID",
@@ -31,4 +33,15 @@ model = dict(
             checkpoint="https://download.openmmlab.com/mmclassification/v0/resnet/resnet50_batch256_imagenet_20200708-cfb998bf.pth",  # noqa: E251  # noqa: E501
         ),
     )
+)
+data = dict(
+    sampler=dict(
+        type="NaiveIdentityDistributedSampler",
+        batch_size=8,
+        num_instances=2,
+        shuffle=False,
+    ),
+    #     sampler=dict(
+    #     type="DistributedSampler",
+    # ),
 )

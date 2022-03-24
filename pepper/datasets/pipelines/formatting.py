@@ -130,7 +130,7 @@ class Collect(object):
             "flip",
             "flip_direction",
             "img_norm_cfg",
-            "cam_id",
+            "camid",
             "debug_index",
         ),
     ):
@@ -185,7 +185,7 @@ class VideoCollect(object):
             "flip",
             "flip_direction",
             "img_norm_cfg",
-            "cam_id",
+            "camid",
             "frame_id",
             "is_video_data",
         ),

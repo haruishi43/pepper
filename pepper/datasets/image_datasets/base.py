@@ -47,13 +47,17 @@ class ImageDataset(Dataset):
         data_infos = []
         for i, d in enumerate(tmp_data):
             pid = d["pid"]
-            cam_id = d["camid"]
+            camid = d["camid"]
             img_path = d["img_path"]
             info = dict(
+                sampler_info=dict(
+                    pid=pid,
+                    camid=camid,
+                ),
                 img_prefix=self.data_prefix,
                 img_info=dict(
                     filename=img_path,
-                    cam_id=cam_id,
+                    camid=camid,
                     debug_index=i,  # FIXME: debugging
                 ),
             )

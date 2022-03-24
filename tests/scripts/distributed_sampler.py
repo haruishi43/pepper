@@ -36,7 +36,7 @@ def build_dataloader(
     num_gpus=1,
     dist=True,
     shuffle=False,  # FIXME: unshuffle for debugging
-    round_up=True,
+    round_up=False,
     seed=None,
     pin_memory=True,
     persistent_workers=False,
@@ -84,6 +84,8 @@ def build_dataloader(
         )
     # Default sampler logic
     elif dist:
+        print("setting up sampler")
+        print(rank, world_size)
         sampler = build_sampler(
             dict(
                 type="DistributedSampler",
@@ -165,10 +167,10 @@ def iterate_dataset(
     dataset = data_loaders[0]
 
     for i, data in enumerate(dataset):
-        meta = data['img_metas'].data[0]
+        meta = data["img_metas"].data[0]
         # print(meta)
-        cam_ids = [m['cam_id'] for m in meta]
-        debug_idx = [m['debug_index'] for m in meta]
+        # camids = [m["camid"] for m in meta]
+        debug_idx = [m["debug_index"] for m in meta]
 
         # FIXME: need help flushing
         # logger.info(f">>> {i}: {debug_idx}")  # logger only logs in rank 0
