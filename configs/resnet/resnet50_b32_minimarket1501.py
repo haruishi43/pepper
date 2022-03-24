@@ -13,7 +13,11 @@ model = dict(
             out_indices=(3,),
             style="pytorch",
         ),
-        neck=dict(type="GlobalAveragePooling", kernel_size=(8, 4), stride=1),
+        neck=dict(
+            type="GlobalAveragePooling",
+            kernel_size=(8, 4),
+            stride=1,
+        ),
         head=dict(
             type="LinearReIDHead",
             num_fcs=1,
@@ -35,8 +39,8 @@ model = dict(
 data = dict(
     sampler=dict(
         type="NaiveIdentityDistributedSampler",
-        batch_size=32,
-        num_instances=4,
+        batch_size=12,
+        num_instances=3,
         shuffle=True,
     ),
 )

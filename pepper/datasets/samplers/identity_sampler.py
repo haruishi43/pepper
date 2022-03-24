@@ -64,8 +64,11 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
             seed=seed,
             drop_last=False,
         )
-        assert not (batch_size % num_instances), \
-            "batch_size should be divisible by num_instances"
+        assert not (batch_size > len(dataset))
+        assert not (batch_size % 2), "batch_size needs to be even"
+        assert not (
+            batch_size % num_instances
+        ), "batch_size needs be divisible by num_instances"
         self.num_instances = num_instances
         self.num_pids_per_batch = batch_size // self.num_instances
         self.batch_size = batch_size
@@ -84,16 +87,15 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
         self.pids = sorted(list(self.pid_index.keys()))
         self.num_identities = len(self.pids)
 
-        print(self.pids)
-        print(self.pid_index)
-
     def __iter__(self):
         available_pids = copy.deepcopy(self.pids)
 
         if self.shuffle:
             g = torch.Generator()
             g.manual_seed(self.seed + self.epoch)
-            pid_indices = torch.randperm(len(available_pids), generator=g).tolist()
+            pid_indices = torch.randperm(
+                len(available_pids), generator=g
+            ).tolist()
             available_pids = [available_pids[i] for i in pid_indices]
 
         batch_idxs_dict = {}
@@ -101,18 +103,27 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
         while len(available_pids) >= self.num_pids_per_batch:
             batch_indices = []
 
-            selected_pids = np.random.choice(
-                available_pids, self.num_pids_per_batch, replace=False
-            ).tolist()
+            if self.shuffle:
+                selected_pids = np.random.choice(
+                    available_pids, self.num_pids_per_batch, replace=False,
+                ).tolist()
+            else:
+                selected_pids = available_pids[:self.num_pids_per_batch]
+
             for pid in selected_pids:
                 # Register pid in batch_idxs_dict if not
                 if pid not in batch_idxs_dict:
                     idxs = copy.deepcopy(self.pid_index[pid])
-                    if len(idxs) < self.num_instances:
-                        idxs = np.random.choice(
-                            idxs, size=self.num_instances, replace=True
-                        ).tolist()
-                    np.random.shuffle(idxs)
+
+                    if self.shuffle:
+                        if len(idxs) < self.num_instances:
+                            idxs = np.random.choice(
+                                idxs, size=self.num_instances, replace=True,
+                            ).tolist()
+                        np.random.shuffle(idxs)
+                    else:
+                        if len(idxs) < self.num_instances:
+                            idxs = (idxs * int(self.num_instances / len(idxs) + 1))[:self.num_instances]
                     batch_idxs_dict[pid] = idxs
 
                 avl_idxs = batch_idxs_dict[pid]
@@ -125,50 +136,9 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
             assert len(batch_indices) == self.batch_size
             indices += batch_indices
 
+        # print("before:", len(indices), indices)
         indices = reorder_index(indices, self.num_replicas)
+        # TODO: add checks?
+        # print("after", len(indices), indices)
         indices = itertools.islice(indices, self.rank, None, self.num_replicas)
         return iter(indices)
-
-    # def old_iter(self):
-    #     start = self.rank
-    #     yield from itertools.islice(
-    #         self._infinite_indices(),
-    #         start,
-    #         None,  # iteration continues until the iterator is exhausted
-    #         self.num_replicas,
-    #     )
-
-    # def _infinite_indices(self):
-
-    #     # shuffle
-
-    #     while True:
-    #         avl_pids = copy.deepcopy(self.pids)
-    #         batch_idxs_dict = {}
-
-    #         batch_indices = []
-    #         while len(avl_pids) >= self.num_pids_per_batch:
-    #             selected_pids = np.random.choice(
-    #                 avl_pids, self.num_pids_per_batch, replace=False
-    #             ).tolist()
-    #             for pid in selected_pids:
-    #                 # Register pid in batch_idxs_dict if not
-    #                 if pid not in batch_idxs_dict:
-    #                     idxs = copy.deepcopy(self.pid_index[pid])
-    #                     if len(idxs) < self.num_instances:
-    #                         idxs = np.random.choice(
-    #                             idxs, size=self.num_instances, replace=True
-    #                         ).tolist()
-    #                     np.random.shuffle(idxs)
-    #                     batch_idxs_dict[pid] = idxs
-
-    #                 avl_idxs = batch_idxs_dict[pid]
-    #                 for _ in range(self.num_instances):
-    #                     batch_indices.append(avl_idxs.pop(0))
-
-    #                 if len(avl_idxs) < self.num_instances:
-    #                     avl_pids.remove(pid)
-
-    #             if len(batch_indices) == self.batch_size:
-    #                 yield from reorder_index(batch_indices, self.num_replicas)
-    #                 batch_indices = []

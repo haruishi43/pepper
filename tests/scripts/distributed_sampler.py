@@ -149,6 +149,9 @@ def iterate_dataset(
 
     sampler_cfg = cfg.data.get("sampler", None)
 
+    # FIXME: sampler arguments checks!
+    # add checks for number of batch size
+
     data_loaders = [
         build_dataloader(
             ds,
@@ -174,7 +177,8 @@ def iterate_dataset(
 
         # FIXME: need help flushing
         # logger.info(f">>> {i}: {debug_idx}")  # logger only logs in rank 0
-        print(f">>> {i}: {debug_idx}")
+        print(f">>> {i}: index {debug_idx}")
+        print(f">>> {i}: ids {data['gt_label'].data}")
 
 
 def parse_args():
