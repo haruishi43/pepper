@@ -172,13 +172,14 @@ def iterate_dataset(
     for i, data in enumerate(dataset):
         meta = data["img_metas"].data[0]
         # print(meta)
-        # camids = [m["camid"] for m in meta]
+        camids = [m["camid"] for m in meta]
         debug_idx = [m["debug_index"] for m in meta]
 
         # FIXME: need help flushing
         # logger.info(f">>> {i}: {debug_idx}")  # logger only logs in rank 0
         print(f">>> {i}: index {debug_idx}")
         print(f">>> {i}: ids {data['gt_label'].data}")
+        print(f">>> {i}: camids {camids}")
 
 
 def parse_args():

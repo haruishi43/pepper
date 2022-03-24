@@ -36,10 +36,18 @@ model = dict(
         ),
     )
 )
+# data = dict(
+#     sampler=dict(
+#         type="NaiveIdentityDistributedSampler",
+#         batch_size=16,
+#         num_instances=4,
+#         shuffle=True,
+#     ),
+# )
 data = dict(
     sampler=dict(
-        type="NaiveIdentityDistributedSampler",
-        batch_size=32,
+        type="BalancedIdentityDistributedSampler",
+        batch_size=16,
         num_instances=4,
         shuffle=True,
     ),
