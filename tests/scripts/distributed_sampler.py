@@ -11,6 +11,7 @@ from functools import partial
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
+import torch.distributed as dist
 
 from mmcv import Config, DictAction
 from mmcv.parallel import collate
@@ -169,6 +170,9 @@ def iterate_dataset(
 
     dataset = data_loaders[0]
 
+    print("iterating...")
+    dist.barrier()
+
     for i, data in enumerate(dataset):
         meta = data["img_metas"].data[0]
         # print(meta)
@@ -178,8 +182,11 @@ def iterate_dataset(
         # FIXME: need help flushing
         # logger.info(f">>> {i}: {debug_idx}")  # logger only logs in rank 0
         print(f">>> {i}: index {debug_idx}")
+        dist.barrier()
         print(f">>> {i}: ids {data['gt_label'].data}")
+        dist.barrier()
         print(f">>> {i}: camids {camids}")
+        dist.barrier()
 
 
 def parse_args():

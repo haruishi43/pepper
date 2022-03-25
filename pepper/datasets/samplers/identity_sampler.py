@@ -88,11 +88,15 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
         self.num_identities = len(self.pids)
 
         if self.round_up and self.num_identities % self.num_pids_per_batch != 0:
-            self.num_iterations = self.num_identities // self.num_pids_per_batch + 1
+            self.num_iterations = (
+                self.num_identities // self.num_pids_per_batch + 1
+            )
         else:
             self.num_iterations = self.num_identities // self.num_pids_per_batch
 
-        self.total_size = self.num_iterations * self.num_pids_per_batch * self.num_instances
+        self.total_size = (
+            self.num_iterations * self.num_pids_per_batch * self.num_instances
+        )
 
     def __iter__(self):
         available_pids = copy.deepcopy(self.pids)
@@ -119,10 +123,12 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
 
             if self.shuffle:
                 selected_pids = np.random.choice(
-                    available_pids, self.num_pids_per_batch, replace=False,
+                    available_pids,
+                    self.num_pids_per_batch,
+                    replace=False,
                 ).tolist()
             else:
-                selected_pids = available_pids[:self.num_pids_per_batch]
+                selected_pids = available_pids[: self.num_pids_per_batch]
 
             for pid in selected_pids:
                 # Register pid in batch_idxs_dict if not
@@ -132,12 +138,16 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
                     if self.shuffle:
                         if len(idxs) < self.num_instances:
                             idxs = np.random.choice(
-                                idxs, size=self.num_instances, replace=True,
+                                idxs,
+                                size=self.num_instances,
+                                replace=True,
                             ).tolist()
                         np.random.shuffle(idxs)
                     else:
                         if len(idxs) < self.num_instances:
-                            idxs = (idxs * int(self.num_instances / len(idxs) + 1))[:self.num_instances]
+                            idxs = (
+                                idxs * int(self.num_instances / len(idxs) + 1)
+                            )[: self.num_instances]
                     batch_idxs_dict[pid] = idxs
 
                 avl_idxs = batch_idxs_dict[pid]
@@ -152,7 +162,9 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
             assert len(batch_indices) == self.batch_size
             indices += batch_indices
 
-        assert len(indices) == self.total_size, f"indices={len(indices)}, should be {self.total_size}"
+        assert (
+            len(indices) == self.total_size
+        ), f"indices={len(indices)}, should be {self.total_size}"
 
         # print("before:", len(indices), indices)
         indices = reorder_index(indices, self.num_replicas)
@@ -220,18 +232,24 @@ class BalancedIdentityDistributedSampler(DistributedSampler):
         self.num_identities = len(self.pids)
 
         if self.round_up and self.num_identities % self.num_pids_per_batch != 0:
-            self.num_iterations = self.num_identities // self.num_pids_per_batch + 1
+            self.num_iterations = (
+                self.num_identities // self.num_pids_per_batch + 1
+            )
         else:
             self.num_iterations = self.num_identities // self.num_pids_per_batch
 
-        self.total_size = self.num_iterations * self.num_pids_per_batch * self.num_instances
+        self.total_size = (
+            self.num_iterations * self.num_pids_per_batch * self.num_instances
+        )
 
     def __iter__(self):
         # deterministically shuffle based on epoch
         if self.shuffle:
             g = torch.Generator()
             g.manual_seed(self.seed + self.epoch)
-            identities = torch.randperm(self.num_identities, generator=g).tolist()
+            identities = torch.randperm(
+                self.num_identities, generator=g
+            ).tolist()
         else:
             identities = torch.arange(self.num_identities).tolist()
 
@@ -241,7 +259,9 @@ class BalancedIdentityDistributedSampler(DistributedSampler):
             identities = (identities * int(tot / len(identities) + 1))[:tot]
         elif len(identities) % self.num_pids_per_batch != 0:
             # drop
-            identities = identities[:-(len(identities) % self.num_pids_per_batch)]
+            identities = identities[
+                : -(len(identities) % self.num_pids_per_batch)
+            ]
 
         indices = []
         for i in identities:
@@ -260,9 +280,17 @@ class BalancedIdentityDistributedSampler(DistributedSampler):
 
             if select_cams:
                 if len(select_cams) >= self.num_instances:
-                    cam_indices = np.random.choice(select_cams, size=self.num_instances - 1, replace=False,)
+                    cam_indices = np.random.choice(
+                        select_cams,
+                        size=self.num_instances - 1,
+                        replace=False,
+                    )
                 else:
-                    cam_indices = np.random.choice(select_cams, size=self.num_instances - 1, replace=True,)
+                    cam_indices = np.random.choice(
+                        select_cams,
+                        size=self.num_instances - 1,
+                        replace=True,
+                    )
                 for j in cam_indices:
                     batch_indices.append(same_pid_indices[j])
             else:
@@ -271,15 +299,25 @@ class BalancedIdentityDistributedSampler(DistributedSampler):
                     # only one image for this identity
                     ind_indices = [0] * (self.num_instances - 1)
                 elif len(select_indices) >= self.num_instances:
-                    ind_indices = np.random.choice(select_indices, size=self.num_instances - 1, replace=False,)
+                    ind_indices = np.random.choice(
+                        select_indices,
+                        size=self.num_instances - 1,
+                        replace=False,
+                    )
                 else:
-                    ind_indices = np.random.choice(select_indices, size=self.num_instances - 1, replace=True,)
+                    ind_indices = np.random.choice(
+                        select_indices,
+                        size=self.num_instances - 1,
+                        replace=True,
+                    )
                 for j in ind_indices:
                     batch_indices.append(same_pid_indices[j])
 
             indices += batch_indices
 
-        assert len(indices) == self.total_size, f"indices={len(indices)}, should be {self.total_size}"
+        assert (
+            len(indices) == self.total_size
+        ), f"indices={len(indices)}, should be {self.total_size}"
 
         # print("before:", len(indices), indices)
         indices = reorder_index(indices, self.num_replicas)

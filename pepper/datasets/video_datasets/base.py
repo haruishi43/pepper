@@ -50,7 +50,10 @@ class VideoDataset(Dataset):
             camid = d["camid"]
             img_paths = d["img_paths"]
             info = dict(
-                sampler_info=dict(pid=pid, camid=camid),
+                sampler_info=dict(
+                    pid=pid,
+                    camid=camid,
+                ),
                 img_prefix=self.data_prefix,
                 camid=camid,
                 img_info=dict(filenames=sorted(img_paths)),
