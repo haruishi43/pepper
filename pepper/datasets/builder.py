@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 
 from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
-from mmcv.utils import Registry, build_from_cfg, digit_version
+from mmcv.utils import Registry, build_from_cfg
 
 DATASETS = Registry("dataset")
 PIPELINES = Registry("pipeline")
@@ -64,8 +64,7 @@ def build_dataloader(
     seed=None,
     pin_memory=True,
     persistent_workers=True,
-    sampler=None,
-    **kwargs
+    sampler_cfg=None,
 ):
     """Build PyTorch DataLoader.
     In distributed training, each GPU/process has a dataloader.
@@ -89,16 +88,13 @@ def build_dataloader(
             This allows to maintain the workers Dataset instances alive.
             The argument also has effect in PyTorch>=1.7.0.
             Default: True
-        sampler (torch.utils.data.Sampler): sampler
+        sampler_cfg (dict): sampler configuration to override the default
+            sampler
         kwargs: any keyword argument to be used to initialize DataLoader
     Returns:
         DataLoader: A PyTorch dataloader.
     """
     rank, world_size = get_dist_info()
-
-    # If sampler exists, turn off dataloader shuffle
-    if sampler is not None:
-        shuffle = False
 
     if dist:
         batch_size = samples_per_gpu
@@ -107,14 +103,57 @@ def build_dataloader(
         batch_size = num_gpus * samples_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
+    # setup sampler
+    # NOTE: we don't use sampler when we run validation or test
+    # custom sampler logic
+    if sampler_cfg:
+        # overwrite
+        sampler_cfg.update(shuffle=shuffle)
+        if seed is not None:
+            sampler_cfg.update(seed=seed)
+
+        # some sampler-specific arguments that needs to be overwriten before
+        if sampler_cfg.get('batch_size', None):
+            sampler_cfg.update(batch_size=batch_size)
+
+        sampler = build_sampler(
+            sampler_cfg,
+            default_args=dict(
+                dataset=dataset,
+                num_replicas=world_size,
+                rank=rank,
+            )
+        )
+    elif dist:
+        sampler_cfg = dict(
+            type='BalancedDistributedSampler',
+            batch_size=batch_size,
+            num_instances=batch_size // 8,
+            shuffle=shuffle,
+            round_up=round_up,
+            seed=seed if seed is not None else 0,
+        )
+        default_args = dict(
+            dataset=dataset,
+            num_replicas=world_size,
+            rank=rank,
+        )
+        sampler = build_sampler(
+            sampler_cfg,
+            default_args=default_args,
+        )
+    else:
+        sampler = None
+
+    # If sampler exists, turn off dataloader shuffle
+    if sampler is not None:
+        shuffle = False
+
     init_fn = (
         partial(worker_init_fn, num_workers=num_workers, rank=rank, seed=seed)
         if seed is not None
         else None
     )
-
-    if digit_version(torch.__version__) >= digit_version("1.8.0"):
-        kwargs["persistent_workers"] = persistent_workers
 
     data_loader = DataLoader(
         dataset,
@@ -125,7 +164,7 @@ def build_dataloader(
         pin_memory=pin_memory,
         shuffle=shuffle,
         worker_init_fn=init_fn,
-        **kwargs
+        persistent_workers=persistent_workers,
     )
 
     return data_loader
@@ -139,23 +178,8 @@ def worker_init_fn(worker_id, num_workers, rank, seed):
     random.seed(worker_seed)
 
 
-def build_trian_sampler(dist, cfg, default_args=None):
-
-    sampler_cfg = cfg.get("sampler", None)
-
-    if dist:
-        default_args = dict()
-        # FIXME: check if it contains num_replicas, rank and shuffle
-
-    # Custom sampler logic
-    if sampler_cfg:
-        return build_from_cfg(sampler_cfg, SAMPLERS, default_args=default_args)
-    # Default sampler logic
-    elif dist:
-        return build_from_cfg(
-            dict(type="DistributedSampler"),
-            SAMPLERS,
-            default_args=default_args,
-        )
-    else:
+def build_sampler(cfg, default_args=None):
+    if cfg is None:
         return None
+    else:
+        return build_from_cfg(cfg, SAMPLERS, default_args=default_args)
