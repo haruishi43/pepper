@@ -113,7 +113,7 @@ def build_dataloader(
             sampler_cfg.update(seed=seed)
 
         # some sampler-specific arguments that needs to be overwriten before
-        if sampler_cfg.get('batch_size', None):
+        if sampler_cfg.get("batch_size", None):
             sampler_cfg.update(batch_size=batch_size)
 
         sampler = build_sampler(
@@ -122,11 +122,11 @@ def build_dataloader(
                 dataset=dataset,
                 num_replicas=world_size,
                 rank=rank,
-            )
+            ),
         )
     elif dist:
         sampler_cfg = dict(
-            type='BalancedDistributedSampler',
+            type="BalancedDistributedSampler",
             batch_size=batch_size,
             num_instances=batch_size // 8,
             shuffle=shuffle,
