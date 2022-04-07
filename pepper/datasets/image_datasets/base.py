@@ -1,24 +1,17 @@
 #!/usr/bin/env python3
 
 from collections import defaultdict
-import copy
 import json
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset
-
-import mmcv
 
 from ..builder import DATASETS
-from ..pipelines import Compose
+from ..base_dataset import BaseDataset
 
 
 @DATASETS.register_module()
-class ImageDataset(Dataset):
-
-    CLASSES = None
-
+class ImageDataset(BaseDataset):
     def __init__(
         self,
         data_prefix,
@@ -26,12 +19,12 @@ class ImageDataset(Dataset):
         ann_file=None,
         test_mode=False,
     ):
-        super(ImageDataset, self).__init__()
-        self.ann_file = ann_file
-        self.data_prefix = data_prefix
-        self.test_mode = test_mode
-        self.pipeline = Compose(pipeline)
-        self.data_infos = self.load_annotations()
+        super(ImageDataset, self).__init__(
+            data_prefix=data_prefix,
+            pipeline=pipeline,
+            ann_file=ann_file,
+            test_mode=test_mode,
+        )
 
     def load_annotations(self):
         """Load annotations from ImageNet style annotation file.
@@ -83,18 +76,6 @@ class ImageDataset(Dataset):
             self.index_dic[pid] = np.asarray(idxs, dtype=np.int64)
 
         self.pids = np.asarray(list(self.index_dic.keys()), dtype=np.int64)
-
-    def __len__(self):
-        return len(self.data_infos)
-
-    def __getitem__(self, idx):
-        return self.prepare_data(idx)
-
-    def prepare_data(self, idx):
-        """Prepare results for image (e.g. the annotation information, ...)."""
-        data_info = self.data_infos[idx]
-        results = copy.deepcopy(data_info)
-        return self.pipeline(results)
 
     def evaluate(self, results, metric="mAP", metric_options=None, logger=None):
         """Evaluate the ReID dataset.

@@ -49,7 +49,7 @@ class WindowMSA(BaseModule):
         self.window_size = window_size  # Wh, Ww
         self.num_heads = num_heads
         head_embed_dims = embed_dims // num_heads
-        self.scale = qk_scale or head_embed_dims ** -0.5
+        self.scale = qk_scale or head_embed_dims**-0.5
 
         # define a parameter table of relative position bias
         self.relative_position_bias_table = nn.Parameter(
@@ -255,7 +255,7 @@ class ShiftWindowMSA(BaseModule):
         # nW*B, window_size, window_size, C
         query_windows = self.window_partition(query, window_size)
         # nW*B, window_size*window_size, C
-        query_windows = query_windows.view(-1, window_size ** 2, C)
+        query_windows = query_windows.view(-1, window_size**2, C)
 
         # W-MSA/SW-MSA (nW*B, window_size*window_size, C)
         attn_windows = self.w_msa(query_windows, mask=attn_mask)
@@ -385,7 +385,7 @@ class MultiheadAttention(BaseModule):
         self.v_shortcut = v_shortcut
 
         self.head_dims = embed_dims // num_heads
-        self.scale = qk_scale or self.head_dims ** -0.5
+        self.scale = qk_scale or self.head_dims**-0.5
 
         self.qkv = nn.Linear(self.input_dims, embed_dims * 3, bias=qkv_bias)
         self.attn_drop = nn.Dropout(attn_drop)
