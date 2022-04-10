@@ -124,6 +124,7 @@ def build_dataloader(
             ),
         )
     elif dist:
+        # default to this when using distributed
         sampler_cfg = dict(
             type="BalancedIdentityDistributedSampler",
             batch_size=batch_size,
