@@ -32,7 +32,7 @@ def iterate_dataset(
     # prepare data loaders
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
 
-    sampler_cfg = cfg.get("sampler", None)
+    sampler_cfg = cfg.data.get("sampler", None)
 
     data_loaders = [
         build_dataloader(

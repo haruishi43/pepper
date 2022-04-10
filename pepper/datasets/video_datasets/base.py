@@ -13,7 +13,6 @@ from ..base_dataset import BaseDataset
 
 @DATASETS.register_module()
 class VideoDataset(BaseDataset):
-
     def __init__(
         self,
         data_prefix,

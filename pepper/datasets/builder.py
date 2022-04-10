@@ -5,7 +5,6 @@ import random
 from functools import partial
 
 import numpy as np
-import torch
 from torch.utils.data import DataLoader
 
 from mmcv.parallel import collate
@@ -126,7 +125,7 @@ def build_dataloader(
         )
     elif dist:
         sampler_cfg = dict(
-            type="BalancedDistributedSampler",
+            type="BalancedIdentityDistributedSampler",
             batch_size=batch_size,
             num_instances=batch_size // 8,
             shuffle=shuffle,
