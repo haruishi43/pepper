@@ -24,10 +24,10 @@ def test_timm_backbone():
 
     with pytest.raises(TypeError):
         # pretrained must be bool
-        model = TIMMBackbone(model_name='resnet18', pretrained='model.pth')
+        model = TIMMBackbone(model_name="resnet18", pretrained="model.pth")
 
     # Test resnet18 from timm
-    model = TIMMBackbone(model_name='resnet18')
+    model = TIMMBackbone(model_name="resnet18")
     model.init_weights()
     model.train()
     assert check_norm_state(model.modules(), True)
@@ -40,7 +40,7 @@ def test_timm_backbone():
     assert feat[0].shape == torch.Size((1, 512, 7, 7))
 
     # Test efficientnet_b1 with pretrained weights
-    model = TIMMBackbone(model_name='efficientnet_b1', pretrained=True)
+    model = TIMMBackbone(model_name="efficientnet_b1", pretrained=True)
     model.init_weights()
     model.train()
     assert isinstance(model.timm_model.global_pool.pool, nn.Identity)
@@ -52,7 +52,7 @@ def test_timm_backbone():
     assert feat[0].shape == torch.Size((1, 1280, 7, 7))
 
     # Test vit_tiny_patch16_224 with pretrained weights
-    model = TIMMBackbone(model_name='vit_tiny_patch16_224', pretrained=True)
+    model = TIMMBackbone(model_name="vit_tiny_patch16_224", pretrained=True)
     model.init_weights()
     model.train()
     assert isinstance(model.timm_model.head, nn.Identity)
@@ -68,26 +68,29 @@ def test_timm_backbone_features_only():
     # Test different norm_layer, can be: 'SyncBN', 'BN2d', 'GN', 'LN', 'IN'
     # Test resnet18 from timm, norm_layer='BN2d'
     model = TIMMBackbone(
-        model_name='resnet18',
+        model_name="resnet18",
         features_only=True,
         pretrained=False,
         output_stride=32,
-        norm_layer='BN2d')
+        norm_layer="BN2d",
+    )
 
     # Test resnet18 from timm, norm_layer='SyncBN'
     model = TIMMBackbone(
-        model_name='resnet18',
+        model_name="resnet18",
         features_only=True,
         pretrained=False,
         output_stride=32,
-        norm_layer='SyncBN')
+        norm_layer="SyncBN",
+    )
 
     # Test resnet18 from timm, output_stride=32
     model = TIMMBackbone(
-        model_name='resnet18',
+        model_name="resnet18",
         features_only=True,
         pretrained=False,
-        output_stride=32)
+        output_stride=32,
+    )
     model.init_weights()
     model.train()
     assert check_norm_state(model.modules(), True)
@@ -103,11 +106,12 @@ def test_timm_backbone_features_only():
 
     # Test resnet18 from timm, output_stride=32, out_indices=(1, 2, 3)
     model = TIMMBackbone(
-        model_name='resnet18',
+        model_name="resnet18",
         features_only=True,
         pretrained=False,
         output_stride=32,
-        out_indices=(1, 2, 3))
+        out_indices=(1, 2, 3),
+    )
     imgs = torch.randn(1, 3, 224, 224)
     feats = model(imgs)
     assert len(feats) == 3
@@ -117,10 +121,11 @@ def test_timm_backbone_features_only():
 
     # Test resnet18 from timm, output_stride=16
     model = TIMMBackbone(
-        model_name='resnet18',
+        model_name="resnet18",
         features_only=True,
         pretrained=False,
-        output_stride=16)
+        output_stride=16,
+    )
     imgs = torch.randn(1, 3, 224, 224)
     feats = model(imgs)
     assert len(feats) == 5
@@ -132,10 +137,11 @@ def test_timm_backbone_features_only():
 
     # Test resnet18 from timm, output_stride=8
     model = TIMMBackbone(
-        model_name='resnet18',
+        model_name="resnet18",
         features_only=True,
         pretrained=False,
-        output_stride=8)
+        output_stride=8,
+    )
     imgs = torch.randn(1, 3, 224, 224)
     feats = model(imgs)
     assert len(feats) == 5
@@ -147,7 +153,8 @@ def test_timm_backbone_features_only():
 
     # Test efficientnet_b1 with pretrained weights
     model = TIMMBackbone(
-        model_name='efficientnet_b1', features_only=True, pretrained=True)
+        model_name="efficientnet_b1", features_only=True, pretrained=True
+    )
     imgs = torch.randn(1, 3, 64, 64)
     feats = model(imgs)
     assert len(feats) == 5
@@ -159,10 +166,11 @@ def test_timm_backbone_features_only():
 
     # Test resnetv2_50x1_bitm from timm, output_stride=8
     model = TIMMBackbone(
-        model_name='resnetv2_50x1_bitm',
+        model_name="resnetv2_50x1_bitm",
         features_only=True,
         pretrained=False,
-        output_stride=8)
+        output_stride=8,
+    )
     imgs = torch.randn(1, 3, 8, 8)
     feats = model(imgs)
     assert len(feats) == 5
@@ -174,10 +182,11 @@ def test_timm_backbone_features_only():
 
     # Test resnetv2_50x3_bitm from timm, output_stride=8
     model = TIMMBackbone(
-        model_name='resnetv2_50x3_bitm',
+        model_name="resnetv2_50x3_bitm",
         features_only=True,
         pretrained=False,
-        output_stride=8)
+        output_stride=8,
+    )
     imgs = torch.randn(1, 3, 8, 8)
     feats = model(imgs)
     assert len(feats) == 5
@@ -189,10 +198,11 @@ def test_timm_backbone_features_only():
 
     # Test resnetv2_101x1_bitm from timm, output_stride=8
     model = TIMMBackbone(
-        model_name='resnetv2_101x1_bitm',
+        model_name="resnetv2_101x1_bitm",
         features_only=True,
         pretrained=False,
-        output_stride=8)
+        output_stride=8,
+    )
     imgs = torch.randn(1, 3, 8, 8)
     feats = model(imgs)
     assert len(feats) == 5

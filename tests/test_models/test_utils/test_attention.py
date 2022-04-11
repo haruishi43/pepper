@@ -26,7 +26,6 @@ def get_relative_position_index(window_size):
 
 
 class TestWindowMSA(TestCase):
-
     def test_forward(self):
         attn = WindowMSA(embed_dims=96, window_size=(7, 7), num_heads=4)
         inputs = torch.rand((16, 7 * 7, 96))
@@ -41,58 +40,66 @@ class TestWindowMSA(TestCase):
 
     def test_relative_pos_embed(self):
         attn = WindowMSA(embed_dims=96, window_size=(7, 8), num_heads=4)
-        self.assertEqual(attn.relative_position_bias_table.shape,
-                         ((2 * 7 - 1) * (2 * 8 - 1), 4))
+        self.assertEqual(
+            attn.relative_position_bias_table.shape,
+            ((2 * 7 - 1) * (2 * 8 - 1), 4),
+        )
         # test relative_position_index
         expected_rel_pos_index = get_relative_position_index((7, 8))
         self.assertTrue(
-            torch.allclose(attn.relative_position_index,
-                           expected_rel_pos_index))
+            torch.allclose(attn.relative_position_index, expected_rel_pos_index)
+        )
 
         # test default init
         self.assertTrue(
-            torch.allclose(attn.relative_position_bias_table,
-                           torch.tensor(0.)))
+            torch.allclose(attn.relative_position_bias_table, torch.tensor(0.0))
+        )
         attn.init_weights()
         self.assertFalse(
-            torch.allclose(attn.relative_position_bias_table,
-                           torch.tensor(0.)))
+            torch.allclose(attn.relative_position_bias_table, torch.tensor(0.0))
+        )
 
     def test_qkv_bias(self):
         # test qkv_bias=True
         attn = WindowMSA(
-            embed_dims=96, window_size=(7, 7), num_heads=4, qkv_bias=True)
-        self.assertEqual(attn.qkv.bias.shape, (96 * 3, ))
+            embed_dims=96, window_size=(7, 7), num_heads=4, qkv_bias=True
+        )
+        self.assertEqual(attn.qkv.bias.shape, (96 * 3,))
 
         # test qkv_bias=False
         attn = WindowMSA(
-            embed_dims=96, window_size=(7, 7), num_heads=4, qkv_bias=False)
+            embed_dims=96, window_size=(7, 7), num_heads=4, qkv_bias=False
+        )
         self.assertIsNone(attn.qkv.bias)
 
     def tets_qk_scale(self):
         # test default qk_scale
         attn = WindowMSA(
-            embed_dims=96, window_size=(7, 7), num_heads=4, qk_scale=None)
+            embed_dims=96, window_size=(7, 7), num_heads=4, qk_scale=None
+        )
         head_dims = 96 // 4
         self.assertAlmostEqual(attn.scale, head_dims**-0.5)
 
         # test specified qk_scale
         attn = WindowMSA(
-            embed_dims=96, window_size=(7, 7), num_heads=4, qk_scale=0.3)
+            embed_dims=96, window_size=(7, 7), num_heads=4, qk_scale=0.3
+        )
         self.assertEqual(attn.scale, 0.3)
 
     def test_attn_drop(self):
         inputs = torch.rand(16, 7 * 7, 96)
         attn = WindowMSA(
-            embed_dims=96, window_size=(7, 7), num_heads=4, attn_drop=1.0)
+            embed_dims=96, window_size=(7, 7), num_heads=4, attn_drop=1.0
+        )
         # drop all attn output, output shuold be equal to proj.bias
         self.assertTrue(torch.allclose(attn(inputs), attn.proj.bias))
 
     def test_prob_drop(self):
         inputs = torch.rand(16, 7 * 7, 96)
         attn = WindowMSA(
-            embed_dims=96, window_size=(7, 7), num_heads=4, proj_drop=1.0)
-        self.assertTrue(torch.allclose(attn(inputs), torch.tensor(0.)))
+            embed_dims=96, window_size=(7, 7), num_heads=4, proj_drop=1.0
+        )
+        self.assertTrue(torch.allclose(attn(inputs), torch.tensor(0.0)))
 
     def test_mask(self):
         inputs = torch.rand(16, 7 * 7, 96)
@@ -108,18 +115,19 @@ class TestWindowMSA(TestCase):
 
 
 class TestShiftWindowMSA(TestCase):
-
     def test_forward(self):
         inputs = torch.rand((1, 14 * 14, 96))
         attn = ShiftWindowMSA(embed_dims=96, window_size=7, num_heads=4)
         output = attn(inputs, (14, 14))
         self.assertEqual(output.shape, inputs.shape)
-        self.assertEqual(attn.w_msa.relative_position_bias_table.shape,
-                         ((2 * 7 - 1)**2, 4))
+        self.assertEqual(
+            attn.w_msa.relative_position_bias_table.shape, ((2 * 7 - 1) ** 2, 4)
+        )
 
         # test forward with shift_size
         attn = ShiftWindowMSA(
-            embed_dims=96, window_size=7, num_heads=4, shift_size=3)
+            embed_dims=96, window_size=7, num_heads=4, shift_size=3
+        )
         output = attn(inputs, (14, 14))
         assert output.shape == (inputs.shape)
 
@@ -145,14 +153,14 @@ class TestShiftWindowMSA(TestCase):
             window_size=7,
             num_heads=4,
             shift_size=3,
-            pad_small_map=True)
+            pad_small_map=True,
+        )
         attn.get_attn_mask = MagicMock(wraps=attn.get_attn_mask)
         output = attn(inputs, (6, 7))
         self.assertEqual(output.shape, inputs.shape)
-        attn.get_attn_mask.assert_called_once_with((7, 7),
-                                                   window_size=7,
-                                                   shift_size=3,
-                                                   device=ANY)
+        attn.get_attn_mask.assert_called_once_with(
+            (7, 7), window_size=7, shift_size=3, device=ANY
+        )
 
         # test pad_small_map=False
         inputs = torch.rand((1, 6 * 7, 96))
@@ -161,8 +169,9 @@ class TestShiftWindowMSA(TestCase):
             window_size=7,
             num_heads=4,
             shift_size=3,
-            pad_small_map=False)
-        with self.assertRaisesRegex(AssertionError, r'the window size \(7\)'):
+            pad_small_map=False,
+        )
+        with self.assertRaisesRegex(AssertionError, r"the window size \(7\)"):
             attn(inputs, (6, 7))
 
         # test pad_small_map=False, and the input size equals to window size
@@ -170,10 +179,9 @@ class TestShiftWindowMSA(TestCase):
         attn.get_attn_mask = MagicMock(wraps=attn.get_attn_mask)
         output = attn(inputs, (7, 7))
         self.assertEqual(output.shape, inputs.shape)
-        attn.get_attn_mask.assert_called_once_with((7, 7),
-                                                   window_size=7,
-                                                   shift_size=0,
-                                                   device=ANY)
+        attn.get_attn_mask.assert_called_once_with(
+            (7, 7), window_size=7, shift_size=0, device=ANY
+        )
 
     def test_drop_layer(self):
         inputs = torch.rand((1, 14 * 14, 96))
@@ -181,11 +189,13 @@ class TestShiftWindowMSA(TestCase):
             embed_dims=96,
             window_size=7,
             num_heads=4,
-            dropout_layer=dict(type='Dropout', drop_prob=1.0))
+            dropout_layer=dict(type="Dropout", drop_prob=1.0),
+        )
         attn.init_weights()
         # drop all attn output, output shuold be equal to proj.bias
         self.assertTrue(
-            torch.allclose(attn(inputs, (14, 14)), torch.tensor(0.)))
+            torch.allclose(attn(inputs, (14, 14)), torch.tensor(0.0))
+        )
 
     def test_deprecation(self):
         # test deprecated arguments
@@ -194,8 +204,10 @@ class TestShiftWindowMSA(TestCase):
                 embed_dims=96,
                 num_heads=4,
                 window_size=7,
-                input_resolution=(14, 14))
+                input_resolution=(14, 14),
+            )
 
         with pytest.warns(DeprecationWarning):
             ShiftWindowMSA(
-                embed_dims=96, num_heads=4, window_size=7, auto_pad=True)
+                embed_dims=96, num_heads=4, window_size=7, auto_pad=True
+            )

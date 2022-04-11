@@ -39,7 +39,6 @@ def assert_equal(x, y):
 
 
 class SubModel(nn.Module):
-
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Conv2d(2, 2, kernel_size=1, groups=2)
@@ -52,7 +51,6 @@ class SubModel(nn.Module):
 
 
 class ExampleModel(nn.Module):
-
     def __init__(self):
         super().__init__()
         self.param1 = nn.Parameter(torch.ones(1))
@@ -66,81 +64,83 @@ class ExampleModel(nn.Module):
         return x
 
 
-def check_lamb_optimizer(optimizer,
-                         model,
-                         bias_lr_mult=1,
-                         bias_decay_mult=1,
-                         norm_decay_mult=1,
-                         dwconv_decay_mult=1):
+def check_lamb_optimizer(
+    optimizer,
+    model,
+    bias_lr_mult=1,
+    bias_decay_mult=1,
+    norm_decay_mult=1,
+    dwconv_decay_mult=1,
+):
     param_groups = optimizer.param_groups
     assert isinstance(optimizer, Optimizer)
-    assert optimizer.defaults['lr'] == base_lr
-    assert optimizer.defaults['weight_decay'] == base_wd
+    assert optimizer.defaults["lr"] == base_lr
+    assert optimizer.defaults["weight_decay"] == base_wd
     model_parameters = list(model.parameters())
     assert len(param_groups) == len(model_parameters)
     for i, param in enumerate(model_parameters):
         param_group = param_groups[i]
-        assert torch.equal(param_group['params'][0], param)
+        assert torch.equal(param_group["params"][0], param)
     # param1
     param1 = param_groups[0]
-    assert param1['lr'] == base_lr
-    assert param1['weight_decay'] == base_wd
+    assert param1["lr"] == base_lr
+    assert param1["weight_decay"] == base_wd
     # conv1.weight
     conv1_weight = param_groups[1]
-    assert conv1_weight['lr'] == base_lr
-    assert conv1_weight['weight_decay'] == base_wd
+    assert conv1_weight["lr"] == base_lr
+    assert conv1_weight["weight_decay"] == base_wd
     # conv2.weight
     conv2_weight = param_groups[2]
-    assert conv2_weight['lr'] == base_lr
-    assert conv2_weight['weight_decay'] == base_wd
+    assert conv2_weight["lr"] == base_lr
+    assert conv2_weight["weight_decay"] == base_wd
     # conv2.bias
     conv2_bias = param_groups[3]
-    assert conv2_bias['lr'] == base_lr * bias_lr_mult
-    assert conv2_bias['weight_decay'] == base_wd * bias_decay_mult
+    assert conv2_bias["lr"] == base_lr * bias_lr_mult
+    assert conv2_bias["weight_decay"] == base_wd * bias_decay_mult
     # bn.weight
     bn_weight = param_groups[4]
-    assert bn_weight['lr'] == base_lr
-    assert bn_weight['weight_decay'] == base_wd * norm_decay_mult
+    assert bn_weight["lr"] == base_lr
+    assert bn_weight["weight_decay"] == base_wd * norm_decay_mult
     # bn.bias
     bn_bias = param_groups[5]
-    assert bn_bias['lr'] == base_lr
-    assert bn_bias['weight_decay'] == base_wd * norm_decay_mult
+    assert bn_bias["lr"] == base_lr
+    assert bn_bias["weight_decay"] == base_wd * norm_decay_mult
     # sub.param1
     sub_param1 = param_groups[6]
-    assert sub_param1['lr'] == base_lr
-    assert sub_param1['weight_decay'] == base_wd
+    assert sub_param1["lr"] == base_lr
+    assert sub_param1["weight_decay"] == base_wd
     # sub.conv1.weight
     sub_conv1_weight = param_groups[7]
-    assert sub_conv1_weight['lr'] == base_lr
-    assert sub_conv1_weight['weight_decay'] == base_wd * dwconv_decay_mult
+    assert sub_conv1_weight["lr"] == base_lr
+    assert sub_conv1_weight["weight_decay"] == base_wd * dwconv_decay_mult
     # sub.conv1.bias
     sub_conv1_bias = param_groups[8]
-    assert sub_conv1_bias['lr'] == base_lr * bias_lr_mult
-    assert sub_conv1_bias['weight_decay'] == base_wd * dwconv_decay_mult
+    assert sub_conv1_bias["lr"] == base_lr * bias_lr_mult
+    assert sub_conv1_bias["weight_decay"] == base_wd * dwconv_decay_mult
     # sub.gn.weight
     sub_gn_weight = param_groups[9]
-    assert sub_gn_weight['lr'] == base_lr
-    assert sub_gn_weight['weight_decay'] == base_wd * norm_decay_mult
+    assert sub_gn_weight["lr"] == base_lr
+    assert sub_gn_weight["weight_decay"] == base_wd * norm_decay_mult
     # sub.gn.bias
     sub_gn_bias = param_groups[10]
-    assert sub_gn_bias['lr'] == base_lr
-    assert sub_gn_bias['weight_decay'] == base_wd * norm_decay_mult
+    assert sub_gn_bias["lr"] == base_lr
+    assert sub_gn_bias["weight_decay"] == base_wd * norm_decay_mult
     # sub.fc1.weight
     sub_fc_weight = param_groups[11]
-    assert sub_fc_weight['lr'] == base_lr
-    assert sub_fc_weight['weight_decay'] == base_wd
+    assert sub_fc_weight["lr"] == base_lr
+    assert sub_fc_weight["weight_decay"] == base_wd
     # sub.fc1.bias
     sub_fc_bias = param_groups[12]
-    assert sub_fc_bias['lr'] == base_lr * bias_lr_mult
-    assert sub_fc_bias['weight_decay'] == base_wd * bias_decay_mult
+    assert sub_fc_bias["lr"] == base_lr * bias_lr_mult
+    assert sub_fc_bias["weight_decay"] == base_wd * bias_decay_mult
     # fc1.weight
     fc_weight = param_groups[13]
-    assert fc_weight['lr'] == base_lr
-    assert fc_weight['weight_decay'] == base_wd
+    assert fc_weight["lr"] == base_lr
+    assert fc_weight["weight_decay"] == base_wd
     # fc1.bias
     fc_bias = param_groups[14]
-    assert fc_bias['lr'] == base_lr * bias_lr_mult
-    assert fc_bias['weight_decay'] == base_wd * bias_decay_mult
+    assert fc_bias["lr"] == base_lr * bias_lr_mult
+    assert fc_bias["weight_decay"] == base_wd * bias_decay_mult
 
 
 def _test_state_dict(weight, bias, input, constructor):
@@ -183,15 +183,19 @@ def _test_state_dict(weight, bias, input, constructor):
     # NOTE: The state_dict of optimizers in PyTorch 1.5 have random keys,
     state_dict = deepcopy(optimizer.state_dict())
     state_dict_c = deepcopy(optimizer_c.state_dict())
-    keys = state_dict['param_groups'][-1]['params']
-    keys_c = state_dict_c['param_groups'][-1]['params']
+    keys = state_dict["param_groups"][-1]["params"]
+    keys_c = state_dict_c["param_groups"][-1]["params"]
     for key, key_c in zip(keys, keys_c):
-        assert_equal(optimizer.state_dict()['state'][key],
-                     optimizer_c.state_dict()['state'][key_c])
+        assert_equal(
+            optimizer.state_dict()["state"][key],
+            optimizer_c.state_dict()["state"][key_c],
+        )
     # Make sure repeated parameters have identical representation in state dict
     optimizer_c.param_groups.extend(optimizer_c.param_groups)
-    assert_equal(optimizer_c.state_dict()['param_groups'][0],
-                 optimizer_c.state_dict()['param_groups'][1])
+    assert_equal(
+        optimizer_c.state_dict()["param_groups"][0],
+        optimizer_c.state_dict()["param_groups"][1],
+    )
 
     # Check that state dict can be loaded even when we cast parameters
     # to a different type and move to a different device.
@@ -202,8 +206,7 @@ def _test_state_dict(weight, bias, input, constructor):
     weight_cuda = Variable(weight.data.float().cuda(), requires_grad=True)
     bias_cuda = Variable(bias.data.float().cuda(), requires_grad=True)
     optimizer_cuda = constructor(weight_cuda, bias_cuda)
-    fn_cuda = functools.partial(fn_base, optimizer_cuda, weight_cuda,
-                                bias_cuda)
+    fn_cuda = functools.partial(fn_base, optimizer_cuda, weight_cuda, bias_cuda)
 
     state_dict = deepcopy(optimizer.state_dict())
     state_dict_c = deepcopy(optimizer.state_dict())
@@ -220,13 +223,14 @@ def _test_state_dict(weight, bias, input, constructor):
 
     # validate deepcopy() copies all public attributes
     def getPublicAttr(obj):
-        return set(k for k in obj.__dict__ if not k.startswith('_'))
+        return set(k for k in obj.__dict__ if not k.startswith("_"))
 
     assert_equal(getPublicAttr(optimizer), getPublicAttr(deepcopy(optimizer)))
 
 
-def _test_basic_cases_template(weight, bias, inputs, constructor,
-                               scheduler_constructors):
+def _test_basic_cases_template(
+    weight, bias, inputs, constructor, scheduler_constructors
+):
     """Copied from PyTorch."""
     weight = Variable(weight, requires_grad=True)
     bias = Variable(bias, requires_grad=True)
@@ -257,42 +261,56 @@ def _test_basic_cases_template(weight, bias, inputs, constructor,
     assert fn().item() < initial_value
 
 
-def _test_basic_cases(constructor,
-                      scheduler_constructors=None,
-                      ignore_multidevice=False):
+def _test_basic_cases(
+    constructor, scheduler_constructors=None, ignore_multidevice=False
+):
     """Copied from PyTorch."""
     if scheduler_constructors is None:
         scheduler_constructors = []
     _test_state_dict(
-        torch.randn(10, 5), torch.randn(10), torch.randn(5), constructor)
+        torch.randn(10, 5), torch.randn(10), torch.randn(5), constructor
+    )
     _test_basic_cases_template(
-        torch.randn(10, 5), torch.randn(10), torch.randn(5), constructor,
-        scheduler_constructors)
+        torch.randn(10, 5),
+        torch.randn(10),
+        torch.randn(5),
+        constructor,
+        scheduler_constructors,
+    )
     # non-contiguous parameters
     _test_basic_cases_template(
         torch.randn(10, 5, 2)[..., 0],
-        torch.randn(10, 2)[..., 0], torch.randn(5), constructor,
-        scheduler_constructors)
+        torch.randn(10, 2)[..., 0],
+        torch.randn(5),
+        constructor,
+        scheduler_constructors,
+    )
     # CUDA
     if not torch.cuda.is_available():
         return
     _test_basic_cases_template(
         torch.randn(10, 5).cuda(),
         torch.randn(10).cuda(),
-        torch.randn(5).cuda(), constructor, scheduler_constructors)
+        torch.randn(5).cuda(),
+        constructor,
+        scheduler_constructors,
+    )
     # Multi-GPU
     if not torch.cuda.device_count() > 1 or ignore_multidevice:
         return
     _test_basic_cases_template(
         torch.randn(10, 5).cuda(0),
         torch.randn(10).cuda(1),
-        torch.randn(5).cuda(0), constructor, scheduler_constructors)
+        torch.randn(5).cuda(0),
+        constructor,
+        scheduler_constructors,
+    )
 
 
 def test_lamb_optimizer():
     model = ExampleModel()
     optimizer_cfg = dict(
-        type='Lamb',
+        type="Lamb",
         lr=base_lr,
         betas=(0.9, 0.999),
         eps=1e-8,
@@ -301,9 +319,14 @@ def test_lamb_optimizer():
             bias_lr_mult=2,
             bias_decay_mult=0.5,
             norm_decay_mult=0,
-            dwconv_decay_mult=0.1))
+            dwconv_decay_mult=0.1,
+        ),
+    )
     optimizer = build_optimizer(model, optimizer_cfg)
-    check_lamb_optimizer(optimizer, model, **optimizer_cfg['paramwise_cfg'])
+    check_lamb_optimizer(optimizer, model, **optimizer_cfg["paramwise_cfg"])
 
-    _test_basic_cases(lambda weight, bias: build_from_cfg(
-        dict(type='Lamb', params=[weight, bias], lr=base_lr), OPTIMIZERS))
+    _test_basic_cases(
+        lambda weight, bias: build_from_cfg(
+            dict(type="Lamb", params=[weight, bias], lr=base_lr), OPTIMIZERS
+        )
+    )

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import copy
 import random
 from functools import partial
 
@@ -17,12 +16,7 @@ SAMPLERS = Registry("sampler")
 
 
 def build_dataset(cfg, default_args=None):
-    from .dataset_wrappers import (
-        ClassBalancedDataset,
-        ConcatDataset,
-        KFoldDataset,
-        RepeatDataset,
-    )
+    from .dataset_wrappers import ConcatDataset
 
     if isinstance(cfg, (list, tuple)):
         dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
@@ -31,21 +25,6 @@ def build_dataset(cfg, default_args=None):
             [build_dataset(c, default_args) for c in cfg["datasets"]],
             separate_eval=cfg.get("separate_eval", True),
         )
-    elif cfg["type"] == "RepeatDataset":
-        dataset = RepeatDataset(
-            build_dataset(cfg["dataset"], default_args), cfg["times"]
-        )
-    elif cfg["type"] == "ClassBalancedDataset":
-        dataset = ClassBalancedDataset(
-            build_dataset(cfg["dataset"], default_args), cfg["oversample_thr"]
-        )
-    elif cfg["type"] == "KFoldDataset":
-        cp_cfg = copy.deepcopy(cfg)
-        if cp_cfg.get("test_mode", None) is None:
-            cp_cfg["test_mode"] = (default_args or {}).pop("test_mode", False)
-        cp_cfg["dataset"] = build_dataset(cp_cfg["dataset"], default_args)
-        cp_cfg.pop("type")
-        dataset = KFoldDataset(**cp_cfg)
     else:
         dataset = build_from_cfg(cfg, DATASETS, default_args)
 

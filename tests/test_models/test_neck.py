@@ -2,8 +2,11 @@
 import pytest
 import torch
 
-from mmcls.models.necks import (GeneralizedMeanPooling, GlobalAveragePooling,
-                                HRFuseScales)
+from mmcls.models.necks import (
+    GeneralizedMeanPooling,
+    GlobalAveragePooling,
+    HRFuseScales,
+)
 
 
 def test_gap_neck():
@@ -37,7 +40,7 @@ def test_gap_neck():
 
     with pytest.raises(AssertionError):
         # dim must in [1, 2, 3]
-        GlobalAveragePooling(dim='other')
+        GlobalAveragePooling(dim="other")
 
 
 def test_gem_neck():

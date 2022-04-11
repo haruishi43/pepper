@@ -42,6 +42,7 @@ def iterate_dataset(
             # `num_gpus` will be ignored if distributed
             num_gpus=len(cfg.gpu_ids),
             dist=distributed,
+            shuffle=False,  # NOTE: debug shuffle (overwrite cfg)
             round_up=True,
             seed=cfg.seed,
             sampler_cfg=sampler_cfg,

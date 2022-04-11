@@ -59,7 +59,7 @@ def test_resnet_cifar():
     for param in model.conv1.parameters():
         assert param.requires_grad is False
     for i in range(1, frozen_stages + 1):
-        layer = getattr(model, f'layer{i}')
+        layer = getattr(model, f"layer{i}")
         for mod in layer.modules():
             if isinstance(mod, _BatchNorm):
                 assert mod.training is False

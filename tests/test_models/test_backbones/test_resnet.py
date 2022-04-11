@@ -6,8 +6,12 @@ from mmcv.cnn import ConvModule
 from mmcv.utils.parrots_wrapper import _BatchNorm
 
 from mmcls.models.backbones import ResNet, ResNetV1c, ResNetV1d
-from mmcls.models.backbones.resnet import (BasicBlock, Bottleneck, ResLayer,
-                                           get_expansion)
+from mmcls.models.backbones.resnet import (
+    BasicBlock,
+    Bottleneck,
+    ResLayer,
+    get_expansion,
+)
 
 
 def is_block(modules):
@@ -19,11 +23,13 @@ def is_block(modules):
 
 def all_zeros(modules):
     """Check if the weight(and bias) is all zero."""
-    weight_zero = torch.equal(modules.weight.data,
-                              torch.zeros_like(modules.weight.data))
-    if hasattr(modules, 'bias'):
-        bias_zero = torch.equal(modules.bias.data,
-                                torch.zeros_like(modules.bias.data))
+    weight_zero = torch.equal(
+        modules.weight.data, torch.zeros_like(modules.weight.data)
+    )
+    if hasattr(modules, "bias"):
+        bias_zero = torch.equal(
+            modules.bias.data, torch.zeros_like(modules.bias.data)
+        )
     else:
         bias_zero = True
 
@@ -52,7 +58,7 @@ def test_get_expansion():
 
     # expansion must be an integer or None
     with pytest.raises(TypeError):
-        get_expansion(Bottleneck, '0')
+        get_expansion(Bottleneck, "0")
 
     # expansion is not specified and cannot be inferred
     with pytest.raises(TypeError):
@@ -86,7 +92,8 @@ def test_basic_block():
 
     # BasicBlock with stride 1 and downsample
     downsample = nn.Sequential(
-        nn.Conv2d(64, 128, kernel_size=1, bias=False), nn.BatchNorm2d(128))
+        nn.Conv2d(64, 128, kernel_size=1, bias=False), nn.BatchNorm2d(128)
+    )
     block = BasicBlock(64, 128, downsample=downsample)
     assert block.in_channels == 64
     assert block.mid_channels == 128
@@ -105,7 +112,8 @@ def test_basic_block():
     # BasicBlock with stride 2 and downsample
     downsample = nn.Sequential(
         nn.Conv2d(64, 128, kernel_size=1, stride=2, bias=False),
-        nn.BatchNorm2d(128))
+        nn.BatchNorm2d(128),
+    )
     block = BasicBlock(64, 128, stride=2, downsample=downsample)
     assert block.in_channels == 64
     assert block.mid_channels == 128
@@ -132,22 +140,22 @@ def test_basic_block():
 def test_bottleneck():
     # style must be in ['pytorch', 'caffe']
     with pytest.raises(AssertionError):
-        Bottleneck(64, 64, style='tensorflow')
+        Bottleneck(64, 64, style="tensorflow")
 
     # expansion must be divisible by out_channels
     with pytest.raises(AssertionError):
         Bottleneck(64, 64, expansion=3)
 
     # Test Bottleneck style
-    block = Bottleneck(64, 64, stride=2, style='pytorch')
+    block = Bottleneck(64, 64, stride=2, style="pytorch")
     assert block.conv1.stride == (1, 1)
     assert block.conv2.stride == (2, 2)
-    block = Bottleneck(64, 64, stride=2, style='caffe')
+    block = Bottleneck(64, 64, stride=2, style="caffe")
     assert block.conv1.stride == (2, 2)
     assert block.conv2.stride == (1, 1)
 
     # Bottleneck with stride 1
-    block = Bottleneck(64, 64, style='pytorch')
+    block = Bottleneck(64, 64, style="pytorch")
     assert block.in_channels == 64
     assert block.mid_channels == 16
     assert block.out_channels == 64
@@ -166,8 +174,9 @@ def test_bottleneck():
 
     # Bottleneck with stride 1 and downsample
     downsample = nn.Sequential(
-        nn.Conv2d(64, 128, kernel_size=1), nn.BatchNorm2d(128))
-    block = Bottleneck(64, 128, style='pytorch', downsample=downsample)
+        nn.Conv2d(64, 128, kernel_size=1), nn.BatchNorm2d(128)
+    )
+    block = Bottleneck(64, 128, style="pytorch", downsample=downsample)
     assert block.in_channels == 64
     assert block.mid_channels == 32
     assert block.out_channels == 128
@@ -186,15 +195,17 @@ def test_bottleneck():
 
     # Bottleneck with stride 2 and downsample
     downsample = nn.Sequential(
-        nn.Conv2d(64, 128, kernel_size=1, stride=2), nn.BatchNorm2d(128))
+        nn.Conv2d(64, 128, kernel_size=1, stride=2), nn.BatchNorm2d(128)
+    )
     block = Bottleneck(
-        64, 128, stride=2, style='pytorch', downsample=downsample)
+        64, 128, stride=2, style="pytorch", downsample=downsample
+    )
     x = torch.randn(1, 64, 56, 56)
     x_out = block(x)
     assert x_out.shape == (1, 128, 28, 28)
 
     # Bottleneck with expansion 2
-    block = Bottleneck(64, 64, style='pytorch', expansion=2)
+    block = Bottleneck(64, 64, style="pytorch", expansion=2)
     assert block.in_channels == 64
     assert block.mid_channels == 32
     assert block.out_channels == 64
@@ -387,7 +398,7 @@ def test_resnet():
 
     with pytest.raises(AssertionError):
         # len(strides) == len(dilations) == num_stages
-        ResNet(50, strides=(1, ), dilations=(1, 1), num_stages=3)
+        ResNet(50, strides=(1,), dilations=(1, 1), num_stages=3)
 
     with pytest.raises(TypeError):
         # pretrained must be a string path
@@ -396,7 +407,7 @@ def test_resnet():
 
     with pytest.raises(AssertionError):
         # Style must be in ['pytorch', 'caffe']
-        ResNet(50, style='tensorflow')
+        ResNet(50, style="tensorflow")
 
     # Test ResNet50 norm_eval=True
     model = ResNet(50, norm_eval=True)
@@ -408,7 +419,8 @@ def test_resnet():
     model = ResNet(
         depth=50,
         norm_eval=True,
-        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'))
+        init_cfg=dict(type="Pretrained", checkpoint="torchvision://resnet50"),
+    )
     model.init_weights()
     model.train()
     assert check_norm_state(model.modules(), False)
@@ -423,7 +435,7 @@ def test_resnet():
         for param in layer.parameters():
             assert param.requires_grad is False
     for i in range(1, frozen_stages + 1):
-        layer = getattr(model, f'layer{i}')
+        layer = getattr(model, f"layer{i}")
         for mod in layer.modules():
             if isinstance(mod, _BatchNorm):
                 assert mod.training is False
@@ -482,7 +494,7 @@ def test_resnet():
     assert feat[2].shape == (1, 1024, 14, 14)
 
     # Test ResNet50 with layers 3 (top feature maps) out forward
-    model = ResNet(50, out_indices=(3, ))
+    model = ResNet(50, out_indices=(3,))
     model.init_weights()
     model.train()
 
@@ -557,7 +569,7 @@ def test_resnet_v1c():
     for param in model.stem.parameters():
         assert param.requires_grad is False
     for i in range(1, frozen_stages + 1):
-        layer = getattr(model, f'layer{i}')
+        layer = getattr(model, f"layer{i}")
         for mod in layer.modules():
             if isinstance(mod, _BatchNorm):
                 assert mod.training is False
@@ -596,7 +608,7 @@ def test_resnet_v1d():
     for param in model.stem.parameters():
         assert param.requires_grad is False
     for i in range(1, frozen_stages + 1):
-        layer = getattr(model, f'layer{i}')
+        layer = getattr(model, f"layer{i}")
         for mod in layer.modules():
             if isinstance(mod, _BatchNorm):
                 assert mod.training is False

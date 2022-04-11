@@ -40,10 +40,10 @@ def test_channel_shuffle():
 
 
 @pytest.mark.skipif(
-    digit_version(torch.__version__) < digit_version('1.6.0'),
-    reason='torch.jit.is_tracing is not available before 1.6.0')
+    digit_version(torch.__version__) < digit_version("1.6.0"),
+    reason="torch.jit.is_tracing is not available before 1.6.0",
+)
 def test_is_tracing():
-
     def foo(x):
         if is_tracing():
             return x
@@ -55,5 +55,5 @@ def test_is_tracing():
     assert isinstance(foo(x), list)
 
     # test with trace
-    traced_foo = torch.jit.trace(foo, (torch.rand(1), ))
+    traced_foo = torch.jit.trace(foo, (torch.rand(1),))
     assert isinstance(traced_foo(x), torch.Tensor)

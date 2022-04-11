@@ -17,7 +17,7 @@ def is_norm(modules):
 def test_se():
     with pytest.raises(AssertionError):
         # base_channels must be a number
-        SELayer(16, squeeze_channels='32')
+        SELayer(16, squeeze_channels="32")
 
     with pytest.raises(AssertionError):
         # base_channels must be None or a number larger than 0
@@ -27,8 +27,12 @@ def test_se():
         # act_cfg must be two dict tuple
         SELayer(
             16,
-            act_cfg=(dict(type='ReLU'), dict(type='Sigmoid'),
-                     dict(type='ReLU')))
+            act_cfg=(
+                dict(type="ReLU"),
+                dict(type="Sigmoid"),
+                dict(type="ReLU"),
+            ),
+        )
 
     # Test SELayer forward, channels=64
     input = torch.randn((4, 64, 112, 112))
@@ -88,7 +92,8 @@ def test_se():
     se = SELayer(
         128,
         squeeze_channels=25,
-        act_cfg=(dict(type='ReLU'), dict(type='HSigmoid')))
+        act_cfg=(dict(type="ReLU"), dict(type="HSigmoid")),
+    )
     output = se(input)
     assert se.conv1.out_channels == 25
     assert se.conv2.in_channels == 25

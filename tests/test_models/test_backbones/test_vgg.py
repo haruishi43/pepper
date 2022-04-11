@@ -74,7 +74,7 @@ def test_vgg():
     assert feat[5].shape == (1, 10)
 
     # Test VGG11BN forward
-    model = VGG(11, norm_cfg=dict(type='BN'), out_indices=(0, 1, 2, 3, 4))
+    model = VGG(11, norm_cfg=dict(type="BN"), out_indices=(0, 1, 2, 3, 4))
     model.init_weights()
     model.train()
 
@@ -91,8 +91,9 @@ def test_vgg():
     model = VGG(
         11,
         num_classes=10,
-        norm_cfg=dict(type='BN'),
-        out_indices=(0, 1, 2, 3, 4, 5))
+        norm_cfg=dict(type="BN"),
+        out_indices=(0, 1, 2, 3, 4, 5),
+    )
     model.init_weights()
     model.train()
 
