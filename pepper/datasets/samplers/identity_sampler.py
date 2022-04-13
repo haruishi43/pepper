@@ -41,7 +41,7 @@ class NaiveIdentitySampler(Sampler):
         dataset,
         batch_size=32,
         num_instances=4,
-        shuffle=False,
+        shuffle=True,
         seed=0,
         round_up=True,
     ):
@@ -307,7 +307,7 @@ class BalancedIdentitySampler(Sampler):
     ):
         self.dataset = dataset
         self.shuffle = shuffle
-        self.seed = 0
+        self.seed = seed
 
         assert not (batch_size > len(dataset))
         assert not (
