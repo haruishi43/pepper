@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from collections import Counter
 from unittest.mock import MagicMock, patch
 
 from pepper.datasets import BaseDataset, build_sampler
@@ -44,9 +45,14 @@ def get_matches(l1, l2):
 
 
 def test_native_sampler():
-    length = 1000
-    num_ids = 124
+    # length = 1000
+    # num_ids = 124
+    # num_camids = 4
+    length = 200
+    num_ids = 17
     num_camids = 4
+    batch_size = 32
+    num_instances = 4
 
     # construct a toy dataset
     dataset = construct_toy_dataset(
@@ -60,6 +66,8 @@ def test_native_sampler():
         dict(
             type="NaiveIdentitySampler",
             dataset=dataset,
+            batch_size=batch_size,
+            num_instances=num_instances,
         ),
     )
 
@@ -73,44 +81,55 @@ def test_native_sampler():
     matches = get_matches(sample1, sample2)
     assert sum(matches) < len(sample1)
 
+    data1 = [dataset[i] for i in sample1]
+    pids1 = [d['sampler_info']['pid'] for d in data1]
+    c = Counter(pids1)
+    print(c)
 
-def test_native_dist_sampler():
-    num_replicas = 2
-    length = 1000
-    num_ids = 124
-    num_camids = 4
 
-    # construct a toy dataset
-    dataset = construct_toy_dataset(
-        length=length,
-        num_ids=num_ids,
-        num_camids=num_camids,
-    )
+    batches1 = [sample1[i:i + batch_size] for i in range(0, len(sample1), batch_size)]
 
-    # build samplers
-    sampler1 = build_sampler(
-        dict(
-            type="NaiveIdentityDistributedSampler",
-            dataset=dataset,
-            num_replicas=num_replicas,
-            rank=0,
-        )
-    )
-    sampler2 = build_sampler(
-        dict(
-            type="NaiveIdentityDistributedSampler",
-            dataset=dataset,
-            num_replicas=num_replicas,
-            rank=0,
-        )
-    )
+    for batch in batches1:
+        print(batch)
 
-    assert len(sampler1) == length // 2
 
-    sample1 = list(sampler1.__iter__())
-    sample2 = list(sampler2.__iter__())
+# def test_native_dist_sampler():
+#     num_replicas = 2
+#     length = 1000
+#     num_ids = 124
+#     num_camids = 4
 
-    # FIXME: what are reasonable tests?
+#     # construct a toy dataset
+#     dataset = construct_toy_dataset(
+#         length=length,
+#         num_ids=num_ids,
+#         num_camids=num_camids,
+#     )
+
+#     # build samplers
+#     sampler1 = build_sampler(
+#         dict(
+#             type="NaiveIdentityDistributedSampler",
+#             dataset=dataset,
+#             num_replicas=num_replicas,
+#             rank=0,
+#         )
+#     )
+#     sampler2 = build_sampler(
+#         dict(
+#             type="NaiveIdentityDistributedSampler",
+#             dataset=dataset,
+#             num_replicas=num_replicas,
+#             rank=0,
+#         )
+#     )
+
+#     assert len(sampler1) == length // 2
+
+#     sample1 = list(sampler1.__iter__())
+#     sample2 = list(sampler2.__iter__())
+
+#     # FIXME: what are reasonable tests?
 
 
 if __name__ == "__main__":
