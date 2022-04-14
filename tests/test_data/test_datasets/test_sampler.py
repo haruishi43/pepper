@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
 from collections import Counter
+import math
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from pepper.datasets import BaseDataset, build_sampler
 
@@ -28,7 +31,9 @@ def construct_toy_dataset(length: int, num_ids: int = 16, num_camids: int = 5):
 
     # need to create data_infos (list[dict('sampler_info')])
     BaseDataset.__getitem__ = MagicMock(side_effect=lambda idx: data_infos[idx])
-    dataset = BaseDataset(data_prefix="", pipeline=[], ann_file=None, test_mode=False)
+    dataset = BaseDataset(
+        data_prefix="", pipeline=[], ann_file=None, test_mode=False
+    )
     dataset.data_infos = data_infos
     return dataset
 
@@ -44,13 +49,10 @@ def get_matches(l1, l2):
     return matches
 
 
-def test_native_sampler():
-    # length = 1000
-    # num_ids = 124
-    # num_camids = 4
-    length = 200
-    num_ids = 17
-    num_camids = 4
+@pytest.mark.parametrize("length", [1000, 10_000])
+@pytest.mark.parametrize("num_ids", [124, 17])
+@pytest.mark.parametrize("num_camids", [4])
+def test_native_sampler(length, num_ids, num_camids):
     batch_size = 32
     num_instances = 4
 
@@ -76,21 +78,30 @@ def test_native_sampler():
     sample1 = list(sampler.__iter__())
     sample2 = list(sampler.__iter__())
 
-    print(len(sample1))
+    assert len(sample1) == len(sample2)
+    assert len(sample1) == batch_size * math.ceil(
+        num_ids / (batch_size // num_instances)
+    )
 
     matches = get_matches(sample1, sample2)
     assert sum(matches) < len(sample1)
 
     data1 = [dataset[i] for i in sample1]
-    pids1 = [d['sampler_info']['pid'] for d in data1]
-    c = Counter(pids1)
-    print(c)
+    pids1 = [d["sampler_info"]["pid"] for d in data1]
+    pc = Counter(pids1)
+    assert len(pc) == num_ids
 
+    if length > len(sample1):
+        ic = Counter(sample1)
+        assert len(ic) == len(sample1)
 
-    batches1 = [sample1[i:i + batch_size] for i in range(0, len(sample1), batch_size)]
-
-    for batch in batches1:
-        print(batch)
+    for i in range(10):
+        sample = list(sampler.__iter__())
+        inter = set(sample1).intersection(set(sample))
+        diff = set(sample1).difference(set(sample))
+        # print(i, len(inter), len(diff))
+        assert len(inter) < len(sample)
+        assert len(diff) > 0
 
 
 # def test_native_dist_sampler():
