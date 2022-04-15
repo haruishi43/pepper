@@ -13,11 +13,6 @@ from torch.utils.data import DistributedSampler, Sampler
 from ..builder import SAMPLERS
 
 
-def no_index(a, b):
-    assert isinstance(a, list)
-    return [i for i, j in enumerate(a) if j != b]
-
-
 def reorder_index(batch_indices, world_size):
     """Reorder indices of samples to align with DataParallel training.
     In this order, each process will contain all images for one ID, triplet loss
@@ -329,21 +324,20 @@ class BalancedIdentitySampler(Sampler):
         self._rng = np.random.default_rng(seed)
 
         # avoid having to run pipelines
-        self.data_infos = copy.deepcopy(
+        data_infos = copy.deepcopy(
             [info["sampler_info"] for info in dataset.data_infos]
         )
 
-        self.index_pid = dict()
-        self.pid_index = defaultdict(list)
-        self.pid_cam = defaultdict(list)
-        for index, info in enumerate(self.data_infos):
+        # NOTE: important that the index doesn't change!
+        self.index_of_pid = defaultdict(list)
+        self.camid_of_pid = defaultdict(list)
+        for index, info in enumerate(data_infos):
             pid = info["pid"]
             camid = info["camid"]
-            self.index_pid[index] = pid
-            self.pid_index[pid].append(index)
-            self.pid_cam[pid].append(camid)
+            self.index_of_pid[pid].append(index)
+            self.camid_of_pid[pid].append(camid)
 
-        self.pids = sorted(list(self.pid_index.keys()))
+        self.pids = sorted(list(self.index_of_pid.keys()))
         self.num_identities = len(self.pids)
 
         if self.round_up and self.num_identities % self.num_pids_per_batch != 0:
@@ -361,7 +355,16 @@ class BalancedIdentitySampler(Sampler):
         return len(self.dataset)
 
     def __iter__(self):
+
+        def remove_same_index(l: list, value):
+            assert isinstance(l, list)
+            return [i for i, j in enumerate(l) if j != value]
+
         pid_idxs = list(range(self.num_identities))
+
+        # instances are index of the data
+        pid_instances = copy.deepcopy(self.index_of_pid)
+        pid_camids = copy.deepcopy(self.camid_of_pid)
 
         if self.shuffle:
             self._rng.shuffle(pid_idxs)
@@ -382,59 +385,86 @@ class BalancedIdentitySampler(Sampler):
         for pid_idx in pid_idxs:
             batch_indices = []
 
+            # obtain pid from index
+            pid = self.pids[pid_idx]
+
+            # get some instance
+            if len(pid_instances[pid]) == 0:
+                # re-add instances if low
+                pid_instances[pid] = copy.deepcopy(self.index_of_pid[pid])
+                pid_camids[pid] = copy.deepcopy(self.camid_of_pid[pid])
+
+            instances = pid_instances[pid]  # List
+            camids = pid_camids[pid]  # List
+            assert len(instances) == len(camids)
+
             if self.shuffle:
-                inst_idx = self._rng.choice(
-                    self.pid_index[self.pids[pid_idx]],
-                    1,
-                )
+                instance_idx = self._rng.integers(len(instances))
+                instance = instances.pop(instance_idx)
+                camid = camids.pop(instance_idx)
             else:
-                inst_idx = ...
+                default_idx = 0
+                instance = instances.pop(default_idx)
+                camid = camids.pop(default_idx)
 
-            pid_index = self._rng.choice(self.pid_index[self.pids[pid_idx]])
-            batch_indices.append(pid_index)
-            data = self.data_infos[pid_index]
-            pid = data["pid"]
-            camid = data["camid"]
+            # add to batch
+            batch_indices.append(instance)
 
-            same_pid_indices = self.pid_index[pid]
-            cam_list = self.pid_cam[pid]
+            # select camids that are different
+            # note that the indices should match `instances`
+            select_cams_indices = remove_same_index(camids, camid)
 
-            select_cams = no_index(cam_list, camid)
-
-            if select_cams:
-                if len(select_cams) >= self.num_instances:
-                    cam_indices = self._rng.choice(
-                        select_cams,
+            if select_cams_indices:
+                # sample from different camids
+                if len(select_cams_indices) >= self.num_instances:
+                    use_indices = self._rng.choice(
+                        select_cams_indices,
                         size=self.num_instances - 1,
                         replace=False,
                     )
                 else:
-                    cam_indices = self._rng.choice(
-                        select_cams,
+                    use_indices = self._rng.choice(
+                        select_cams_indices,
                         size=self.num_instances - 1,
                         replace=True,
                     )
-                for j in cam_indices:
-                    batch_indices.append(same_pid_indices[j])
+                for i in use_indices:
+                    batch_indices.append(instances[i])
             else:
-                select_indices = no_index(same_pid_indices, pid_index)
-                if not select_indices:
+                # sample from remaining instances (that have the same camid)
+                if len(instances) == 0:
+                    use_indices = []
                     # only one image for this identity
-                    ind_indices = [0] * (self.num_instances - 1)
-                elif len(select_indices) >= self.num_instances:
-                    ind_indices = self._rng.choice(
-                        select_indices,
+                    batch_indices += [instance] * (self.num_instances - 1)
+                elif len(instances) >= self.num_instances:
+                    use_indices = self._rng.choice(
+                        list(range(len(instances))),
                         size=self.num_instances - 1,
                         replace=False,
                     )
+                    # sample from remaining instances
+                    for i in use_indices:
+                        batch_indices.append(instances[i])
                 else:
-                    ind_indices = self._rng.choice(
-                        select_indices,
-                        size=self.num_instances - 1,
-                        replace=True,
+                    # when the number of instances are low, we repeat some
+                    use_indices = []
+                    batch_indices += list(
+                        self._rng.choice(
+                            instances,
+                            size=self.num_instances - 1,
+                            replace=True,
+                        )
                     )
-                for j in ind_indices:
-                    batch_indices.append(same_pid_indices[j])
+
+            # remove used indices
+            if len(use_indices) == 0:
+                pid_instances[pid] = []
+                pid_camids[pid] = []
+            else:
+                for i in sorted(use_indices, reverse=True):
+                    # we remove from both instances and camids
+                    instances.pop(i)
+                    camids.pop(i)
 
             indices += batch_indices
 
@@ -514,6 +544,11 @@ class BalancedIdentityDistributedSampler(DistributedSampler):
         )
 
     def __iter__(self):
+
+        def no_index(l: list, value):
+            assert isinstance(l, list)
+            return [i for i, j in enumerate(l) if j != value]
+
         # deterministically shuffle based on epoch
         if self.shuffle:
             g = torch.Generator()

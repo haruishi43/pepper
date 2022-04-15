@@ -194,7 +194,8 @@ def test_balanced_sampler(length, num_ids, num_camids):
             dataset=dataset,
             batch_size=batch_size,
             num_instances=num_instances,
-            shuffle=False,
+            shuffle=True,
+            seed=10,
         ),
     )
 
@@ -219,20 +220,20 @@ def test_balanced_sampler(length, num_ids, num_camids):
     print()
     print(pc)
     print(cc)
-    assert len(pc) == num_ids
-    assert len(cc) == num_camids
+    assert len(pc) == num_ids, "should use all pids"
+    assert len(cc) == num_camids, "should use all camids"
 
     if length > len(sample1):
         ic = Counter(sample1)
-        assert len(ic) == len(sample1)
+        assert len(ic) == len(sample1), "should not repeat index"
 
-    # for i in range(10):
-    #     sample = list(sampler.__iter__())
-    #     inter = set(sample1).intersection(set(sample))
-    #     diff = set(sample1).difference(set(sample))
-    #     # print(i, len(inter), len(diff))
-    #     assert len(inter) < len(sample)
-    #     assert len(diff) > 0
+    for i in range(10):
+        sample = list(sampler.__iter__())
+        inter = set(sample1).intersection(set(sample))
+        diff = set(sample1).difference(set(sample))
+        print(i, len(inter), len(diff))
+        assert len(inter) < len(sample)
+        assert len(diff) > 0
 
 
 if __name__ == "__main__":
