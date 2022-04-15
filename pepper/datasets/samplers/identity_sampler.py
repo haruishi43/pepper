@@ -492,10 +492,10 @@ class BalancedIdentityDistributedSampler(DistributedSampler):
         dataset,
         num_replicas=None,
         rank=None,
-        seed=0,
-        shuffle=True,
         batch_size=32,
         num_instances=4,
+        seed=0,
+        shuffle=True,
         round_up=True,
     ):
         super().__init__(
@@ -515,22 +515,23 @@ class BalancedIdentityDistributedSampler(DistributedSampler):
         self.batch_size = batch_size
         self.round_up = round_up
 
+        self._rng = np.random.default_rng(self.seed)
+
         # avoid having to run pipelines
-        self.data_infos = copy.deepcopy(
+        data_infos = copy.deepcopy(
             [info["sampler_info"] for info in dataset.data_infos]
         )
 
-        self.index_pid = dict()
-        self.pid_index = defaultdict(list)
-        self.pid_cam = defaultdict(list)
-        for index, info in enumerate(self.data_infos):
+        # NOTE: important that the index doesn't change!
+        self.index_of_pid = defaultdict(list)
+        self.camid_of_pid = defaultdict(list)
+        for index, info in enumerate(data_infos):
             pid = info["pid"]
             camid = info["camid"]
-            self.index_pid[index] = pid
-            self.pid_index[pid].append(index)
-            self.pid_cam[pid].append(camid)
+            self.index_of_pid[pid].append(index)
+            self.camid_of_pid[pid].append(camid)
 
-        self.pids = sorted(list(self.pid_index.keys()))
+        self.pids = sorted(list(self.index_of_pid.keys()))
         self.num_identities = len(self.pids)
 
         if self.round_up and self.num_identities % self.num_pids_per_batch != 0:
@@ -546,79 +547,118 @@ class BalancedIdentityDistributedSampler(DistributedSampler):
 
     def __iter__(self):
 
-        def no_index(l: list, value):
+        self._rng = np.random.default_rng(self.seed + self.epoch)
+
+        def remove_same_index(l: list, value):
             assert isinstance(l, list)
             return [i for i, j in enumerate(l) if j != value]
 
-        # deterministically shuffle based on epoch
+        pid_idxs = list(range(self.num_identities))
+
+        # instances are index of the data
+        pid_instances = copy.deepcopy(self.index_of_pid)
+        pid_camids = copy.deepcopy(self.camid_of_pid)
+
         if self.shuffle:
-            g = torch.Generator()
-            g.manual_seed(self.seed + self.epoch)
-            identities = torch.randperm(
-                self.num_identities, generator=g
-            ).tolist()
+            self._rng.shuffle(pid_idxs)
         else:
-            identities = torch.arange(self.num_identities).tolist()
+            warnings.warn("WARN: `shuffle=False` detected.")
 
         tot = self.num_iterations * self.num_pids_per_batch
-        if self.round_up and len(identities) % self.num_pids_per_batch != 0:
+        if self.round_up and self.num_identities % self.num_pids_per_batch != 0:
             # pad
-            identities = (identities * int(tot / len(identities) + 1))[:tot]
-        elif len(identities) % self.num_pids_per_batch != 0:
+            pid_idxs = (pid_idxs * int(tot / len(pid_idxs) + 1))[:tot]
+        elif self.num_identities % self.num_pids_per_batch != 0:
             # drop
-            identities = identities[
-                : -(len(identities) % self.num_pids_per_batch)
+            pid_idxs = pid_idxs[
+                : -(len(pid_idxs) % self.num_pids_per_batch)
             ]
 
         indices = []
-        for i in identities:
+        for pid_idx in pid_idxs:
             batch_indices = []
 
-            pid_index = np.random.choice(self.pid_index[self.pids[i]])
-            batch_indices.append(pid_index)
-            data = self.data_infos[pid_index]
-            pid = data["pid"]
-            camid = data["camid"]
+            # obtain pid from index
+            pid = self.pids[pid_idx]
 
-            same_pid_indices = self.pid_index[pid]
-            cam_list = self.pid_cam[pid]
+            # get some instance
+            if len(pid_instances[pid]) == 0:
+                # re-add instances if low
+                pid_instances[pid] = copy.deepcopy(self.index_of_pid[pid])
+                pid_camids[pid] = copy.deepcopy(self.camid_of_pid[pid])
 
-            select_cams = no_index(cam_list, camid)
+            instances = pid_instances[pid]  # List
+            camids = pid_camids[pid]  # List
+            assert len(instances) == len(camids)
 
-            if select_cams:
-                if len(select_cams) >= self.num_instances:
-                    cam_indices = np.random.choice(
-                        select_cams,
-                        size=self.num_instances - 1,
-                        replace=False,
-                    )
-                else:
-                    cam_indices = np.random.choice(
-                        select_cams,
-                        size=self.num_instances - 1,
-                        replace=True,
-                    )
-                for j in cam_indices:
-                    batch_indices.append(same_pid_indices[j])
+            if self.shuffle:
+                instance_idx = self._rng.integers(len(instances))
+                instance = instances.pop(instance_idx)
+                camid = camids.pop(instance_idx)
             else:
-                select_indices = no_index(same_pid_indices, pid_index)
-                if not select_indices:
-                    # only one image for this identity
-                    ind_indices = [0] * (self.num_instances - 1)
-                elif len(select_indices) >= self.num_instances:
-                    ind_indices = np.random.choice(
-                        select_indices,
+                default_idx = 0
+                instance = instances.pop(default_idx)
+                camid = camids.pop(default_idx)
+
+            # add to batch
+            batch_indices.append(instance)
+
+            # select camids that are different
+            # note that the indices should match `instances`
+            select_cams_indices = remove_same_index(camids, camid)
+
+            if select_cams_indices:
+                # sample from different camids
+                if len(select_cams_indices) >= self.num_instances:
+                    use_indices = self._rng.choice(
+                        select_cams_indices,
                         size=self.num_instances - 1,
                         replace=False,
                     )
                 else:
-                    ind_indices = np.random.choice(
-                        select_indices,
+                    use_indices = self._rng.choice(
+                        select_cams_indices,
                         size=self.num_instances - 1,
                         replace=True,
                     )
-                for j in ind_indices:
-                    batch_indices.append(same_pid_indices[j])
+                for i in use_indices:
+                    batch_indices.append(instances[i])
+                use_indices = set(use_indices)
+            else:
+                # sample from remaining instances (that have the same camid)
+                if len(instances) == 0:
+                    use_indices = []
+                    # only one image for this identity
+                    batch_indices += [instance] * (self.num_instances - 1)
+                elif len(instances) >= self.num_instances:
+                    use_indices = self._rng.choice(
+                        list(range(len(instances))),
+                        size=self.num_instances - 1,
+                        replace=False,
+                    )
+                    # sample from remaining instances
+                    for i in use_indices:
+                        batch_indices.append(instances[i])
+                else:
+                    # when the number of instances are low, we repeat some
+                    use_indices = []
+                    batch_indices += list(
+                        self._rng.choice(
+                            instances,
+                            size=self.num_instances - 1,
+                            replace=True,
+                        )
+                    )
+
+            # remove used indices
+            if len(use_indices) == 0:
+                pid_instances[pid] = []
+                pid_camids[pid] = []
+            else:
+                for i in sorted(use_indices, reverse=True):
+                    # we remove from both instances and camids
+                    instances.pop(i)
+                    camids.pop(i)
 
             indices += batch_indices
 

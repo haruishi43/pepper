@@ -105,8 +105,7 @@ def test_native_sampler(length, num_ids, num_camids):
         assert len(diff) > 0
 
 
-# FIXME: add real tests
-@pytest.mark.skip()
+# @pytest.mark.skip()
 def test_native_dist_sampler():
     batch_size = 32
     num_instances = 4
@@ -128,6 +127,8 @@ def test_native_dist_sampler():
     )
 
     # build samplers
+    shuffle = True
+    round_up = True
     sampler1 = build_sampler(
         dict(
             type="NaiveIdentityDistributedSampler",
@@ -136,8 +137,8 @@ def test_native_dist_sampler():
             rank=0,
             batch_size=batch_size,
             num_instances=num_instances,
-            shuffle=False,
-            round_up=False,
+            shuffle=shuffle,
+            round_up=round_up,
         )
     )
     sampler2 = build_sampler(
@@ -148,8 +149,8 @@ def test_native_dist_sampler():
             rank=1,
             batch_size=batch_size,
             num_instances=num_instances,
-            shuffle=False,
-            round_up=False,
+            shuffle=shuffle,
+            round_up=round_up,
         )
     )
 
@@ -163,14 +164,18 @@ def test_native_dist_sampler():
 
     pids1 = [d["sampler_info"]["pid"] for d in data1]
     pids2 = [d["sampler_info"]["pid"] for d in data2]
-    pc1 = Counter(pids1)
-    pc2 = Counter(pids2)
 
-    print()
-    print(pc1.keys())
-    print(pc2.keys())
+    # pc1 = Counter(pids1)
+    # pc2 = Counter(pids2)
+    # print()
+    # print(pc1.keys())
+    # print(pc2.keys())
 
-    print(len(set(pids1).intersection(set(pids2))))
+    num_same_ids = len(set(pids1).intersection(set(pids2)))
+
+    ids_per_batch = batch_size // num_instances
+    iterations = math.ceil(num_ids / ids_per_batch)
+    assert num_same_ids == iterations * ids_per_batch - num_ids, "number of repeated ids is unexpected"
 
 
 # @pytest.mark.skip()
@@ -240,7 +245,7 @@ def test_balanced_sampler(length, num_ids, num_camids):
 
 
 # FIXME: add real tests
-@pytest.mark.skip()
+# @pytest.mark.skip()
 def test_balanced_dist_sampler():
     batch_size = 32
     num_instances = 4
@@ -270,8 +275,8 @@ def test_balanced_dist_sampler():
             rank=0,
             batch_size=batch_size,
             num_instances=num_instances,
-            shuffle=False,
-            round_up=False,
+            # shuffle=False,
+            # round_up=False,
         )
     )
     sampler2 = build_sampler(
@@ -282,8 +287,8 @@ def test_balanced_dist_sampler():
             rank=1,
             batch_size=batch_size,
             num_instances=num_instances,
-            shuffle=False,
-            round_up=False,
+            # shuffle=False,
+            # round_up=False,
         )
     )
 
@@ -297,14 +302,19 @@ def test_balanced_dist_sampler():
 
     pids1 = [d["sampler_info"]["pid"] for d in data1]
     pids2 = [d["sampler_info"]["pid"] for d in data2]
-    pc1 = Counter(pids1)
-    pc2 = Counter(pids2)
 
-    print()
-    print(pc1.keys())
-    print(pc2.keys())
+    # pc1 = Counter(pids1)
+    # pc2 = Counter(pids2)
+    # print()
+    # print(pc1.keys())
+    # print(pc2.keys())
 
-    print(len(set(pids1).intersection(set(pids2))))
+    num_same_ids = len(set(pids1).intersection(set(pids2)))
+
+    ids_per_batch = batch_size // num_instances
+    iterations = math.ceil(num_ids / ids_per_batch)
+    assert num_same_ids == iterations * ids_per_batch - num_ids, "number of repeated ids is unexpected"
+
 
 if __name__ == "__main__":
 
