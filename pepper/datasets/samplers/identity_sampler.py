@@ -177,12 +177,12 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
         dataset,
         num_replicas=None,
         rank=None,
-        seed=0,
-        shuffle=True,
         batch_size=32,
         num_instances=4,
+        seed=0,
+        shuffle=True,
         round_up=True,
-    ):
+    ) -> None:
         super().__init__(
             dataset,
             num_replicas=num_replicas,
@@ -199,6 +199,8 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
         self.num_pids_per_batch = batch_size // self.num_instances
         self.batch_size = batch_size
         self.round_up = round_up
+
+        self._rng = np.random.default_rng(self.seed)
 
         # avoid having to run pipelines
         data_infos = copy.deepcopy(
@@ -227,6 +229,7 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
 
     def __iter__(self):
         available_pids = copy.deepcopy(self.pids)
+        pid_idxs = copy.deepcopy(self.pid_index)
         removed_pids = []
 
         if self.shuffle:
@@ -237,7 +240,6 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
             ).tolist()
             available_pids = [available_pids[i] for i in pid_indices]
 
-        batch_idxs_dict = {}
         indices = []
         for _ in range(self.num_iterations):
             batch_indices = []
@@ -248,7 +250,7 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
                 available_pids.extend(removed_pids[:num_add])
 
             if self.shuffle:
-                selected_pids = np.random.choice(
+                selected_pids = self._rng.choice(
                     available_pids,
                     self.num_pids_per_batch,
                     replace=False,
@@ -257,33 +259,35 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
                 selected_pids = available_pids[: self.num_pids_per_batch]
 
             for pid in selected_pids:
-                # Register pid in batch_idxs_dict if not
-                if pid not in batch_idxs_dict:
-                    idxs = copy.deepcopy(self.pid_index[pid])
+                # if pid was removed, add the indices back
+                if pid not in pid_idxs.keys():
+                    pid_idxs[pid] = copy.deepcopy(self.pid_index[pid])
 
-                    if self.shuffle:
-                        if len(idxs) < self.num_instances:
-                            idxs = np.random.choice(
-                                idxs,
-                                size=self.num_instances,
-                                replace=True,
-                            ).tolist()
-                        np.random.shuffle(idxs)
-                    else:
-                        if len(idxs) < self.num_instances:
-                            idxs = (
-                                idxs * int(self.num_instances / len(idxs) + 1)
-                            )[: self.num_instances]
-                    batch_idxs_dict[pid] = idxs
+                idxs = pid_idxs[pid]
+                if self.shuffle:
+                    if len(idxs) < self.num_instances:
+                        idxs = self._rng.choice(
+                            idxs,
+                            size=self.num_instances,
+                            replace=True,
+                        ).tolist()
+                    self._rng.shuffle(idxs)
+                else:
+                    if len(idxs) < self.num_instances:
+                        idxs = (idxs * int(self.num_instances / len(idxs) + 1))[
+                            : self.num_instances
+                        ]
 
-                avl_idxs = batch_idxs_dict[pid]
                 for _ in range(self.num_instances):
-                    batch_indices.append(avl_idxs.pop(0))
+                    batch_indices.append(idxs.pop(0))
 
-                if len(avl_idxs) < self.num_instances:
-                    available_pids.remove(pid)
-                    batch_idxs_dict.pop(pid)
-                    removed_pids.append(pid)
+                # remove pids if the number of indices remaining are low
+                if len(idxs) < self.num_instances:
+                    pid_idxs.pop(pid)
+
+                # remove after use
+                available_pids.remove(pid)
+                removed_pids.append(pid)
 
             assert len(batch_indices) == self.batch_size
             indices += batch_indices
@@ -305,16 +309,13 @@ class BalancedIdentitySampler(Sampler):
     def __init__(
         self,
         dataset,
-        batch_size=32,
-        num_instances=4,
-        shuffle=True,
-        seed=0,
-        round_up=True,
+        batch_size: int = 32,
+        num_instances: int = 4,
+        seed: int = 0,
+        shuffle: bool = True,
+        round_up: bool = True,
     ):
         self.dataset = dataset
-        self.shuffle = shuffle
-        self.seed = seed
-
         assert not (batch_size > len(dataset))
         assert not (
             batch_size % num_instances
@@ -323,6 +324,9 @@ class BalancedIdentitySampler(Sampler):
         self.num_pids_per_batch = batch_size // self.num_instances
         self.batch_size = batch_size
         self.round_up = round_up
+        self.shuffle = shuffle
+
+        self._rng = np.random.default_rng(seed)
 
         # avoid having to run pipelines
         self.data_infos = copy.deepcopy(
@@ -357,26 +361,36 @@ class BalancedIdentitySampler(Sampler):
         return len(self.dataset)
 
     def __iter__(self):
+        pid_idxs = list(range(self.num_identities))
+
         if self.shuffle:
-            identities = torch.randperm(self.num_identities).tolist()
+            self._rng.shuffle(pid_idxs)
         else:
-            identities = torch.arange(self.num_identities).tolist()
+            warnings.warn("WARN: `shuffle=False` detected.")
 
         tot = self.num_iterations * self.num_pids_per_batch
-        if self.round_up and len(identities) % self.num_pids_per_batch != 0:
+        if self.round_up and self.num_identities % self.num_pids_per_batch != 0:
             # pad
-            identities = (identities * int(tot / len(identities) + 1))[:tot]
-        elif len(identities) % self.num_pids_per_batch != 0:
+            pid_idxs = (pid_idxs * int(tot / len(pid_idxs) + 1))[:tot]
+        elif self.num_identities % self.num_pids_per_batch != 0:
             # drop
-            identities = identities[
-                : -(len(identities) % self.num_pids_per_batch)
+            pid_idxs = pid_idxs[
+                : -(len(pid_idxs) % self.num_pids_per_batch)
             ]
 
         indices = []
-        for i in identities:
+        for pid_idx in pid_idxs:
             batch_indices = []
 
-            pid_index = np.random.choice(self.pid_index[self.pids[i]])
+            if self.shuffle:
+                inst_idx = self._rng.choice(
+                    self.pid_index[self.pids[pid_idx]],
+                    1,
+                )
+            else:
+                inst_idx = ...
+
+            pid_index = self._rng.choice(self.pid_index[self.pids[pid_idx]])
             batch_indices.append(pid_index)
             data = self.data_infos[pid_index]
             pid = data["pid"]
@@ -389,13 +403,13 @@ class BalancedIdentitySampler(Sampler):
 
             if select_cams:
                 if len(select_cams) >= self.num_instances:
-                    cam_indices = np.random.choice(
+                    cam_indices = self._rng.choice(
                         select_cams,
                         size=self.num_instances - 1,
                         replace=False,
                     )
                 else:
-                    cam_indices = np.random.choice(
+                    cam_indices = self._rng.choice(
                         select_cams,
                         size=self.num_instances - 1,
                         replace=True,
@@ -408,13 +422,13 @@ class BalancedIdentitySampler(Sampler):
                     # only one image for this identity
                     ind_indices = [0] * (self.num_instances - 1)
                 elif len(select_indices) >= self.num_instances:
-                    ind_indices = np.random.choice(
+                    ind_indices = self._rng.choice(
                         select_indices,
                         size=self.num_instances - 1,
                         replace=False,
                     )
                 else:
-                    ind_indices = np.random.choice(
+                    ind_indices = self._rng.choice(
                         select_indices,
                         size=self.num_instances - 1,
                         replace=True,

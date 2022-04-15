@@ -49,6 +49,7 @@ def get_matches(l1, l2):
     return matches
 
 
+@pytest.mark.skip()
 @pytest.mark.parametrize("length", [1000, 10_000])
 @pytest.mark.parametrize("num_ids", [124, 17])
 @pytest.mark.parametrize("num_camids", [4])
@@ -104,43 +105,134 @@ def test_native_sampler(length, num_ids, num_camids):
         assert len(diff) > 0
 
 
-# def test_native_dist_sampler():
-#     num_replicas = 2
-#     length = 1000
-#     num_ids = 124
-#     num_camids = 4
+# FIXME: add real tests
+@pytest.mark.skip()
+def test_native_dist_sampler():
+    batch_size = 32
+    num_instances = 4
 
-#     # construct a toy dataset
-#     dataset = construct_toy_dataset(
-#         length=length,
-#         num_ids=num_ids,
-#         num_camids=num_camids,
-#     )
+    num_replicas = 2
+    # length = 1000
+    # num_ids = 124
 
-#     # build samplers
-#     sampler1 = build_sampler(
-#         dict(
-#             type="NaiveIdentityDistributedSampler",
-#             dataset=dataset,
-#             num_replicas=num_replicas,
-#             rank=0,
-#         )
-#     )
-#     sampler2 = build_sampler(
-#         dict(
-#             type="NaiveIdentityDistributedSampler",
-#             dataset=dataset,
-#             num_replicas=num_replicas,
-#             rank=0,
-#         )
-#     )
+    length = 200
+    num_ids = 17
 
-#     assert len(sampler1) == length // 2
+    num_camids = 4
 
-#     sample1 = list(sampler1.__iter__())
-#     sample2 = list(sampler2.__iter__())
+    # construct a toy dataset
+    dataset = construct_toy_dataset(
+        length=length,
+        num_ids=num_ids,
+        num_camids=num_camids,
+    )
 
-#     # FIXME: what are reasonable tests?
+    # build samplers
+    sampler1 = build_sampler(
+        dict(
+            type="NaiveIdentityDistributedSampler",
+            dataset=dataset,
+            num_replicas=num_replicas,
+            rank=0,
+            batch_size=batch_size,
+            num_instances=num_instances,
+            shuffle=False,
+            round_up=False,
+        )
+    )
+    sampler2 = build_sampler(
+        dict(
+            type="NaiveIdentityDistributedSampler",
+            dataset=dataset,
+            num_replicas=num_replicas,
+            rank=1,
+            batch_size=batch_size,
+            num_instances=num_instances,
+            shuffle=False,
+            round_up=False,
+        )
+    )
+
+    assert len(sampler1) == length // 2
+
+    sample1 = list(sampler1.__iter__())
+    sample2 = list(sampler2.__iter__())
+
+    data1 = [dataset[i] for i in sample1]
+    data2 = [dataset[i] for i in sample2]
+
+    pids1 = [d["sampler_info"]["pid"] for d in data1]
+    pids2 = [d["sampler_info"]["pid"] for d in data2]
+    pc1 = Counter(pids1)
+    pc2 = Counter(pids2)
+
+    print()
+    print(pc1.keys())
+    print(pc2.keys())
+
+    print(len(set(pids1).intersection(set(pids2))))
+
+
+@pytest.mark.parametrize("length", [1000])
+@pytest.mark.parametrize("num_ids", [17])
+@pytest.mark.parametrize("num_camids", [6])
+def test_balanced_sampler(length, num_ids, num_camids):
+    batch_size = 32
+    num_instances = 4
+
+    # construct a toy dataset
+    dataset = construct_toy_dataset(
+        length,
+        num_ids=num_ids,
+        num_camids=num_camids,
+    )
+
+    # build sampler
+    sampler = build_sampler(
+        dict(
+            type="BalancedIdentitySampler",
+            dataset=dataset,
+            batch_size=batch_size,
+            num_instances=num_instances,
+            shuffle=False,
+        ),
+    )
+
+    assert len(sampler) == length
+
+    sample1 = list(sampler.__iter__())
+    sample2 = list(sampler.__iter__())
+
+    assert len(sample1) == len(sample2)
+    assert len(sample1) == batch_size * math.ceil(
+        num_ids / (batch_size // num_instances)
+    )
+
+    matches = get_matches(sample1, sample2)
+    assert sum(matches) < len(sample1)
+
+    data1 = [dataset[i] for i in sample1]
+    pids1 = [d["sampler_info"]["pid"] for d in data1]
+    camids1 = [d["sampler_info"]["camid"] for d in data1]
+    pc = Counter(pids1)
+    cc = Counter(camids1)
+    print()
+    print(pc)
+    print(cc)
+    assert len(pc) == num_ids
+    assert len(cc) == num_camids
+
+    if length > len(sample1):
+        ic = Counter(sample1)
+        assert len(ic) == len(sample1)
+
+    # for i in range(10):
+    #     sample = list(sampler.__iter__())
+    #     inter = set(sample1).intersection(set(sample))
+    #     diff = set(sample1).difference(set(sample))
+    #     # print(i, len(inter), len(diff))
+    #     assert len(inter) < len(sample)
+    #     assert len(diff) > 0
 
 
 if __name__ == "__main__":
