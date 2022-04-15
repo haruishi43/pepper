@@ -230,6 +230,7 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
         if self.shuffle:
             g = torch.Generator()
             g.manual_seed(self.seed + self.epoch)
+            self._rng = np.random.default_rng(self.seed + self.epoch)
             pid_indices = torch.randperm(
                 len(available_pids), generator=g
             ).tolist()
@@ -309,7 +310,7 @@ class BalancedIdentitySampler(Sampler):
         seed: int = 0,
         shuffle: bool = True,
         round_up: bool = True,
-    ):
+    ) -> None:
         self.dataset = dataset
         assert not (batch_size > len(dataset))
         assert not (
@@ -497,7 +498,7 @@ class BalancedIdentityDistributedSampler(DistributedSampler):
         seed=0,
         shuffle=True,
         round_up=True,
-    ):
+    ) -> None:
         super().__init__(
             dataset,
             num_replicas=num_replicas,
