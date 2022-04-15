@@ -430,6 +430,7 @@ class BalancedIdentitySampler(Sampler):
                     )
                 for i in use_indices:
                     batch_indices.append(instances[i])
+                use_indices = set(use_indices)
             else:
                 # sample from remaining instances (that have the same camid)
                 if len(instances) == 0:
