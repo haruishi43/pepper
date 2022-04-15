@@ -232,6 +232,8 @@ def test_balanced_sampler(length, num_ids, num_camids):
         inter = set(sample1).intersection(set(sample))
         diff = set(sample1).difference(set(sample))
         print(i, len(inter), len(diff))
+        # inter should be low
+        # diff should be high
         assert len(inter) < len(sample)
         assert len(diff) > 0
 
