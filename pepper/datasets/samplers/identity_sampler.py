@@ -356,7 +356,6 @@ class BalancedIdentitySampler(Sampler):
         return len(self.dataset)
 
     def __iter__(self):
-
         def remove_same_index(l: list, value):
             assert isinstance(l, list)
             return [i for i, j in enumerate(l) if j != value]
@@ -378,9 +377,7 @@ class BalancedIdentitySampler(Sampler):
             pid_idxs = (pid_idxs * int(tot / len(pid_idxs) + 1))[:tot]
         elif self.num_identities % self.num_pids_per_batch != 0:
             # drop
-            pid_idxs = pid_idxs[
-                : -(len(pid_idxs) % self.num_pids_per_batch)
-            ]
+            pid_idxs = pid_idxs[: -(len(pid_idxs) % self.num_pids_per_batch)]
 
         indices = []
         for pid_idx in pid_idxs:
@@ -571,9 +568,7 @@ class BalancedIdentityDistributedSampler(DistributedSampler):
             pid_idxs = (pid_idxs * int(tot / len(pid_idxs) + 1))[:tot]
         elif self.num_identities % self.num_pids_per_batch != 0:
             # drop
-            pid_idxs = pid_idxs[
-                : -(len(pid_idxs) % self.num_pids_per_batch)
-            ]
+            pid_idxs = pid_idxs[: -(len(pid_idxs) % self.num_pids_per_batch)]
 
         indices = []
         for pid_idx in pid_idxs:

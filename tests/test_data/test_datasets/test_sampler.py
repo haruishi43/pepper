@@ -106,11 +106,11 @@ def test_native_sampler(length, num_ids, num_camids):
 
 
 # @pytest.mark.skip()
-@pytest.mark.parametrize('batch_size', [32, 64])
-@pytest.mark.parametrize('num_instances', [4, 8])
-@pytest.mark.parametrize('length', [1000, 10_000])
-@pytest.mark.parametrize('num_ids', [17, 124])
-@pytest.mark.parametrize('num_camids', [4, 6])
+@pytest.mark.parametrize("batch_size", [32, 64])
+@pytest.mark.parametrize("num_instances", [4, 8])
+@pytest.mark.parametrize("length", [1000, 10_000])
+@pytest.mark.parametrize("num_ids", [17, 124])
+@pytest.mark.parametrize("num_camids", [4, 6])
 def test_native_dist_sampler(
     batch_size,
     num_instances,
@@ -180,7 +180,9 @@ def test_native_dist_sampler(
 
         ids_per_batch = batch_size // num_instances
         iterations = math.ceil(num_ids / ids_per_batch)
-        assert num_same_ids == iterations * ids_per_batch - num_ids, "number of repeated ids is unexpected"
+        assert (
+            num_same_ids == iterations * ids_per_batch - num_ids
+        ), "number of repeated ids is unexpected"
 
 
 # @pytest.mark.skip()
@@ -251,11 +253,11 @@ def test_balanced_sampler(length, num_ids, num_camids):
 
 # FIXME: add real tests
 # @pytest.mark.skip()
-@pytest.mark.parametrize('batch_size', [32, 64])
-@pytest.mark.parametrize('num_instances', [4, 8])
-@pytest.mark.parametrize('length', [1000, 10_000])
-@pytest.mark.parametrize('num_ids', [17, 124])
-@pytest.mark.parametrize('num_camids', [4, 6])
+@pytest.mark.parametrize("batch_size", [32, 64])
+@pytest.mark.parametrize("num_instances", [4, 8])
+@pytest.mark.parametrize("length", [1000, 10_000])
+@pytest.mark.parametrize("num_ids", [17, 124])
+@pytest.mark.parametrize("num_camids", [4, 6])
 def test_balanced_dist_sampler(
     batch_size,
     num_instances,
@@ -323,7 +325,9 @@ def test_balanced_dist_sampler(
 
         ids_per_batch = batch_size // num_instances
         iterations = math.ceil(num_ids / ids_per_batch)
-        assert num_same_ids == iterations * ids_per_batch - num_ids, "number of repeated ids is unexpected"
+        assert (
+            num_same_ids == iterations * ids_per_batch - num_ids
+        ), "number of repeated ids is unexpected"
 
 
 if __name__ == "__main__":

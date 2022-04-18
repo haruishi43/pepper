@@ -9,6 +9,7 @@ from mmcv.utils import digit_version
 
 from pepper.datasets import build_dataloader, build_dataset
 from pepper.datasets.dataset_wrappers import ConcatDataset
+from pepper.datasets.image_datasets.base import ImageDataset
 
 
 class TestDataloaderBuilder:
@@ -138,7 +139,7 @@ class TestDatasetBuilder:
     def setup_class(cls):
         data_prefix = osp.join(osp.dirname(__file__), "../data/dataset")
         cls.dataset_cfg = dict(
-            type="ImageNet",
+            type="ImageDataset",
             data_prefix=data_prefix,
             ann_file=osp.join(data_prefix, "ann.txt"),
             pipeline=[],
@@ -148,7 +149,7 @@ class TestDatasetBuilder:
     def test_normal_dataset(self):
         # Test build
         dataset = build_dataset(self.dataset_cfg)
-        assert isinstance(dataset, ImageNet)
+        assert isinstance(dataset, ImageDataset)
         assert dataset.test_mode == self.dataset_cfg["test_mode"]
 
         # Test default_args

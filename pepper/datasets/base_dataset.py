@@ -5,6 +5,7 @@ import os.path as osp
 from abc import ABCMeta, abstractmethod
 from os import PathLike
 
+import numpy as np
 from torch.utils.data import Dataset
 
 from .pipelines import Compose
@@ -61,6 +62,10 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
 
     def __getitem__(self, idx):
         return self.prepare_data(idx)
+
+    def get_gt_labels(self):
+        gt_labels = np.array([data["gt_label"] for data in self.data_infos])
+        return gt_labels
 
     @abstractmethod
     def evaluate(self):
