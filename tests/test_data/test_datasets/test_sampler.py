@@ -16,23 +16,21 @@ def construct_toy_dataset(length: int, num_ids: int = 16, num_camids: int = 5):
     for i in range(length):
         data_infos.append(
             dict(
-                sampler_info=dict(
-                    pid=i % num_ids,
-                    camid=i % num_camids,
-                ),
                 img_prefix="data",
                 img_info=dict(
                     file_name=f"{str(i)}.jpg",
+                    pid=i % num_ids,
                     camid=i % num_camids,
+                    debug_mode="train",
                     debug_index=i,
                 ),
             )
         )
 
-    # need to create data_infos (list[dict('sampler_info')])
+    # need to create data_infos (list[dict('img_info')])
     BaseDataset.__getitem__ = MagicMock(side_effect=lambda idx: data_infos[idx])
     dataset = BaseDataset(
-        data_prefix="", pipeline=[], ann_file=None, test_mode=False
+        data_prefix="", pipeline=[], ann_file=None, eval_mode=False
     )
     dataset.data_infos = data_infos
     return dataset
@@ -88,7 +86,7 @@ def test_native_sampler(length, num_ids, num_camids):
     assert sum(matches) < len(sample1)
 
     data1 = [dataset[i] for i in sample1]
-    pids1 = [d["sampler_info"]["pid"] for d in data1]
+    pids1 = [d["img_info"]["pid"] for d in data1]
     pc = Counter(pids1)
     assert len(pc) == num_ids
 
@@ -167,8 +165,8 @@ def test_native_dist_sampler(
         data1 = [dataset[i] for i in sample1]
         data2 = [dataset[i] for i in sample2]
 
-        pids1 = [d["sampler_info"]["pid"] for d in data1]
-        pids2 = [d["sampler_info"]["pid"] for d in data2]
+        pids1 = [d["img_info"]["pid"] for d in data1]
+        pids2 = [d["img_info"]["pid"] for d in data2]
 
         # pc1 = Counter(pids1)
         # pc2 = Counter(pids2)
@@ -224,8 +222,8 @@ def test_balanced_sampler(length, num_ids, num_camids):
     assert sum(matches) < len(sample1)
 
     data1 = [dataset[i] for i in sample1]
-    pids1 = [d["sampler_info"]["pid"] for d in data1]
-    camids1 = [d["sampler_info"]["camid"] for d in data1]
+    pids1 = [d["img_info"]["pid"] for d in data1]
+    camids1 = [d["img_info"]["camid"] for d in data1]
     pc = Counter(pids1)
     cc = Counter(camids1)
     # print()
@@ -312,8 +310,8 @@ def test_balanced_dist_sampler(
         data1 = [dataset[i] for i in sample1]
         data2 = [dataset[i] for i in sample2]
 
-        pids1 = [d["sampler_info"]["pid"] for d in data1]
-        pids2 = [d["sampler_info"]["pid"] for d in data2]
+        pids1 = [d["img_info"]["pid"] for d in data1]
+        pids2 = [d["img_info"]["pid"] for d in data2]
 
         # pc1 = Counter(pids1)
         # pc2 = Counter(pids2)

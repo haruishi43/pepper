@@ -39,16 +39,28 @@ data = dict(
         ann_file=data_root + "gtPepper/train.json",
         pipeline=train_pipeline,
     ),
-    query=dict(
+    val=dict(
         type=data_type,
-        data_prefix=data_root + "query",
-        ann_file=data_root + "gtPepper/query.json",
+        data_prefix=dict(
+            query=data_root + "query",
+            gallery=data_root + "bounding_box_test",
+        ),
+        ann_file=dict(
+            query=data_root + "gtPepper/query.json",
+            gallery=data_root + "gtPepper/gallery.json"
+        ),
         pipeline=test_pipeline,
     ),
     test=dict(
         type=data_type,
-        data_prefix=data_root + "bounding_box_test",
-        ann_file=data_root + "gtPepper/gallery.json",
+        data_prefix=dict(
+            query=data_root + "query",
+            gallery=data_root + "bounding_box_test",
+        ),
+        ann_file=dict(
+            query=data_root + "gtPepper/query.json",
+            gallery=data_root + "gtPepper/gallery.json"
+        ),
         pipeline=test_pipeline,
     ),
 )

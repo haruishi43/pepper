@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
 import numpy as np
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from mmcv import Config
 from mmcv.utils import build_from_cfg
 
-from pepper.datasets import DATASETS, build_dataset
+from pepper.datasets import BaseDataset, DATASETS, build_dataset
 
 """Goals of this test suite
 
@@ -16,12 +17,23 @@ Test evaluation metric
 """
 
 
-# def test_mini_market1501():
-#     cfg = Config.fromfile("tests/configs/mini_market1501.py")
+def test_mini_market1501():
+    cfg = Config.fromfile("tests/configs/_base_/datasets/mini_market1501.py")
 
-#     print(cfg.pretty_text)
+    print(cfg.pretty_text)
 
-#     dataset = build_from_cfg(cfg.data.train, DATASETS)
+    print("creating training set")
+    train_set = build_from_cfg(cfg.data.train, DATASETS)
+
+    print("creating val set")
+    val_set = build_from_cfg(cfg.data.val, DATASETS)
+    assert len(val_set.get_query_infos()) == 32
+    assert len(val_set.get_gallery_infos()) == 32
+
+    print("creating test set")
+    test_set = build_from_cfg(cfg.data.test, DATASETS)
+    assert len(test_set.get_query_infos()) == 32
+    assert len(test_set.get_gallery_infos()) == 32
 
 
 # def test_mini_mars():
@@ -33,6 +45,30 @@ Test evaluation metric
 
 
 # evaluation
+
+@patch.multiple(BaseDataset, __abstractmethods__=set())
+def construct_toy_dataset(length: int, num_ids: int = 16, num_camids: int = 5):
+    assert length > num_ids
+    data_infos = []
+    for i in range(length):
+        data_infos.append(
+            dict(
+                img_prefix="data",
+                img_info=dict(
+                    file_name=f"{str(i)}.jpg",
+                    pid=i % num_ids,
+                    camid=i % num_camids,
+                    debug_index=i,
+                ),
+            )
+        )
+
+    BaseDataset.__getitem__ = MagicMock(side_effect=lambda idx: data_infos[idx])
+    dataset = BaseDataset(
+        data_prefix="", pipeline=[], ann_file=None, eval_mode=False
+    )
+    dataset.data_infos = data_infos
+    return dataset
 
 
 def create_toy_reid_dataset(

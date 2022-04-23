@@ -3,27 +3,30 @@
 # copy from: https://github.com/open-mmlab/OpenUnReID/blob/66bb2ae0b00575b80fbe8915f4d4f4739cc21206/openunreid/core/utils/faiss_utils.py
 # updated in: https://github.com/facebookresearch/faiss/blob/main/contrib/torch_utils.py
 
-
-import faiss
 import torch
 
+import faiss
+from faiss.contrib.torch_utils import (
+    swig_ptr_from_FloatTensor,
+    swig_ptr_from_IndicesTensor,
+)
 
-def swig_ptr_from_FloatTensor(x):
-    assert x.is_contiguous()
-    assert x.dtype == torch.float32
-    return faiss.cast_integer_to_float_ptr(
-        x.storage().data_ptr() + x.storage_offset() * 4
-    )
+# def swig_ptr_from_FloatTensor(x):
+#     assert x.is_contiguous()
+#     assert x.dtype == torch.float32
+#     return faiss.cast_integer_to_float_ptr(
+#         x.storage().data_ptr() + x.storage_offset() * 4
+#     )
 
 
-def swig_ptr_from_LongTensor(x):
-    assert x.is_contiguous()
-    assert x.dtype == torch.int64, "dtype=%s" % x.dtype
+# def swig_ptr_from_LongTensor(x):
+#     assert x.is_contiguous()
+#     assert x.dtype == torch.int64, "dtype=%s" % x.dtype
 
-    # `cast_integer_long_ptr`` deprecated in 1.6.0
-    return faiss.cast_integer_to_idx_t_ptr(
-        x.storage().data_ptr() + x.storage_offset() * 8
-    )
+#     # `cast_integer_long_ptr`` deprecated in 1.6.0
+#     return faiss.cast_integer_to_idx_t_ptr(
+#         x.storage().data_ptr() + x.storage_offset() * 8
+#     )
 
 
 def search_index_pytorch(
@@ -50,7 +53,8 @@ def search_index_pytorch(
         assert I.size() == (n, k)
     torch.cuda.synchronize()
     xptr = swig_ptr_from_FloatTensor(x)
-    Iptr = swig_ptr_from_LongTensor(I)
+    # Iptr = swig_ptr_from_LongTensor(I)
+    Iptr = swig_ptr_from_IndicesTensor(I)
     Dptr = swig_ptr_from_FloatTensor(D)
     index.search_c(n, xptr, k, Dptr, Iptr)
     torch.cuda.synchronize()
@@ -103,7 +107,8 @@ def search_raw_array_pytorch(
         assert I.device == xb.device
 
     D_ptr = swig_ptr_from_FloatTensor(D)
-    I_ptr = swig_ptr_from_LongTensor(I)
+    # I_ptr = swig_ptr_from_LongTensor(I)
+    I_ptr = swig_ptr_from_IndicesTensor(I)
 
     # bruteForceKnn is deprecated in favor of bfKnn
     faiss.bruteForceKnn(

@@ -13,7 +13,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from .faiss_utils import (
+from pepper.core.utils.faiss_utils import (
     index_init_cpu,
     index_init_gpu,
     search_index_pytorch,

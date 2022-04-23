@@ -46,7 +46,7 @@ data = dict(
         ann_file=data_root + "gtPepper/query.json",
         pipeline=test_pipeline,
     ),
-    test=dict(
+    gallery=dict(
         type=data_type,
         data_prefix=data_root,
         ann_file=data_root + "gtPepper/gallery.json",

@@ -57,7 +57,7 @@ class NaiveIdentitySampler(Sampler):
 
         # avoid having to run pipelines
         data_infos = copy.deepcopy(
-            [info["sampler_info"] for info in dataset.data_infos]
+            [info["img_info"] for info in dataset.data_infos]
         )
 
         self.pid_index = defaultdict(list)
@@ -199,7 +199,7 @@ class NaiveIdentityDistributedSampler(DistributedSampler):
 
         # avoid having to run pipelines
         data_infos = copy.deepcopy(
-            [info["sampler_info"] for info in dataset.data_infos]
+            [info["img_info"] for info in dataset.data_infos]
         )
 
         self.pid_index = defaultdict(list)
@@ -326,7 +326,7 @@ class BalancedIdentitySampler(Sampler):
 
         # avoid having to run pipelines
         data_infos = copy.deepcopy(
-            [info["sampler_info"] for info in dataset.data_infos]
+            [info["img_info"] for info in dataset.data_infos]
         )
 
         # NOTE: important that the index doesn't change!
@@ -517,7 +517,7 @@ class BalancedIdentityDistributedSampler(DistributedSampler):
 
         # avoid having to run pipelines
         data_infos = copy.deepcopy(
-            [info["sampler_info"] for info in dataset.data_infos]
+            [info["img_info"] for info in dataset.data_infos]
         )
 
         # NOTE: important that the index doesn't change!

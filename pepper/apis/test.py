@@ -15,7 +15,7 @@ from mmcv.runner import get_dist_info
 
 
 def single_gpu_test(
-    model, data_loader, show=False, out_dir=None, **show_kwargs
+    model, data_loader, show=False, out_dir=None, **show_kwargs,
 ):
     model.eval()
     results = []
@@ -69,7 +69,7 @@ def single_gpu_test(
     return results
 
 
-def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
+def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False,):
     """Test model with multiple gpus.
     This method tests model with multiple gpus and collects the results
     under two different modes: gpu and cpu modes. By setting 'gpu_collect=True'

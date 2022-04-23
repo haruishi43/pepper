@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from collections import defaultdict
 import json
 
 import numpy as np
@@ -17,13 +16,13 @@ class ImageDataset(BaseDataset):
         data_prefix,
         pipeline,
         ann_file=None,
-        test_mode=False,
+        eval_mode=False,
     ):
         super(ImageDataset, self).__init__(
             data_prefix=data_prefix,
             pipeline=pipeline,
             ann_file=ann_file,
-            test_mode=test_mode,
+            eval_mode=eval_mode,
         )
 
     def load_annotations(self):
@@ -31,51 +30,79 @@ class ImageDataset(BaseDataset):
         Returns:
             list[dict]: Annotation information from ReID api.
         """
-        assert isinstance(self.ann_file, str)
 
-        with open(self.ann_file, "r") as f:
-            tmp_data = json.load(f)
+        def _get_annotations(ann_file, data_prefix, mode="train",):
+            assert isinstance(ann_file, str)
+            with open(ann_file, "r") as f:
+                tmp_data = json.load(f)
+            assert isinstance(tmp_data, list)
+            data_infos = []
+            for i, d in enumerate(tmp_data):
+                pid = d["pid"]
+                camid = d["camid"]
+                img_path = d["img_path"]
+                info = dict(
+                    img_prefix=data_prefix,
+                    img_info=dict(
+                        filename=img_path,
+                        pid=pid,
+                        camid=camid,
+                        debug_eval=mode,
+                        debug_index=i,
+                    ),
+                    gt_label=np.array(pid, dtype=np.int64),
+                )
+                data_infos.append(info)
+            del tmp_data
+            return data_infos
 
-        assert isinstance(tmp_data, list)
-        data_infos = []
-        for i, d in enumerate(tmp_data):
-            pid = d["pid"]
-            camid = d["camid"]
-            img_path = d["img_path"]
-            info = dict(
-                sampler_info=dict(
-                    pid=pid,
-                    camid=camid,
-                ),
-                img_prefix=self.data_prefix,
-                img_info=dict(
-                    filename=img_path,
-                    camid=camid,
-                    debug_index=i,  # FIXME: debugging
-                ),
+        if not self._is_eval:
+            data_infos = _get_annotations(self.ann_file, self.data_prefix)
+        else:
+            query_infos = _get_annotations(
+                self.ann_file["query"],
+                self.data_prefix["query"],
+                mode="query",
             )
-            info["gt_label"] = np.array(pid, dtype=np.int64)
-            data_infos.append(info)
-
-        del tmp_data
-
-        if not self.test_mode:
-            # relabel
-            self._parse_ann_info(data_infos)
+            self._num_query = len(query_infos)
+            gallery_infos = _get_annotations(
+                self.ann_file["gallery"],
+                self.data_prefix["gallery"],
+                mode="gallery",
+            )
+            self._num_gallery = len(gallery_infos)
+            data_infos = query_infos + gallery_infos
         return data_infos
 
-    def _parse_ann_info(self, data_infos):
-        """Parse person id annotations."""
+    def evaluate(
+        self,
+        results,
+        metric="mAP",
+        metric_options=None,
+        logger=None,
+    ):
+        """Evaluate the ReID dataset
 
-        index_tmp_dic = defaultdict(list)
-        self.index_dic = dict()
-        for idx, info in enumerate(data_infos):
-            pid = info["gt_label"]
-            index_tmp_dic[int(pid)].append(idx)
-        for pid, idxs in index_tmp_dic.items():
-            self.index_dic[pid] = np.asarray(idxs, dtype=np.int64)
+        - results: dict
 
-        self.pids = np.asarray(list(self.index_dic.keys()), dtype=np.int64)
+        """
 
-    def evaluate(self, results, metric="mAP", metric_options=None, logger=None):
-        ...
+        if metric_options is None:
+            metric_options = dict(rank_list=[1, 5, 10, 25], max_rank=20)
+        for rank in metric_options["rank_list"]:
+            assert rank >= 1 and rank <= metric_options["max_rank"]
+        if isinstance(metric, list):
+            metric = metric
+        elif isinstance(metric, str):
+            metrics = [metric]
+        else:
+            raise TypeError("metric must be a list or a str")
+
+        allowed_metrics = ["mAP", "CMC"]
+        for metric in metrics:
+            if metric not in allowed_metrics:
+                raise KeyError(f"metric {metric} is not supported.")
+
+        # distance
+
+        #

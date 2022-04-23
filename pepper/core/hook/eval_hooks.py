@@ -11,7 +11,8 @@ from mmcv.runner import EvalHook as BaseEvalHook
 
 class EvalHook(BaseEvalHook):
     """Please refer to `mmcv.runner.hooks.evaluation.py:EvalHook` for detailed
-    docstring."""
+    docstring.
+    """
 
     def _do_evaluate(self, runner):
         """perform evaluation and save ckpt."""

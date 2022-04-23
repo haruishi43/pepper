@@ -18,13 +18,13 @@ class VideoDataset(BaseDataset):
         data_prefix,
         pipeline,
         ann_file=None,
-        test_mode=False,
+        eval_mode=False,
     ):
         super(VideoDataset, self).__init__(
             data_prefix=data_prefix,
             pipeline=pipeline,
             ann_file=ann_file,
-            test_mode=test_mode,
+            eval_mode=eval_mode,
         )
 
     def load_annotations(self):
@@ -39,18 +39,18 @@ class VideoDataset(BaseDataset):
 
         assert isinstance(tmp_data, list)
         data_infos = []
-        for d in tmp_data:
+        for i, d in enumerate(tmp_data):
             pid = d["pid"]
             camid = d["camid"]
             img_paths = d["img_paths"]
             info = dict(
-                sampler_info=dict(
+                img_prefix=self.data_prefix,
+                img_info=dict(
+                    filenames=sorted(img_paths),
                     pid=pid,
                     camid=camid,
+                    debug_index=i,
                 ),
-                img_prefix=self.data_prefix,
-                camid=camid,
-                img_info=dict(filenames=sorted(img_paths)),
             )
             info["gt_label"] = np.array(pid, dtype=np.int64)
             data_infos.append(info)
@@ -75,20 +75,20 @@ class VideoDataset(BaseDataset):
 
         self.pids = np.asarray(list(self.index_dic.keys()), dtype=np.int64)
 
-    def prepare_data(self, idx):
+    def prepare_data(self, data):
         """Prepare results for image (e.g. the annotation information, ...)."""
-        data_info = copy.deepcopy(self.data_infos[idx])
+        info = data["img_info"]
 
         # make a list of dicts
-        filenames = data_info["img_info"]["filenames"]
+        filenames = info["filenames"]
         results = []
         for i, fn in enumerate(filenames):
-            camid = data_info["camid"]
             info = dict(
                 img_prefix=self.data_prefix,
                 img_info=dict(
                     filename=fn,
-                    camid=camid,
+                    pid=info["pid"],
+                    camid=info["camid"],
                     frame_id=i,
                     is_video_data=True,
                 ),
