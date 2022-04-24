@@ -192,7 +192,8 @@ def compute_euclidean_distance(features, others):
         torch.pow(features, 2).sum(dim=1, keepdim=True).expand(m, n)
         + torch.pow(others, 2).sum(dim=1, keepdim=True).expand(n, m).t()
     )
-    dist_m.addmm_(1, -2, features, others.t())
+    # dist_m.addmm_(1, -2, features, others.t())
+    dist_m.addmm_(features, others.t(), beta=1, alpha=-2)
 
     return dist_m.cpu().numpy()
 

@@ -91,7 +91,9 @@ def create_toy_reid_dataset(
     n: int = 4,
     nfeat: int = 2,
     ninst: int = 10,
+    factor: float = 0.1,
     seed: int = 0,
+    debug: bool = False,  # print out
 ) -> np.ndarray:
     _rng = np.random.default_rng(seed)
 
@@ -115,7 +117,7 @@ def create_toy_reid_dataset(
 
             # make the gallery features close to the query
             gallery_feats.append(
-                query_feats[i] - 0.1 * _rng.normal(0, 1, nfeat)
+                query_feats[i] - factor * _rng.normal(0, 1, nfeat)
             )
     gallery_pids = np.asarray(gallery_pids)  # (num_instances * n)
     gallery_camids = np.asarray(gallery_camids)  # (num_instances * n)
@@ -124,24 +126,25 @@ def create_toy_reid_dataset(
     )  # (num_instances * n, nfeat)
 
     # debug print outs
-    print("query pids", query_pids.shape)
-    print("query camids", query_camids.shape)
-    print("query feats", query_feats.shape)
-    print("gallery pids", gallery_pids.shape)
-    print("gallery camids", gallery_camids.shape)
-    print("gallery feats", gallery_feats.shape)
+    if debug:
+        print("query pids", query_pids.shape)
+        print("query camids", query_camids.shape)
+        print("query feats", query_feats.shape)
+        print("gallery pids", gallery_pids.shape)
+        print("gallery camids", gallery_camids.shape)
+        print("gallery feats", gallery_feats.shape)
 
-    i_inst = 0
-    for i in range(n):
-        print("-" * 16)
-        print("pids:", query_pids[i])
-        print("camids:", query_camids[i])
+        i_inst = 0
+        for i in range(n):
+            print("-" * 16)
+            print("pids:", query_pids[i])
+            print("camids:", query_camids[i])
 
-        for j in range(num_instances):
-            print("gallery camids:", gallery_camids[i_inst])
-            print("query_feat:", query_feats[i])
-            print(f"gallery_feat #{i_inst}:", gallery_feats[i_inst])
-            i_inst += 1
+            for j in range(num_instances):
+                print("gallery camids:", gallery_camids[i_inst])
+                print("query_feat:", query_feats[i])
+                print(f"gallery_feat #{i_inst}:", gallery_feats[i_inst])
+                i_inst += 1
 
     return query_pids, query_camids, query_feats, gallery_pids, gallery_camids, gallery_feats
 
@@ -157,9 +160,10 @@ if __name__ == "__main__":
         gallery_camids,
         gallery_feats,
     ) = create_toy_reid_dataset(
-        n=20,
+        n=100,
         nfeat=2,
-        ninst=5,
+        ninst=2,
+        factor=0.3,
     )
 
     # evaluate predictions

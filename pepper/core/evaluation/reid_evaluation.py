@@ -26,6 +26,7 @@ def evaluate(
     g_camids: np.ndarray,
     metric: str,  # euclidean, cosine, jaccard
     ranks: List[int] = [1, 5, 10],
+    max_rank: int = 50,
     use_aqe: bool = False,
     qe_times: int = 1,
     qe_k: int = 5,
@@ -69,12 +70,17 @@ def evaluate(
         )
         dist = rerank_dist * (1 - lambda_value) + dist * lambda_value
 
+    if g_pids.shape[0] < max_rank:
+        print(f"Note: number of gallery is too small {g_pids.shape[0]} < {max_rank}")
+        max_rank = g_pids.shape[0]
+
     cmc, all_AP, all_INP = evaluate_rank(
         dist,
         q_pids=q_pids,
         g_pids=g_pids,
         q_camids=q_camids,
         g_camids=g_camids,
+        max_rank=max_rank,
         use_metric_cuhk03=False,
         use_cython=True,
     )
