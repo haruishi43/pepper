@@ -3,7 +3,6 @@
 import json
 
 import numpy as np
-import torch
 
 from ..builder import DATASETS
 from ..base_dataset import BaseDataset
@@ -31,7 +30,11 @@ class ImageDataset(BaseDataset):
             list[dict]: Annotation information from ReID api.
         """
 
-        def _get_annotations(ann_file, data_prefix, mode="train",):
+        def _get_annotations(
+            ann_file,
+            data_prefix,
+            mode="train",
+        ):
             assert isinstance(ann_file, str)
             with open(ann_file, "r") as f:
                 tmp_data = json.load(f)
@@ -71,38 +74,7 @@ class ImageDataset(BaseDataset):
                 mode="gallery",
             )
             self._num_gallery = len(gallery_infos)
+
+            # dataloading needs a single list so we concat it
             data_infos = query_infos + gallery_infos
         return data_infos
-
-    def evaluate(
-        self,
-        results,
-        metric="mAP",
-        metric_options=None,
-        logger=None,
-    ):
-        """Evaluate the ReID dataset
-
-        - results: dict
-
-        """
-
-        if metric_options is None:
-            metric_options = dict(rank_list=[1, 5, 10, 25], max_rank=20)
-        for rank in metric_options["rank_list"]:
-            assert rank >= 1 and rank <= metric_options["max_rank"]
-        if isinstance(metric, list):
-            metric = metric
-        elif isinstance(metric, str):
-            metrics = [metric]
-        else:
-            raise TypeError("metric must be a list or a str")
-
-        allowed_metrics = ["mAP", "CMC"]
-        for metric in metrics:
-            if metric not in allowed_metrics:
-                raise KeyError(f"metric {metric} is not supported.")
-
-        # distance
-
-        #

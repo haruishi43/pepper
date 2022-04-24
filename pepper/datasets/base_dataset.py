@@ -6,6 +6,7 @@ from abc import ABCMeta, abstractmethod
 from os import PathLike
 
 import numpy as np
+import torch
 from torch.utils.data import Dataset
 
 from .pipelines import Compose
@@ -37,7 +38,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
     _is_eval = False
 
     # number of query images (to index `data_infos`)
-    _num_query = None
+    _num_query = None  # HACK: using this for indexing back query and gallery
     _num_gallery = None
 
     def __init__(
@@ -54,8 +55,9 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         # The keys should be `query` and `gallery`
 
         if eval_mode:
-            assert isinstance(data_prefix, dict) and isinstance(ann_file, dict), \
-                "for validation, `data_prefix` and `ann_file` must be dict."
+            assert isinstance(data_prefix, dict) and isinstance(
+                ann_file, dict
+            ), "for validation, `data_prefix` and `ann_file` must be dict."
 
             _data_prefix = dict()
             for key in data_prefix.keys():
@@ -89,11 +91,11 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
 
     def get_query_infos(self):
         assert self._is_eval
-        return self.data_infos[:self._num_query]
+        return self.data_infos[: self._num_query]
 
     def get_gallery_infos(self):
         assert self._is_eval
-        return self.data_infos[self._num_query:]
+        return self.data_infos[self._num_query :]
 
     def prepare_data(self, data):
         return self.pipeline(data)
@@ -109,6 +111,56 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         gt_labels = np.array([data["gt_label"] for data in self.data_infos])
         return gt_labels
 
-    @abstractmethod
-    def evaluate(self):
-        pass
+    def get_pids(self):
+        infos = copy.deepcopy(self.data_infos)
+        return np.asarray([info["img_info"]["pid"] for info in infos])
+
+    def get_camids(self):
+        infos = copy.deepcopy(self.data_infos)
+        return np.asarray([info["img_info"]["camid"] for info in infos])
+
+    def evaluate(
+        self,
+        results,
+        metric="mAP",
+        metric_options=None,
+        logger=None,
+    ):
+        """Evaluate the ReID dataset
+
+        - results: dict
+
+        """
+        assert self._is_eval, "ERR: not in eval mode"
+        # NOTE: we assume that the results are in order [query, gallery]
+
+        if metric_options is None:
+            metric_options = dict(rank_list=[1, 5, 10, 25], max_rank=20)
+        for rank in metric_options["rank_list"]:
+            assert rank >= 1 and rank <= metric_options["max_rank"]
+        if isinstance(metric, list):
+            metric = metric
+        elif isinstance(metric, str):
+            metrics = [metric]
+        else:
+            raise TypeError("metric must be a list or a str")
+
+        allowed_metrics = ["mAP", "CMC"]
+        for metric in metrics:
+            if metric not in allowed_metrics:
+                raise KeyError(f"metric {metric} is not supported.")
+
+        # assert that results is list of tensors
+        results = [result.data.cpu() for result in results]
+        features = torch.stack(results)
+        pids = torch.from_numpy(self.get_pids())
+        camids = torch.from_numpy(self.get_camids())
+
+        # separate query and gallery
+        assert len(features) == len(self.data_infos)
+        q_feat = features[: self._num_query]
+        g_feat = features[self._num_query :]
+        q_pids = pids[: self._num_query]
+        g_pids = pids[self._num_query :]
+        q_camids = camids[: self._num_query]
+        g_camids = camids[self._num_query :]

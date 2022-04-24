@@ -47,7 +47,7 @@ data = dict(
         ),
         ann_file=dict(
             query=data_root + "gtPepper/query.json",
-            gallery=data_root + "gtPepper/gallery.json"
+            gallery=data_root + "gtPepper/gallery.json",
         ),
         pipeline=test_pipeline,
     ),
@@ -59,7 +59,7 @@ data = dict(
         ),
         ann_file=dict(
             query=data_root + "gtPepper/query.json",
-            gallery=data_root + "gtPepper/gallery.json"
+            gallery=data_root + "gtPepper/gallery.json",
         ),
         pipeline=test_pipeline,
     ),
