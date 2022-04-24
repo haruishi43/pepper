@@ -9,6 +9,8 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
+from pepper.core.evaluation import evaluate
+
 from .pipelines import Compose
 
 
@@ -39,7 +41,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
 
     # number of query images (to index `data_infos`)
     _num_query = None  # HACK: using this for indexing back query and gallery
-    _num_gallery = None
+    _num_gallery = None  # not really used (only for validation)
 
     def __init__(
         self,
@@ -135,7 +137,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         # NOTE: we assume that the results are in order [query, gallery]
 
         if metric_options is None:
-            metric_options = dict(rank_list=[1, 5, 10, 25], max_rank=20)
+            metric_options = dict(rank_list=[1, 5, 10, 20], max_rank=20)
         for rank in metric_options["rank_list"]:
             assert rank >= 1 and rank <= metric_options["max_rank"]
         if isinstance(metric, list):
@@ -153,8 +155,8 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         # assert that results is list of tensors
         results = [result.data.cpu() for result in results]
         features = torch.stack(results)
-        pids = torch.from_numpy(self.get_pids())
-        camids = torch.from_numpy(self.get_camids())
+        pids = self.get_pids()
+        camids = self.get_camids()
 
         # separate query and gallery
         assert len(features) == len(self.data_infos)
@@ -164,3 +166,42 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         g_pids = pids[self._num_query :]
         q_camids = camids[: self._num_query]
         g_camids = camids[self._num_query :]
+
+        # results contains the keys:
+        # 'CMC', 'mAP', 'mINP', 'metric', 'TPR@FPR', and 'Rank-#'
+        # 'CMC' contains all ranks
+        # rank-specific CMC are contained in 'Rank-#'
+        # 'metric' = (mAP + cmc[0]) / 2 * 100
+        results = evaluate(
+            q_feat=q_feat,
+            g_feat=g_feat,
+            q_pids=q_pids,
+            g_pids=g_pids,
+            q_camids=q_camids,
+            g_camids=g_camids,
+            metric="euclidean",
+            ranks=metric_options["rank_list"],
+            use_aqe=False,
+            qe_times=1,
+            qe_k=5,
+            alpha=3.0,
+            rerank=False,
+            k1=20,
+            k2=6,
+            lambda_value=0.3,
+            use_roc=False,
+        )
+
+        eval_results = dict()
+
+        # FIXME: change returned results
+        if 'mAP' in metrics:
+            eval_results['mAP'] = np.around(results['mAP'], decimals=3)
+        if 'CMC' in metrics:
+            for rank in metric_options['rank_list']:
+                eval_results[f'Rank-{rank}'] = np.around(
+                    results[f'Rank-{rank}'],
+                    decimals=3,
+                )
+
+        return eval_results
