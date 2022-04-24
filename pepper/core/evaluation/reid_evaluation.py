@@ -18,8 +18,8 @@ from .rank import evaluate_rank
 
 
 def evaluate(
-    q_feat: torch.tensor,
-    g_feat: torch.tensor,
+    q_feat: torch.Tensor,
+    g_feat: torch.Tensor,
     q_pids: np.ndarray,
     g_pids: np.ndarray,
     q_camids: np.ndarray,
