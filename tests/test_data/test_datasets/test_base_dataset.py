@@ -6,6 +6,7 @@ import pytest
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 from mmcv import Config
 from mmcv.utils import build_from_cfg
@@ -125,6 +126,12 @@ def create_toy_reid_dataset(
         gallery_feats, axis=0
     )  # (num_instances * n, nfeat)
 
+    # need to convert array to tensor
+    query_feats = torch.from_numpy(query_feats.astype(np.float32)) / n
+    gallery_feats = torch.from_numpy(gallery_feats.astype(np.float32)) / n
+    # query_feats = F.normalize(query_feats, p=2, dim=0)
+    # gallery_feats = F.normalize(gallery_feats, p=2, dim=0)
+
     # debug print outs
     if debug:
         print("query pids", query_pids.shape)
@@ -146,10 +153,21 @@ def create_toy_reid_dataset(
                 print(f"gallery_feat #{i_inst}:", gallery_feats[i_inst])
                 i_inst += 1
 
-    return query_pids, query_camids, query_feats, gallery_pids, gallery_camids, gallery_feats
+    return (
+        query_pids,
+        query_camids,
+        query_feats,
+        gallery_pids,
+        gallery_camids,
+        gallery_feats,
+    )
 
 
 if __name__ == "__main__":
+
+    num_ids = 1500  # 4
+    feature_length = 1024  # 2
+    num_instance_gallery = 6  # 2
 
     # create query and gallery predictions and
     (
@@ -160,15 +178,29 @@ if __name__ == "__main__":
         gallery_camids,
         gallery_feats,
     ) = create_toy_reid_dataset(
-        n=100,
-        nfeat=2,
-        ninst=2,
-        factor=0.3,
+        n=num_ids,
+        nfeat=feature_length,
+        ninst=num_instance_gallery,
+        factor=10.0,
+        # debug=True,
     )
 
     # evaluate predictions
-    query_feats = torch.from_numpy(query_feats)
-    gallery_feats = torch.from_numpy(gallery_feats)
+    # results = evaluate(
+    #     q_feat=query_feats,
+    #     g_feat=gallery_feats,
+    #     q_pids=query_pids,
+    #     g_pids=gallery_pids,
+    #     q_camids=query_camids,
+    #     g_camids=gallery_camids,
+    #     metric="euclidean",
+    #     ranks=[1],
+    # )
+    # print(results["mAP"])
+
+    # NOTE: rerank and aqe seems to make it worse in this test
+    # TODO: figure out why
+    # when pids=5000, feat=32, inst=12, we can see improvements
 
     results = evaluate(
         q_feat=query_feats,
@@ -179,6 +211,13 @@ if __name__ == "__main__":
         g_camids=gallery_camids,
         metric="euclidean",
         ranks=[1],
+        max_rank=10,
+        use_aqe=True,
+        # rerank=True,
+        # use_roc=True,
     )
 
     print(results["mAP"])
+    print(results["metric"])
+    print(results["CMC"])
+    print(len(results["CMC"]))

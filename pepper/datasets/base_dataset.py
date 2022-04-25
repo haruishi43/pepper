@@ -195,12 +195,12 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         eval_results = dict()
 
         # FIXME: change returned results
-        if 'mAP' in metrics:
-            eval_results['mAP'] = np.around(results['mAP'], decimals=3)
-        if 'CMC' in metrics:
-            for rank in metric_options['rank_list']:
-                eval_results[f'Rank-{rank}'] = np.around(
-                    results[f'Rank-{rank}'],
+        if "mAP" in metrics:
+            eval_results["mAP"] = np.around(results["mAP"], decimals=3)
+        if "CMC" in metrics:
+            for rank in metric_options["rank_list"]:
+                eval_results[f"Rank-{rank}"] = np.around(
+                    results[f"Rank-{rank}"],
                     decimals=3,
                 )
 

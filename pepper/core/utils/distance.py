@@ -71,7 +71,11 @@ def k_reciprocal_neigh(initial_rank, i, k1):
 
 @torch.no_grad()
 def compute_jaccard_distance(
-    features, k1=20, k2=6, search_option=0, fp16=False
+    features,
+    k1=20,
+    k2=6,
+    search_option=0,
+    fp16=False,
 ):
     if search_option < 3:
         # torch.cuda.empty_cache()
@@ -192,7 +196,6 @@ def compute_euclidean_distance(features, others):
         torch.pow(features, 2).sum(dim=1, keepdim=True).expand(m, n)
         + torch.pow(others, 2).sum(dim=1, keepdim=True).expand(n, m).t()
     )
-    # dist_m.addmm_(1, -2, features, others.t())
     dist_m.addmm_(features, others.t(), beta=1, alpha=-2)
 
     return dist_m.cpu().numpy()

@@ -6,6 +6,7 @@ The main evaluation function.
 
 from collections import OrderedDict
 from typing import List
+import warnings
 
 import numpy as np
 import torch
@@ -71,7 +72,9 @@ def evaluate(
         dist = rerank_dist * (1 - lambda_value) + dist * lambda_value
 
     if g_pids.shape[0] < max_rank:
-        print(f"Note: number of gallery is too small {g_pids.shape[0]} < {max_rank}")
+        warnings.warn(
+            f"Note: number of gallery is too small {g_pids.shape[0]} < {max_rank}"
+        )
         max_rank = g_pids.shape[0]
 
     cmc, all_AP, all_INP = evaluate_rank(
