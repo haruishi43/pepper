@@ -186,10 +186,10 @@ def main():
         # checkpoints as meta data
         cfg.checkpoint_config.meta = dict(
             config=cfg.pretty_text,
-            CLASSES=datasets[0].CLASSES,
+            NUM_PIDS=datasets[0].NUM_PIDS,
         )
     # add an attribute for visualization convenience
-    model.CLASSES = datasets[0].CLASSES
+    model.NUM_PIDS = datasets[0].NUM_PIDS
     train_model(
         model,
         datasets,

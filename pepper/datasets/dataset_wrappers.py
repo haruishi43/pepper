@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import bisect
-
 from mmcv.utils import print_log
 from torch.utils.data.dataset import ConcatDataset as _ConcatDataset
 
@@ -24,7 +22,7 @@ class ConcatDataset(_ConcatDataset):
         super(ConcatDataset, self).__init__(datasets)
         self.separate_eval = separate_eval
 
-        self.CLASSES = datasets[0].CLASSES
+        self.NUM_PIDS = datasets[0].NUM_PIDS
 
         if not separate_eval:
             if len(set([type(ds) for ds in datasets])) != 1:
@@ -32,20 +30,6 @@ class ConcatDataset(_ConcatDataset):
                     "To evaluate a concat dataset non-separately, "
                     "all the datasets should have same types"
                 )
-
-    def get_cat_ids(self, idx):
-        if idx < 0:
-            if -idx > len(self):
-                raise ValueError(
-                    "absolute value of index should not exceed dataset length"
-                )
-            idx = len(self) + idx
-        dataset_idx = bisect.bisect_right(self.cumulative_sizes, idx)
-        if dataset_idx == 0:
-            sample_idx = idx
-        else:
-            sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
-        return self.datasets[dataset_idx].get_cat_ids(sample_idx)
 
     def evaluate(self, results, *args, indices=None, logger=None, **kwargs):
         """Evaluate the results.
