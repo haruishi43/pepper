@@ -20,6 +20,8 @@ def aqe(
     alpha: float = 3.0,
 ):
     """
+    Automatic Query Expansion (AQE)
+
     Combining the retrieved topk nearest neighbors with the original query and doing another retrieval.
     c.f. https://www.robots.ox.ac.uk/~vgg/publications/papers/chum07b.pdf
     Args :

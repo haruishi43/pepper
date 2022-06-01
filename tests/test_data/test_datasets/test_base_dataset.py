@@ -165,9 +165,26 @@ def create_toy_reid_dataset(
 
 if __name__ == "__main__":
 
+    # args
+    debug = True
+
+    # extreme
     num_ids = 1500  # 4
     feature_length = 1024  # 2
     num_instance_gallery = 6  # 2
+    factor = 10.0
+
+    # easy
+    num_ids = 4
+    feature_length = 2
+    num_instance_gallery = 2
+    factor = 0.1
+
+    # medium
+    num_ids = 20
+    feature_length = 8
+    num_instance_gallery = 4
+    factor = 0.5
 
     # create query and gallery predictions and
     (
@@ -181,8 +198,8 @@ if __name__ == "__main__":
         n=num_ids,
         nfeat=feature_length,
         ninst=num_instance_gallery,
-        factor=10.0,
-        # debug=True,
+        factor=factor,
+        debug=debug,
     )
 
     # evaluate predictions
@@ -198,8 +215,6 @@ if __name__ == "__main__":
     # )
     # print(results["mAP"])
 
-    # NOTE: rerank and aqe seems to make it worse in this test
-    # TODO: figure out why
     # when pids=5000, feat=32, inst=12, we can see improvements
 
     results = evaluate(
@@ -212,7 +227,7 @@ if __name__ == "__main__":
         metric="euclidean",
         ranks=[1],
         max_rank=10,
-        use_aqe=True,
+        # use_aqe=True,
         # rerank=True,
         # use_roc=True,
     )

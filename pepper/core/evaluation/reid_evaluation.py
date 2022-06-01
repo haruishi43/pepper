@@ -5,7 +5,7 @@ The main evaluation function.
 """
 
 from collections import OrderedDict
-from typing import List
+from typing import Any, Dict, List
 import warnings
 
 import numpy as np
@@ -37,7 +37,11 @@ def evaluate(
     k2: int = 6,
     lambda_value: float = 0.3,
     use_roc: bool = False,
-):
+) -> Dict[str, Any]:
+    """Main evaluation function for ReID
+
+    be careful when using automatic query expansion
+    """
 
     results = OrderedDict()
 

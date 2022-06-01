@@ -3,30 +3,18 @@
 # copy from: https://github.com/open-mmlab/OpenUnReID/blob/66bb2ae0b00575b80fbe8915f4d4f4739cc21206/openunreid/core/utils/faiss_utils.py
 # updated in: https://github.com/facebookresearch/faiss/blob/main/contrib/torch_utils.py
 
+import numpy as np
+
 import torch
 
 import faiss
 from faiss.contrib.torch_utils import (
     swig_ptr_from_FloatTensor,
+    swig_ptr_from_HalfTensor,
     swig_ptr_from_IndicesTensor,
+    swig_ptr_from_IntTensor,
+    using_stream,
 )
-
-# def swig_ptr_from_FloatTensor(x):
-#     assert x.is_contiguous()
-#     assert x.dtype == torch.float32
-#     return faiss.cast_integer_to_float_ptr(
-#         x.storage().data_ptr() + x.storage_offset() * 4
-#     )
-
-
-# def swig_ptr_from_LongTensor(x):
-#     assert x.is_contiguous()
-#     assert x.dtype == torch.int64, "dtype=%s" % x.dtype
-
-#     # `cast_integer_long_ptr`` deprecated in 1.6.0
-#     return faiss.cast_integer_to_idx_t_ptr(
-#         x.storage().data_ptr() + x.storage_offset() * 8
-#     )
 
 
 def search_index_pytorch(
@@ -63,68 +51,102 @@ def search_index_pytorch(
 
 def search_raw_array_pytorch(
     res,
-    xb,
     xq,
+    xb,
     k,
     D=None,
     I=None,
     metric=faiss.METRIC_L2,
 ):
-    assert xb.device == xq.device
+    """knn gpu
 
-    nq, d = xq.size()
-    if xq.is_contiguous():
-        xq_row_major = True
-    elif xq.t().is_contiguous():
-        xq = xq.t()  # I initially wrote xq:t(), Lua is still haunting me :-)
-        xq_row_major = False
-    else:
-        raise TypeError("matrix should be row or column-major")
+    Replace this method with the maintained version:
+    https://github.com/facebookresearch/faiss/blob/main/contrib/torch_utils.py
+    """
 
-    xq_ptr = swig_ptr_from_FloatTensor(xq)
+    # check if the arrays are torch
+    if type(xb) == np.ndarray:
+        # forward parameters to numpy method
+        return faiss.knn_gpu(res, xq, xb, k, D, I, metric)
 
-    nb, d2 = xb.size()
-    assert d2 == d
+    nb, d = xb.size()
     if xb.is_contiguous():
         xb_row_major = True
     elif xb.t().is_contiguous():
         xb = xb.t()
         xb_row_major = False
     else:
-        raise TypeError("matrix should be row or column-major")
-    xb_ptr = swig_ptr_from_FloatTensor(xb)
+        raise TypeError("matrix xb should be row or column-major")
+
+    if xb.dtype == torch.float32:
+        xb_type = faiss.DistanceDataType_F32
+        xb_ptr = swig_ptr_from_FloatTensor(xb)
+    elif xb.dtype == torch.float16:
+        xb_type = faiss.DistanceDataType_F16
+        xb_ptr = swig_ptr_from_HalfTensor(xb)
+    else:
+        raise TypeError("xb must be f32 or f16")
+
+    nq, d2 = xq.size()
+    assert d2 == d
+    if xq.is_contiguous():
+        xq_row_major = True
+    elif xq.t().is_contiguous():
+        xq = xq.t()
+        xq_row_major = False
+    else:
+        raise TypeError("matrix xq should be row or column-major")
+
+    if xq.dtype == torch.float32:
+        xq_type = faiss.DistanceDataType_F32
+        xq_ptr = swig_ptr_from_FloatTensor(xq)
+    elif xq.dtype == torch.float16:
+        xq_type = faiss.DistanceDataType_F16
+        xq_ptr = swig_ptr_from_HalfTensor(xq)
+    else:
+        raise TypeError("xq must be f32 or f16")
 
     if D is None:
         D = torch.empty(nq, k, device=xb.device, dtype=torch.float32)
     else:
         assert D.shape == (nq, k)
-        assert D.device == xb.device
+        # interface takes void*, we need to check this
+        assert (D.dtype == torch.float32)
 
     if I is None:
         I = torch.empty(nq, k, device=xb.device, dtype=torch.int64)
     else:
         assert I.shape == (nq, k)
-        assert I.device == xb.device
+
+    if I.dtype == torch.int64:
+        I_type = faiss.IndicesDataType_I64
+        I_ptr = swig_ptr_from_IndicesTensor(I)
+    elif I.dtype == torch.int32:
+        I_type = faiss.IndicesDataType_I32
+        I_ptr = swig_ptr_from_IntTensor(I)
+    else:
+        raise TypeError("I must be i64 or i32")
 
     D_ptr = swig_ptr_from_FloatTensor(D)
-    # I_ptr = swig_ptr_from_LongTensor(I)
-    I_ptr = swig_ptr_from_IndicesTensor(I)
 
-    # bruteForceKnn is deprecated in favor of bfKnn
-    faiss.bruteForceKnn(
-        res,
-        metric,
-        xb_ptr,
-        xb_row_major,
-        nb,
-        xq_ptr,
-        xq_row_major,
-        nq,
-        d,
-        k,
-        D_ptr,
-        I_ptr,
-    )
+    args = faiss.GpuDistanceParams()
+    args.metric = metric
+    args.k = k
+    args.dims = d
+    args.vectors = xb_ptr
+    args.vectorsRowMajor = xb_row_major
+    args.vectorType = xb_type
+    args.numVectors = nb
+    args.queries = xq_ptr
+    args.queriesRowMajor = xq_row_major
+    args.queryType = xq_type
+    args.numQueries = nq
+    args.outDistances = D_ptr
+    args.outIndices = I_ptr
+    args.outIndicesType = I_type
+
+    with using_stream(res):
+        faiss.bfKnn(res, args)
 
     return D, I
 
