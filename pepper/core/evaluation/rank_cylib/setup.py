@@ -1,5 +1,5 @@
-from distutils.core import setup
-from distutils.extension import Extension
+from setuptools import setup
+from setuptools.extension import Extension
 
 import numpy as np
 from Cython.Build import cythonize
@@ -27,5 +27,9 @@ ext_modules = [
 ]
 
 setup(
-    name="Cython-based reid evaluation code", ext_modules=cythonize(ext_modules)
+    name="Cython-based reid evaluation code",
+    ext_modules=cythonize(
+        ext_modules,
+        language_level="3",
+    )
 )

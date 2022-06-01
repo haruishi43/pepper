@@ -3,5 +3,13 @@
 ## Compile with cython to accelerate evaluation
 
 ```Bash
-cd peper/core/evaluation/rank_cylib; make all
+cd pepper/core/evaluation/rank_cylib; make all
+```
+
+## Install faiss
+
+It is recommended to install the GPU accelerated version:
+
+```Bash
+pip install faiss-gpu
 ```
