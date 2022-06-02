@@ -107,7 +107,7 @@ def build_dataloader(
         sampler_cfg = dict(
             type="BalancedIdentityDistributedSampler",
             batch_size=batch_size,
-            num_instances=batch_size // 8,
+            num_instances=batch_size // 8,  # FIXME: hard-coded
             shuffle=shuffle,
             round_up=round_up,
             seed=seed if seed is not None else 0,

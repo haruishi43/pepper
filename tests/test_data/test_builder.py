@@ -5,17 +5,24 @@ from copy import deepcopy
 from unittest.mock import patch
 
 import torch
-from mmcv.utils import digit_version
 
 from pepper.datasets import build_dataloader, build_dataset
 from pepper.datasets.dataset_wrappers import ConcatDataset
 from pepper.datasets.image_datasets.base import ImageDataset
 
+from tests.utils.toy_dataset import construct_toy_image_dataset
+
+# FIXME: need to update the code for image and video datasets
+
 
 class TestDataloaderBuilder:
     @classmethod
     def setup_class(cls):
-        cls.data = list(range(20))
+        cls.data = construct_toy_image_dataset(
+            length=20,
+            num_ids=5,
+            num_camids=3,
+        )
         cls.samples_per_gpu = 5
         cls.workers_per_gpu = 1
 
@@ -31,28 +38,27 @@ class TestDataloaderBuilder:
         # Test default config
         dataloader = build_dataloader(**common_cfg)
 
-        if digit_version(torch.__version__) >= digit_version("1.8.0"):
-            assert dataloader.persistent_workers
-        elif hasattr(dataloader, "persistent_workers"):
-            assert not dataloader.persistent_workers
+        assert dataloader.persistent_workers
 
         assert dataloader.batch_size == self.samples_per_gpu
         assert dataloader.num_workers == self.workers_per_gpu
-        assert not all(
-            torch.cat(list(iter(dataloader))) == torch.tensor(self.data)
-        )
 
         # Test without shuffle
         dataloader = build_dataloader(**common_cfg, shuffle=False)
-        assert all(torch.cat(list(iter(dataloader))) == torch.tensor(self.data))
 
         # Test with custom sampler_cfg
         dataloader = build_dataloader(
             **common_cfg,
-            sampler_cfg=dict(type="RepeatAugSampler", selected_round=0),
+            sampler_cfg=dict(
+                type="NaiveIdentitySampler",
+                dataset=self.data,
+                batch_size=4,
+                num_instances=1,
+            ),
             shuffle=False
         )
         expect = [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6]
+        print(torch.cat(list(iter(dataloader))))
         assert all(torch.cat(list(iter(dataloader))) == torch.tensor(expect))
 
     @patch("pepper.datasets.builder.get_dist_info", return_value=(0, 1))
@@ -68,11 +74,7 @@ class TestDataloaderBuilder:
         # Test default config
         dataloader = build_dataloader(**common_cfg)
 
-        if digit_version(torch.__version__) >= digit_version("1.8.0"):
-            assert dataloader.persistent_workers
-        elif hasattr(dataloader, "persistent_workers"):
-            assert not dataloader.persistent_workers
-
+        assert dataloader.persistent_workers
         assert dataloader.batch_size == self.samples_per_gpu * 2
         assert dataloader.num_workers == self.workers_per_gpu * 2
         assert not all(
@@ -86,7 +88,7 @@ class TestDataloaderBuilder:
         # Test with custom sampler_cfg
         dataloader = build_dataloader(
             **common_cfg,
-            sampler_cfg=dict(type="RepeatAugSampler", selected_round=0),
+            sampler_cfg=dict(type="NaiveIdentitySampler", selected_round=0),
             shuffle=False
         )
         expect = torch.tensor(
@@ -107,11 +109,7 @@ class TestDataloaderBuilder:
         # Test default config
         dataloader = build_dataloader(**common_cfg)
 
-        if digit_version(torch.__version__) >= digit_version("1.8.0"):
-            assert dataloader.persistent_workers
-        elif hasattr(dataloader, "persistent_workers"):
-            assert not dataloader.persistent_workers
-
+        assert dataloader.persistent_workers
         assert dataloader.batch_size == self.samples_per_gpu
         assert dataloader.num_workers == self.workers_per_gpu
         non_expect = torch.tensor(self.data[1::2])

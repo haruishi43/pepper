@@ -111,7 +111,7 @@ def search_raw_array_pytorch(
     else:
         assert D.shape == (nq, k)
         # interface takes void*, we need to check this
-        assert (D.dtype == torch.float32)
+        assert D.dtype == torch.float32
 
     if I is None:
         I = torch.empty(nq, k, device=xb.device, dtype=torch.int64)

@@ -2,38 +2,14 @@
 
 from collections import Counter
 import math
-from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pepper.datasets import BaseDataset, build_sampler
+from pepper.datasets import build_sampler
 
-
-@patch.multiple(BaseDataset, __abstractmethods__=set())
-def construct_toy_dataset(length: int, num_ids: int = 16, num_camids: int = 5):
-    assert length > num_ids
-    data_infos = []
-    for i in range(length):
-        data_infos.append(
-            dict(
-                img_prefix="data",
-                img_info=dict(
-                    file_name=f"{str(i)}.jpg",
-                    pid=i % num_ids,
-                    camid=i % num_camids,
-                    debug_mode="train",
-                    debug_index=i,
-                ),
-            )
-        )
-
-    # need to create data_infos (list[dict('img_info')])
-    BaseDataset.__getitem__ = MagicMock(side_effect=lambda idx: data_infos[idx])
-    dataset = BaseDataset(
-        data_prefix="", pipeline=[], ann_file=None, eval_mode=False
-    )
-    dataset.data_infos = data_infos
-    return dataset
+from tests.utils.toy_dataset import (
+    construct_toy_image_dataset,
+)
 
 
 def get_matches(l1, l2):
@@ -56,7 +32,7 @@ def test_native_sampler(length, num_ids, num_camids):
     num_instances = 4
 
     # construct a toy dataset
-    dataset = construct_toy_dataset(
+    dataset = construct_toy_image_dataset(
         length,
         num_ids=num_ids,
         num_camids=num_camids,
@@ -119,7 +95,7 @@ def test_native_dist_sampler(
     num_replicas = 2  # FIXME: add tests for larger world size
 
     # construct a toy dataset
-    dataset = construct_toy_dataset(
+    dataset = construct_toy_image_dataset(
         length=length,
         num_ids=num_ids,
         num_camids=num_camids,
@@ -192,7 +168,7 @@ def test_balanced_sampler(length, num_ids, num_camids):
     num_instances = 4
 
     # construct a toy dataset
-    dataset = construct_toy_dataset(
+    dataset = construct_toy_image_dataset(
         length,
         num_ids=num_ids,
         num_camids=num_camids,
@@ -266,7 +242,7 @@ def test_balanced_dist_sampler(
     num_replicas = 2
 
     # construct a toy dataset
-    dataset = construct_toy_dataset(
+    dataset = construct_toy_image_dataset(
         length=length,
         num_ids=num_ids,
         num_camids=num_camids,
@@ -330,7 +306,7 @@ def test_balanced_dist_sampler(
 
 if __name__ == "__main__":
 
-    dataset = construct_toy_dataset(33)
+    dataset = construct_toy_image_dataset(33)
 
     for data in dataset:
         print(data)

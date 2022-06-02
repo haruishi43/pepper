@@ -33,5 +33,5 @@ setup(
     ext_modules=cythonize(
         ext_modules,
         language_level="3",
-    )
+    ),
 )

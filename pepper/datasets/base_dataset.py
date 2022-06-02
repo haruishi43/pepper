@@ -100,13 +100,17 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         return self.data_infos[self._num_query :]
 
     def prepare_data(self, data):
+        # NOTE: might need to prepare the sample before handing it to pipeline
         return self.pipeline(data)
 
     def __len__(self):
         return len(self.data_infos)
 
     def __getitem__(self, idx):
+
+        # NOTE: some functions in the pipeline may be inplace
         data = copy.deepcopy(self.data_infos[idx])
+
         return self.prepare_data(data)
 
     def get_gt_labels(self):
