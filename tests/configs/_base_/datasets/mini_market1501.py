@@ -31,7 +31,7 @@ test_pipeline = [
 data_type = "ImageDataset"
 data_root = "tests/data/mini_market1501/"
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=16,
     workers_per_gpu=2,
     train=dict(
         type=data_type,
@@ -39,31 +39,17 @@ data = dict(
         ann_file=data_root + "gtPepper/train.json",
         pipeline=train_pipeline,
     ),
-    val=dict(
+    query=dict(
         type=data_type,
-        data_prefix=dict(
-            query=data_root + "query",
-            gallery=data_root + "bounding_box_test",
-        ),
-        ann_file=dict(
-            query=data_root + "gtPepper/query.json",
-            gallery=data_root + "gtPepper/gallery.json",
-        ),
+        data_prefix=data_root + "query",
+        ann_file=data_root + "gtPepper/query.json",
         pipeline=test_pipeline,
-        eval_mode=True,
     ),
     test=dict(
         type=data_type,
-        data_prefix=dict(
-            query=data_root + "query",
-            gallery=data_root + "bounding_box_test",
-        ),
-        ann_file=dict(
-            query=data_root + "gtPepper/query.json",
-            gallery=data_root + "gtPepper/gallery.json",
-        ),
+        data_prefix=data_root + "bounding_box_test",
+        ann_file=data_root + "gtPepper/gallery.json",
         pipeline=test_pipeline,
-        eval_mode=True,
     ),
 )
 evaluation = dict(interval=1, metric="mAP")

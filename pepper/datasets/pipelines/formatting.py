@@ -132,8 +132,8 @@ class Collect(object):
             "img_norm_cfg",
             "pid",
             "camid",
-            "debug_mode",
-            "debug_index",
+            "split",  # FIXME: remove
+            "debug_index",  # FIXME: remove
         ),
     ):
         self.keys = keys
@@ -145,7 +145,7 @@ class Collect(object):
         for key in self.meta_keys:
             if key in results:
                 img_meta[key] = results[key]
-            if key in results["img_info"]:
+            elif key in results["img_info"]:
                 img_meta[key] = results["img_info"][key]
         data["img_metas"] = DC(img_meta, cpu_only=True)
         for key in self.keys:

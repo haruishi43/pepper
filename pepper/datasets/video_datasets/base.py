@@ -53,7 +53,7 @@ class VideoDataset(BaseDataset):
                         filenames=sorted(img_paths),  # emphasis on 's'
                         pid=pid,
                         camid=camid,
-                        debug_eval=mode,
+                        split=mode,
                         debug_index=i,
                     ),
                     gt_label=np.array(pid, dtype=np.int64),
@@ -83,29 +83,30 @@ class VideoDataset(BaseDataset):
         return data_infos
 
     def prepare_data(self, data):
-        """Prepare data sample before handing it to pipelein
+        """Prepare data sample before handing it to pipeline
 
         Pipelines are designed to take list of dictionaries for sequential data.
         This means that we need a dictionary for each frame in the sequence.
         """
+        assert isinstance(data, dict)
         img_prefix = data["img_prefix"]
-        info = data["img_info"]
+        img_info = data["img_info"]
         gt_label = data["gt_label"]
 
         # make a list of dicts
-        filenames = info["filenames"]
+        filenames = img_info["filenames"]
         results = []
         for i, fn in enumerate(filenames):
             info = dict(
                 img_prefix=img_prefix,
                 img_info=dict(
                     filename=fn,
-                    pid=info["pid"],
-                    camid=info["camid"],
+                    pid=img_info["pid"],
+                    camid=img_info["camid"],
                     frame_id=i,
                     is_video_data=True,
-                    debug_eval=info["debug_eval"],
-                    debug_index=info["debug_index"],
+                    split=img_info["split"],
+                    debug_index=img_info["debug_index"],
                 ),
                 gt_label=gt_label,
             )

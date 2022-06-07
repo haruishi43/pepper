@@ -50,7 +50,7 @@ class ImageDataset(BaseDataset):
                         filename=img_path,
                         pid=pid,
                         camid=camid,
-                        debug_eval=mode,
+                        split=mode,
                         debug_index=i,
                     ),
                     gt_label=np.array(pid, dtype=np.int64),

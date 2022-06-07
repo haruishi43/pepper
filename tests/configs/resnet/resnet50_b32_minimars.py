@@ -1,5 +1,5 @@
 _base_ = [
-    "../_base_/datasets/mini_market1501.py",
+    "../_base_/datasets/mini_mars.py",
     "../_base_/schedules/basic_schedule.py",
     "../_base_/default_runtime.py",
 ]

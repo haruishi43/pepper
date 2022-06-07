@@ -32,23 +32,23 @@ test_pipeline = [
 data_type = "VideoDataset"
 data_root = "tests/data/mini_mars/"
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=16,
     workers_per_gpu=2,
     train=dict(
         type=data_type,
-        data_prefix=data_root,
+        data_prefix=data_root + "bbox_train",
         ann_file=data_root + "gtPepper/train.json",
         pipeline=train_pipeline,
     ),
     query=dict(
         type=data_type,
-        data_prefix=data_root,
+        data_prefix=data_root + "bbox_test",
         ann_file=data_root + "gtPepper/query.json",
         pipeline=test_pipeline,
     ),
     test=dict(
         type=data_type,
-        data_prefix=data_root,
+        data_prefix=data_root + "bbox_test",
         ann_file=data_root + "gtPepper/gallery.json",
         pipeline=test_pipeline,
     ),

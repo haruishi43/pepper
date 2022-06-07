@@ -42,7 +42,7 @@ def iterate_dataset(
             # `num_gpus` will be ignored if distributed
             num_gpus=len(cfg.gpu_ids),
             dist=distributed,
-            shuffle=False,  # NOTE: debug shuffle (overwrite cfg)
+            shuffle=True,  # NOTE: debug shuffle (overwrite cfg)
             round_up=True,
             seed=cfg.seed,
             sampler_cfg=sampler_cfg,
@@ -50,12 +50,28 @@ def iterate_dataset(
         for ds in dataset
     ]
 
-    dataset = data_loaders[0]
+    loader = data_loaders[0]
 
     print("iterating...")
     dist.barrier()
 
-    for i, data in enumerate(dataset):
+    for i, data in enumerate(loader):
+        meta = data["img_metas"].data[0]
+        # print(meta)
+        camids = [m["camid"] for m in meta]
+        debug_idx = [m["debug_index"] for m in meta]
+
+        # FIXME: need help flushing
+        # logger.info(f">>> {i}: {debug_idx}")  # logger only logs in rank 0
+        print(f">>> {i}: index {debug_idx}")
+        dist.barrier()
+        print(f">>> {i}: ids {data['gt_label'].data}")
+        dist.barrier()
+        print(f">>> {i}: camids {camids}")
+        dist.barrier()
+
+    dist.barrier()
+    for i, data in enumerate(loader):
         meta = data["img_metas"].data[0]
         # print(meta)
         camids = [m["camid"] for m in meta]
@@ -125,6 +141,8 @@ def parse_args():
     )
     parser.add_argument("--local_rank", type=int, default=0)
     args = parser.parse_args()
+
+    # Setup for torch.dist
     if "LOCAL_RANK" not in os.environ:
         os.environ["LOCAL_RANK"] = str(args.local_rank)
 
