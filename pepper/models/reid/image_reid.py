@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
+from mmcv.runner import auto_fp16
+
 from ..builder import REID, build_backbone, build_head, build_neck
 from .base import BaseReID
 
 
 @REID.register_module()
-class ImageClassifier(BaseReID):
+class ImageReID(BaseReID):
     def __init__(
         self,
         backbone,
@@ -15,7 +17,7 @@ class ImageClassifier(BaseReID):
         train_cfg=None,
         init_cfg=None,
     ):
-        super(ImageClassifier, self).__init__(init_cfg)
+        super(ImageReID, self).__init__(init_cfg)
 
         if pretrained is not None:
             self.init_cfg = dict(type="Pretrained", checkpoint=pretrained)
@@ -115,18 +117,30 @@ class ImageClassifier(BaseReID):
             dict[str, Tensor]: a dictionary of loss components
         """
 
+        # FIXME: need to update for video_reid
+        assert img.ndim == 4
+
+        # 1. compute features
         x = self.extract_feat(img)
+        # there could be multiple outputs from resnet
+        # we assume (for the base model) that it is configured correctly
+        head_outputs = self.head.forward_train(x[0])
 
+        # 2. compute losses
         losses = dict()
-        loss = self.head.forward_train(x, gt_label)
+        reid_loss = self.head.loss(gt_label, *head_outputs)
 
-        losses.update(loss)
+        losses.update(reid_loss)
 
         return losses
 
-    def simple_test(self, img, img_metas=None, **kwargs):
-        x = self.extract_feat(img)
-
-        res = self.head.simple_test(x, **kwargs)
-
-        return res
+    @auto_fp16(apply_to=('img', ), out_fp32=True)
+    def simple_test(self, img, **kwargs):
+        """Test without augmentation."""
+        if img.nelement() > 0:
+            x = self.extract_feat(img)
+            head_outputs = self.head.forward_train(x[0])
+            feats = head_outputs[0]
+            return feats
+        else:
+            return img.new_zeros(0, self.head.out_channels)

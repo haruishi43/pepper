@@ -159,6 +159,7 @@ class LinearReIDHead(BaseHead):
     def _init_layers(self):
         """Initialize fc layers."""
         self.fcs = nn.ModuleList()
+
         for i in range(self.num_fcs):
             in_channels = self.in_channels if i == 0 else self.fc_channels
             self.fcs.append(
@@ -169,7 +170,9 @@ class LinearReIDHead(BaseHead):
         in_channels = (
             self.in_channels if self.num_fcs == 0 else self.fc_channels
         )
+
         self.fc_out = nn.Linear(in_channels, self.out_channels)
+
         if self.loss_cls:
             self.bn = nn.BatchNorm1d(self.out_channels)
             self.classifier = nn.Linear(self.out_channels, self.num_classes)

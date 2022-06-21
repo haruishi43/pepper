@@ -14,7 +14,7 @@ model = dict(
             style="pytorch",
         ),
         neck=dict(
-            type="GlobalAveragePooling",
+            type="KernelGlobalAveragePooling",
             kernel_size=(8, 4),
             stride=1,
         ),

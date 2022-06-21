@@ -1,5 +1,5 @@
 _base_ = [
-    "../_base_/datasets/market1501.py",
+    "../_base_/datasets/image/market1501.py",
     "../_base_/schedules/basic_schedule.py",
     "../_base_/default_runtime.py",
 ]
@@ -12,7 +12,7 @@ model = dict(
         out_indices=(3,),
         style="pytorch",
     ),
-    neck=dict(type="GlobalAveragePooling", kernel_size=(8, 4), stride=1),
+    neck=dict(type="KernelGlobalAveragePooling", kernel_size=(8, 4), stride=1),
     head=dict(
         type="LinearReIDHead",
         num_fcs=1,
@@ -21,7 +21,7 @@ model = dict(
         out_channels=128,
         num_classes=380,
         loss=dict(type="CrossEntropyLoss", loss_weight=1.0),
-        # loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=1.0),
+        loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=1.0),
         norm_cfg=dict(type="BN1d"),
         act_cfg=dict(type="ReLU"),
     ),

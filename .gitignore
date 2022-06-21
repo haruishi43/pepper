@@ -131,3 +131,6 @@ dmypy.json
 # dev
 .vscode
 tmp/
+
+# proj
+work_dirs/

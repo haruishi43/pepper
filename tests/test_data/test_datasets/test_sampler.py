@@ -9,7 +9,6 @@ from pepper.datasets import build_sampler
 
 from tests.utils.toy_dataset import (
     construct_toy_image_dataset,
-    construct_toy_video_dataset,
 )
 
 

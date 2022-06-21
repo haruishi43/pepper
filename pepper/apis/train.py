@@ -95,8 +95,6 @@ def train_model(
             ds,
             cfg.data.samples_per_gpu,
             cfg.data.workers_per_gpu,
-            # `num_gpus` will be ignored if distributed
-            num_gpus=len(cfg.gpu_ids),
             dist=distributed,
             round_up=True,
             seed=cfg.seed,

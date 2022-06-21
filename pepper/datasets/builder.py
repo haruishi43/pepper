@@ -43,6 +43,7 @@ def build_dataloader(
     pin_memory=True,
     persistent_workers=True,
     sampler_cfg=None,
+    is_val=False,
 ):
     """Build PyTorch DataLoader.
     In distributed training, each GPU/process has a dataloader.
@@ -84,43 +85,59 @@ def build_dataloader(
     # setup sampler
     # NOTE: we don't use sampler when we run validation or test
     # custom sampler logic
-    if sampler_cfg:
-        # overwrite
-        sampler_cfg.update(shuffle=shuffle)
-        if seed is not None:
-            sampler_cfg.update(seed=seed)
+    if is_val:
 
-        # some sampler-specific arguments that needs to be overwriten before
-        if sampler_cfg.get("batch_size", None):
-            sampler_cfg.update(batch_size=batch_size)
-
-        sampler = build_sampler(
-            sampler_cfg,
-            default_args=dict(
-                dataset=dataset,
-                num_replicas=world_size,
-                rank=rank,
-            ),
-        )
-    elif dist:
-        # default to this when using distributed
-        sampler_cfg = dict(
-            type="BalancedIdentityDistributedSampler",
-            batch_size=batch_size,
-            num_instances=batch_size // 8,  # FIXME: hard-coded
-            shuffle=shuffle,
-            round_up=round_up,
-            seed=seed if seed is not None else 0,
-        )
+        # NOTE: default_args are reused for creating samplers
         default_args = dict(
             dataset=dataset,
             num_replicas=world_size,
             rank=rank,
         )
-        sampler = build_sampler(
-            sampler_cfg,
-            default_args=default_args,
-        )
+
+        if sampler_cfg:
+            # overwrite
+            sampler_cfg.update(shuffle=shuffle)
+            if seed is not None:
+                sampler_cfg.update(seed=seed)
+
+            # some sampler-specific arguments that needs to be overwriten before
+            if sampler_cfg.get("batch_size", None):
+                sampler_cfg.update(batch_size=batch_size)
+
+            sampler = build_sampler(
+                sampler_cfg,
+                default_args=default_args,
+            )
+        elif dist:
+            # default to this when using distributed
+            sampler_cfg = dict(
+                type="BalancedIdentityDistributedSampler",
+                batch_size=batch_size,
+                num_instances=batch_size // 8,  # FIXME: hard-coded
+                shuffle=shuffle,
+                round_up=round_up,
+                seed=seed if seed is not None else 0,
+            )
+
+            sampler = build_sampler(
+                sampler_cfg,
+                default_args=default_args,
+            )
+        else:
+            # default to this when using dataparallel
+            sampler_cfg = dict(
+                type="BalancedIdentitySampler",
+                batch_size=batch_size,
+                num_instances=batch_size // 8,  # FIXME: hard-coded
+                shuffle=shuffle,
+                round_up=round_up,
+                seed=seed if seed is not None else 0,
+            )
+
+            sampler = build_sampler(
+                sampler_cfg,
+                default_args=default_args,
+            )
     else:
         sampler = None
 
