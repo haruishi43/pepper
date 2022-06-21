@@ -28,16 +28,18 @@ test_pipeline = [
     dict(type="ImageToTensor", keys=["img"]),
     dict(type="Collect", keys=["img"], meta_keys=[]),
 ]
-data_type = "ImageDataset"
+data_type = "Market1501Dataset"
 data_root = "data/market1501/Market-1501-v15.09.15/"
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=32,
     workers_per_gpu=2,
     train=dict(
         type=data_type,
         data_prefix=data_root + "bounding_box_train",
         ann_file=data_root + "gtPepper/train.json",
         pipeline=train_pipeline,
+        num_pids=751,
+        num_camids=6,
     ),
     val=dict(
         type=data_type,
@@ -50,6 +52,8 @@ data = dict(
             gallery=data_root + "gtPepper/gallery.json",
         ),
         pipeline=test_pipeline,
+        num_pids=750,
+        num_camids=6,
     ),
     test=dict(
         type=data_type,
@@ -62,6 +66,7 @@ data = dict(
             gallery=data_root + "gtPepper/gallery.json",
         ),
         pipeline=test_pipeline,
+        num_pids=750,
+        num_camids=6,
     ),
 )
-evaluation = dict(interval=1, metric="mAP")

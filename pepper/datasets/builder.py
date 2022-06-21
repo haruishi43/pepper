@@ -85,7 +85,7 @@ def build_dataloader(
     # setup sampler
     # NOTE: we don't use sampler when we run validation or test
     # custom sampler logic
-    if is_val:
+    if not is_val:
 
         # NOTE: default_args are reused for creating samplers
         default_args = dict(

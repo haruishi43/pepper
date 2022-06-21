@@ -88,7 +88,7 @@ def train_model(
     # prepare data loaders
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
 
-    sampler_cfg = cfg.data.get("sampler", None)
+    sampler_cfg = cfg.get("sampler", None)
 
     data_loaders = [
         build_dataloader(
@@ -179,7 +179,8 @@ def train_model(
         if val_samples_per_gpu > 1:
             # Replace 'ImageToTensor' to 'DefaultFormatBundle'
             cfg.data.val.pipeline = replace_ImageToTensor(cfg.data.val.pipeline)
-        val_dataset = build_dataset(cfg.data.val, dict(test_mode=True))
+        val_dataset = build_dataset(cfg.data.val, dict(eval_mode=True))
+
         val_dataloader = build_dataloader(
             val_dataset,
             samples_per_gpu=val_samples_per_gpu,
@@ -187,6 +188,7 @@ def train_model(
             dist=distributed,
             shuffle=False,
             round_up=True,
+            is_val=True,
         )
         eval_cfg = cfg.get("evaluation", {})
         eval_cfg["by_epoch"] = cfg.runner["type"] != "IterBasedRunner"

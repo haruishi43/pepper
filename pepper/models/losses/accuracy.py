@@ -4,6 +4,7 @@ import mmcv
 import torch.nn as nn
 
 # FIXME: mmcls's accuracy code is a bit newer
+# https://github.com/open-mmlab/mmclassification/blob/master/mmcls/models/losses/accuracy.py
 
 
 @mmcv.jit(coderize=True)

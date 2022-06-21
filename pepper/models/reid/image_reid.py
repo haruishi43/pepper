@@ -134,7 +134,7 @@ class ImageReID(BaseReID):
 
         return losses
 
-    @auto_fp16(apply_to=('img', ), out_fp32=True)
+    @auto_fp16(apply_to=("img",), out_fp32=True)
     def simple_test(self, img, **kwargs):
         """Test without augmentation."""
         if img.nelement() > 0:

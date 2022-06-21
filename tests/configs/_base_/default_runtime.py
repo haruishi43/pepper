@@ -9,7 +9,7 @@ log_config = dict(
     ],
 )
 # yapf:enable
-custom_hooks = [dict(type="NumClassCheckHook")]
+# custom_hooks = [dict(type="NumClassCheckHook")]
 # custom_hooks = [  # debug
 #     dict(type="NumClassCheckHook"),
 #     dict(type="CheckInvalidLossHook", interval=50),

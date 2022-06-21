@@ -14,6 +14,8 @@ class EvalHook(BaseEvalHook):
     docstring.
     """
 
+    greater_keys = ["metric", "mAP", "mINP"]
+
     def _do_evaluate(self, runner):
         """perform evaluation and save ckpt."""
         if not self._should_evaluate(runner):
@@ -31,6 +33,8 @@ class EvalHook(BaseEvalHook):
 class DistEvalHook(BaseDistEvalHook):
     """Please refer to `mmcv.runner.hooks.evaluation.py:DistEvalHook` for
     detailed docstring."""
+
+    greater_keys = ["metric", "mAP", "mINP"]
 
     def _do_evaluate(self, runner):
         """perform evaluation and save ckpt."""

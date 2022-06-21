@@ -3,13 +3,15 @@
 import warnings
 
 import torch.nn as nn
-from ..builder import HEADS, build_loss
-from .base_head import BaseHead
-
-from mmcls.models.losses import Accuracy
 
 from mmcv.runner import BaseModule, auto_fp16, force_fp32
 from mmcv.cnn import build_activation_layer, build_norm_layer
+
+from .base_head import BaseHead
+from ..builder import HEADS, build_loss
+from ..losses import Accuracy
+
+# from mmcls.models.losses import Accuracy
 
 
 class FcModule(BaseModule):

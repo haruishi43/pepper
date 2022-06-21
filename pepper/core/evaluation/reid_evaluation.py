@@ -28,6 +28,7 @@ def evaluate(
     metric: str,  # euclidean, cosine, jaccard
     ranks: List[int] = [1, 5, 10],
     max_rank: int = 50,
+    use_metric_cuhk03=False,
     use_aqe: bool = False,
     qe_times: int = 1,
     qe_k: int = 5,
@@ -88,7 +89,7 @@ def evaluate(
         q_camids=q_camids,
         g_camids=g_camids,
         max_rank=max_rank,
-        use_metric_cuhk03=False,
+        use_metric_cuhk03=use_metric_cuhk03,
         use_cython=True,
     )
 

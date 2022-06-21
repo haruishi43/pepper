@@ -30,10 +30,10 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         ann_file (str | None): the annotation file. When ann_file is str,
             the subclass is expected to read from the ann_file. When ann_file
             is None, the subclass is expected to read according to data_prefix
-        test_mode (bool): in train mode or test mode
     """
 
     NUM_PIDS = None
+    NUM_CAMIDS = None
     EVAL_KEYS = ("query", "gallery")
 
     # eval mode
@@ -49,6 +49,8 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         pipeline,
         ann_file=None,
         eval_mode=False,
+        num_pids=None,
+        num_camids=None,
     ):
         super(BaseDataset, self).__init__()
 
@@ -83,6 +85,18 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         # data_infos is a List of dicts
         # the dicts should contain 'sampler_info' and 'img_info'
         self.data_infos = self.load_annotations()
+
+        # add globals
+        if num_pids is None:
+            # FIXME: don't use all pids... (this will be train + test ids)
+            self.NUM_PIDS = len(np.unique(self.get_pids()))
+        else:
+            self.NUM_PIDS = num_pids
+
+        if num_camids is None:
+            self.NUM_CAMIDS = len(np.unique(self.get_camids()))
+        else:
+            self.NUM_CAMIDS = num_camids
 
         # setup pipeline
         self.pipeline = Compose(pipeline)
@@ -128,8 +142,9 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
     def evaluate(
         self,
         results,
-        metric="mAP",
+        metric=["metric", "mAP", "CMC"],
         metric_options=None,
+        use_metric_cuhk03=False,
         logger=None,
     ):
         """Evaluate the ReID dataset
@@ -145,19 +160,19 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         for rank in metric_options["rank_list"]:
             assert rank >= 1 and rank <= metric_options["max_rank"]
         if isinstance(metric, list):
-            metric = metric
+            metrics = metric
         elif isinstance(metric, str):
             metrics = [metric]
         else:
             raise TypeError("metric must be a list or a str")
 
-        allowed_metrics = ["mAP", "CMC"]
+        allowed_metrics = ["metric", "mAP", "CMC", "mINP"]
         for metric in metrics:
             if metric not in allowed_metrics:
                 raise KeyError(f"metric {metric} is not supported.")
 
         # assert that results is list of tensors
-        results = [result.data.cpu() for result in results]
+        results = [result.data.cpu().squeeze() for result in results]
         features = torch.stack(results)
         pids = self.get_pids()
         camids = self.get_camids()
@@ -185,6 +200,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
             g_camids=g_camids,
             metric="euclidean",
             ranks=metric_options["rank_list"],
+            use_metric_cuhk03=use_metric_cuhk03,
             use_aqe=False,
             qe_times=1,
             qe_k=5,
@@ -200,12 +216,16 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
 
         # FIXME: change returned results
         if "mAP" in metrics:
-            eval_results["mAP"] = np.around(results["mAP"], decimals=3)
+            eval_results["mAP"] = round(float(results["mAP"]), 3)
         if "CMC" in metrics:
             for rank in metric_options["rank_list"]:
-                eval_results[f"Rank-{rank}"] = np.around(
-                    results[f"Rank-{rank}"],
-                    decimals=3,
+                eval_results[f"Rank-{rank}"] = round(
+                    float(results[f"Rank-{rank}"]),
+                    3,
                 )
+        if "metric" in metrics:
+            eval_results["metric"] = round(float(results["metric"]), 3)
+        if "mINP" in metrics:
+            eval_results["mINP"] = round(float(results["mINP"]), 3)
 
         return eval_results

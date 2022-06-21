@@ -39,6 +39,7 @@ data = dict(
         ann_file=data_root + "gtPepper/train.json",
         pipeline=train_pipeline,
     ),
+    # FIXME: val and test
     query=dict(
         type=data_type,
         data_prefix=data_root + "query",

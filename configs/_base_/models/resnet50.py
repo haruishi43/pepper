@@ -1,5 +1,5 @@
 model = dict(
-    type="BaseReID",
+    type="ImageReID",
     backbone=dict(
         type="ResNet",
         depth=50,
@@ -26,7 +26,7 @@ model = dict(
     ),
 )
 sampler = dict(
-    type="BalancedDistributedSampler",
+    type="BalancedIdentityDistributedSampler",
     batch_size=32,
     num_instances=4,
     shuffle=True,

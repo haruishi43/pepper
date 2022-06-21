@@ -140,16 +140,7 @@ def main():
         f"Set random seed to {cfg.seed}, " f"deterministic: {deterministic}"
     )
 
-    if cfg.get("train_cfg", False):
-        model = build_reid(
-            cfg.model,
-            train_cfg=cfg.train_cfg,
-            test_cfg=cfg.test_cfg,
-        )
-    else:
-        model = build_reid(cfg.model)
-    model.init_weights()
-
+    # initialize datasets
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:
         val_dataset = copy.deepcopy(cfg.data.val)
@@ -162,8 +153,19 @@ def main():
             config=cfg.pretty_text,
             NUM_PIDS=datasets[0].NUM_PIDS,
         )
-    # add an attribute for visualization convenience
-    model.NUM_PIDS = datasets[0].NUM_PIDS
+
+    # initialize models
+    cfg.model.head.num_classes = datasets[0].NUM_PIDS
+    if cfg.get("train_cfg", False):
+        model = build_reid(
+            cfg.model,
+            train_cfg=cfg.train_cfg,
+            test_cfg=cfg.test_cfg,
+        )
+    else:
+        model = build_reid(cfg.model)
+    model.init_weights()
+
     train_model(
         model,
         datasets,

@@ -16,12 +16,14 @@ class ImageDataset(BaseDataset):
         pipeline,
         ann_file=None,
         eval_mode=False,
+        **kwargs,
     ):
         super(ImageDataset, self).__init__(
             data_prefix=data_prefix,
             pipeline=pipeline,
             ann_file=ann_file,
             eval_mode=eval_mode,
+            **kwargs,
         )
 
     def load_annotations(self):

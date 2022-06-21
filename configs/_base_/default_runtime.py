@@ -1,7 +1,6 @@
-checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=50,
+    interval=10,
     hooks=[
         dict(type="TextLoggerHook"),
         # FIXME: add tensorboard after debugging everything!
@@ -9,7 +8,7 @@ log_config = dict(
     ],
 )
 # yapf:enable
-custom_hooks = [dict(type="NumClassCheckHook")]
+# custom_hooks = [dict(type="NumClassCheckHook")]
 # custom_hooks = [  # debug
 #     dict(type="NumClassCheckHook"),
 #     dict(type="CheckInvalidLossHook", interval=50),

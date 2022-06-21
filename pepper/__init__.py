@@ -4,8 +4,8 @@ from packaging.version import parse
 import warnings
 
 import mmcv
-import mmdet
-import mmcls
+# import mmdet
+# import mmcls
 
 from .version import __version__, version_info
 
@@ -14,10 +14,10 @@ MMCV_MIN = "1.3.17"
 MMCV_MAX = "1.5.0"
 
 # depends on mmdet
-MMDET_MIN = "2.19.1"
+# MMDET_MIN = "2.19.1"
 
 # depends on mmcls
-MMCLS_MIN = "0.21.0"
+# MMCLS_MIN = "0.21.0"
 
 
 def digit_version(version_str: str, length: int = 4):
@@ -68,19 +68,19 @@ assert mmcv_min_version <= mmcv_version <= mmcv_max_version, (
 )
 
 
-mmdet_min_version = digit_version(MMDET_MIN)
-mmdet_version = digit_version(mmdet.__version__)
-assert mmdet_min_version <= mmdet_version, (
-    f"MMDet=={mmdet.__version__} is used but incompatible. "
-    f"Please install mmdet>={MMDET_MIN}."
-)
+# mmdet_min_version = digit_version(MMDET_MIN)
+# mmdet_version = digit_version(mmdet.__version__)
+# assert mmdet_min_version <= mmdet_version, (
+#     f"MMDet=={mmdet.__version__} is used but incompatible. "
+#     f"Please install mmdet>={MMDET_MIN}."
+# )
 
 
-mmcls_min_version = digit_version(MMCLS_MIN)
-mmcls_version = digit_version(mmcls.__version__)
-assert mmcls_min_version <= mmcls_version, (
-    f"MMCls=={mmcls.__version__} is used but incompatible. "
-    f"Please install mmcls>={MMCLS_MIN}."
-)
+# mmcls_min_version = digit_version(MMCLS_MIN)
+# mmcls_version = digit_version(mmcls.__version__)
+# assert mmcls_min_version <= mmcls_version, (
+#     f"MMCls=={mmcls.__version__} is used but incompatible. "
+#     f"Please install mmcls>={MMCLS_MIN}."
+# )
 
 __all__ = ["__version__", "version_info", "digit_version"]

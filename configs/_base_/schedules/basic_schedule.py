@@ -9,8 +9,14 @@ lr_config = dict(
     warmup="linear",
     warmup_iters=1000,
     warmup_ratio=1.0 / 1000,
-    step=[5],
+    step=[20],
 )
 
+# checkpoint
+checkpoint_config = dict(interval=100)
+
 # runner settings
-runner = dict(type="EpochBasedRunner", max_epochs=6)
+runner = dict(type="EpochBasedRunner", max_epochs=200)
+
+# evaluation
+evaluation = dict(interval=100, metric=["metric", "CMC", "mAP"])
