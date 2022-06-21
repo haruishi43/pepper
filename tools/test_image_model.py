@@ -13,6 +13,7 @@ def main():
     print(cfg.pretty_text)
 
     use_gpu = True
+    train_mode = True
     bs = 32
     instances = 4
     h, w = 256, 128
@@ -27,8 +28,12 @@ def main():
     )
     print("num classes:", net.head.num_classes)
 
+    if use_gpu:
+        net = net.cuda()
+        img = img.cuda()
+        gt_label = gt_label.cuda()
+
     # run model (reuturns loss for training mode)
-    train_mode = False
     out = net(
         img=img,
         gt_label=gt_label,
@@ -36,10 +41,11 @@ def main():
     )
 
     if train_mode:
-        # losses and metrics
+        # losses and metrics (dict)
+        print(out.keys())
         print(out)
     else:
-        # features
+        # features (torch.tensor)
         print(out)
         print(out.shape)
 
