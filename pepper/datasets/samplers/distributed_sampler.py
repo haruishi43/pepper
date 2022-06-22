@@ -16,8 +16,14 @@ class DistributedSampler(_DistributedSampler):
         seed=0,
         shuffle=True,
         round_up=True,
+        is_val=False,
     ):
         # subclass: https://pytorch.org/docs/stable/_modules/torch/utils/data/distributed.html#DistributedSampler
+
+        self.is_val = is_val
+        if is_val:
+            assert not shuffle, "no shuffle for validation"
+            assert round_up, "we need all validation data"
 
         super().__init__(
             dataset,
@@ -50,7 +56,12 @@ class DistributedSampler(_DistributedSampler):
         assert len(indices) == self.total_size
 
         # subsample
+        # if self.is_val:
+        #     indices = indices[self.rank * self.num_samples : (self.rank + 1) * self.num_samples]
+        # else:
         indices = indices[self.rank : self.total_size : self.num_replicas]
+
+        # last checks
         if self.round_up:
             assert len(indices) == self.num_samples
 

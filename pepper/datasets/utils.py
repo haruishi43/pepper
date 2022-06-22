@@ -60,5 +60,5 @@ def replace_ImageToTensor(pipelines):
                 "data pipeline in your config file.",
                 UserWarning,
             )
-            pipelines[i] = {"type": "DefaultFormatBundle"}
+            pipelines[i] = {"type": "FormatBundle"}
     return pipelines

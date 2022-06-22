@@ -68,7 +68,15 @@ class DistEvalHook(BaseDistEvalHook):
             tmpdir=tmpdir,
             gpu_collect=self.gpu_collect,
         )
+
         if runner.rank == 0:
+
+            # force single gpu test (debug)
+            # results = single_gpu_test(
+            #     runner.model,
+            #     self.dataloader,
+            # )
+
             print("\n")
             runner.log_buffer.output["eval_iter_num"] = len(self.dataloader)
             key_score = self.evaluate(runner, results)

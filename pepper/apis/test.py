@@ -75,11 +75,11 @@ def multi_gpu_test(
     for i, data in enumerate(data_loader):
         with torch.no_grad():
             result = model(return_loss=False, **data)
+
         if isinstance(result, list):
             results.extend(result)
         else:
             results.append(result)
-
 
         if rank == 0:
             batch_size = data["img"].size(0)
@@ -87,11 +87,11 @@ def multi_gpu_test(
             # FIXME: seems like validation set is not running distributed
             # number of validation dataset is len(data_loader) * 2
 
-            # for _ in range(batch_size * world_size):
-            #     prog_bar.update()
-
-            for _ in range(batch_size):
+            for _ in range(batch_size * world_size):
                 prog_bar.update()
+
+            # for _ in range(batch_size):
+            #     prog_bar.update()
 
     # collect results from all ranks
     if gpu_collect:

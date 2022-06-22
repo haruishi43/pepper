@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import copy
 import os
 import os.path as osp
 import time
@@ -142,17 +141,6 @@ def main():
 
     # initialize datasets
     datasets = [build_dataset(cfg.data.train)]
-    if len(cfg.workflow) == 2:
-        val_dataset = copy.deepcopy(cfg.data.val)
-        val_dataset.pipeline = cfg.data.train.pipeline
-        datasets.append(build_dataset(val_dataset))
-    if cfg.checkpoint_config is not None:
-        # save mmtrack version, config file content and class names in
-        # checkpoints as meta data
-        cfg.checkpoint_config.meta = dict(
-            config=cfg.pretty_text,
-            NUM_PIDS=datasets[0].NUM_PIDS,
-        )
 
     # initialize models
     cfg.model.head.num_classes = datasets[0].NUM_PIDS
@@ -165,6 +153,14 @@ def main():
     else:
         model = build_reid(cfg.model)
     model.init_weights()
+
+    if cfg.checkpoint_config is not None:
+        # save mmtrack version, config file content and class names in
+        # checkpoints as meta data
+        cfg.checkpoint_config.meta = dict(
+            config=cfg.pretty_text,
+            NUM_PIDS=datasets[0].NUM_PIDS,
+        )
 
     train_model(
         model,

@@ -19,4 +19,6 @@ checkpoint_config = dict(interval=100)
 runner = dict(type="EpochBasedRunner", max_epochs=200)
 
 # evaluation
-evaluation = dict(interval=100, metric=["metric", "CMC", "mAP"])
+evaluation = dict(
+    interval=100, gpu_collect=True, metric=["metric", "CMC", "mAP"]
+)

@@ -82,18 +82,15 @@ def build_dataloader(
         batch_size = num_gpus * samples_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
+    # default_args are reused for creating samplers
+    default_args = dict(
+        dataset=dataset,
+        num_replicas=world_size,
+        rank=rank,
+    )
+
     # setup sampler
-    # NOTE: we don't use sampler when we run validation or test
-    # custom sampler logic
     if not is_val:
-
-        # NOTE: default_args are reused for creating samplers
-        default_args = dict(
-            dataset=dataset,
-            num_replicas=world_size,
-            rank=rank,
-        )
-
         if sampler_cfg:
             # overwrite
             sampler_cfg.update(shuffle=shuffle)
@@ -139,9 +136,20 @@ def build_dataloader(
                 default_args=default_args,
             )
     else:
-        sampler = None
+        if dist:
+            sampler_cfg = dict(
+                type="DistributedSampler",
+                shuffle=False,
+                is_val=True,
+            )
+            sampler = build_sampler(
+                sampler_cfg,
+                default_args=default_args,
+            )
+        else:
+            sampler = None
 
-    # If sampler exists, turn off dataloader shuffle
+    # If sampler exists, turn off dataloader shuffle (shuffled inside sampler if needed)
     if sampler is not None:
         shuffle = False
 
