@@ -16,7 +16,7 @@ model = dict(
         out_channels=128,
         num_classes=380,
         loss=dict(type="CrossEntropyLoss", loss_weight=1.0),
-        loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=1.0),
+        loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=0.3),
         norm_cfg=dict(type="BN1d"),
         act_cfg=dict(type="ReLU"),
     ),
