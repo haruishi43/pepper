@@ -12,13 +12,14 @@ lr_config = dict(
     step=[5],
 )
 
-# checkpoint
-checkpoint_config = dict(interval=100)
-
 # runner settings
-runner = dict(type="EpochBasedRunner", max_epochs=200)
+# runner = dict(type="EpochBasedRunner", max_epochs=200)
+runner = dict(type="IterBasedRunner", max_iters=4000)
 
 # evaluation
 evaluation = dict(
-    interval=100, gpu_collect=True, metric=["metric", "CMC", "mAP"]
+    interval=1000, gpu_collect=True, metric=["metric", "CMC", "mAP"]
 )
+
+# checkpoint
+checkpoint_config = dict(interval=1000)
