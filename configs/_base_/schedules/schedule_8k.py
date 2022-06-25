@@ -6,7 +6,9 @@ optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
     policy="poly",
-    power=0.9, min_lr=1e-4, by_epoch=False,
+    power=0.9,
+    min_lr=1e-4,
+    by_epoch=False,
     # warmup="linear",
     # warmup_iters=1000,
     # warmup_ratio=1.0 / 1000,

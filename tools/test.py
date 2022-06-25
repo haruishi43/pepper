@@ -211,7 +211,7 @@ def main():
                 v = round(v, 2)
             else:
                 raise ValueError(f"Unsupport metric type: {type(v)}")
-            print(f"\n{k} : {v}")
+            print(f"{k} : {v}")
 
         # TODO: output to file
         # if args.out:
