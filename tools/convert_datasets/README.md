@@ -1,0 +1,2 @@
+- Isolate dataset conversion from the `Dataset` class.
+- Previously (torch-reid), converts the dataset for training / testing when the script is run. However, this preprocessing will take a while.

@@ -1,7 +1,7 @@
-# Copyright (c) OpenMMLab. All rights reserved.
+#!/usr/bin/env python3
+
 import argparse
 import os
-import warnings
 from numbers import Number
 
 import mmcv
@@ -23,35 +23,31 @@ from pepper.utils import get_root_logger, setup_multi_processes
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="pepper test model")
+    parser = argparse.ArgumentParser(description="Test a model")
     parser.add_argument("config", help="test config file path")
     parser.add_argument("checkpoint", help="checkpoint file")
-    parser.add_argument("--out", help="output result file")
-    out_options = ["class_scores", "pred_score", "pred_label", "pred_class"]
-    parser.add_argument(
-        "--out-items",
-        nargs="+",
-        default=["all"],
-        choices=out_options + ["none", "all"],
-        help="Besides metrics, what items will be included in the output "
-        f'result file. You can choose some of ({", ".join(out_options)}), '
-        'or use "all" to include all above, or use "none" to disable all of '
-        "above. Defaults to output all.",
-        metavar="",
-    )
-    parser.add_argument(  # FIXME: need to change the metrics
-        "--metrics",
-        type=str,
-        nargs="+",
-        help="evaluation metrics, which depends on the dataset, e.g., "
-        '"accuracy", "precision", "recall", "f1_score", "support" for single '
-        'label dataset, and "mAP", "CP", "CR", "CF1", "OP", "OR", "OF1" for '
-        "multi-label dataset",
-    )
-    parser.add_argument("--show", action="store_true", help="show results")
-    parser.add_argument(
-        "--show-dir", help="directory where painted images will be saved"
-    )
+
+    # TODO: add output function later
+    # parser.add_argument("--out", help="output result file")
+    # out_options = ["class_scores", "pred_score", "pred_label", "pred_class"]
+    # parser.add_argument(
+    #     "--out-items",
+    #     nargs="+",
+    #     default=["all"],
+    #     choices=out_options + ["none", "all"],
+    #     help="Besides metrics, what items will be included in the output "
+    #     f'result file. You can choose some of ({", ".join(out_options)}), '
+    #     'or use "all" to include all above, or use "none" to disable all of '
+    #     "above. Defaults to output all.",
+    #     metavar="",
+    # )
+
+    # TODO: add visualization
+    # parser.add_argument("--show", action="store_true", help="show results")
+    # parser.add_argument(
+    #     "--show-dir", help="directory where painted images will be saved"
+    # )
+
     parser.add_argument(
         "--gpu-collect",
         action="store_true",
@@ -86,16 +82,6 @@ def parse_args():
         "Check available options in `model.show_result`.",
     )
     parser.add_argument(
-        "--device", default=None, help="device used for testing. (Deprecated)"
-    )
-    parser.add_argument(
-        "--gpu-ids",
-        type=int,
-        nargs="+",
-        help="(Deprecated, please use --gpu-id) ids of gpus to use "
-        "(only applicable to non-distributed testing)",
-    )
-    parser.add_argument(
         "--gpu-id",
         type=int,
         default=0,
@@ -112,9 +98,9 @@ def parse_args():
     if "LOCAL_RANK" not in os.environ:
         os.environ["LOCAL_RANK"] = str(args.local_rank)
 
-    assert (
-        args.metrics or args.out
-    ), "Please specify at least one of output path and evaluation metrics."
+    # assert (
+    #     args.metrics or args.out
+    # ), "Please specify at least one of output path and evaluation metrics."
 
     return args
 
@@ -134,16 +120,7 @@ def main():
         torch.backends.cudnn.benchmark = True
     cfg.model.pretrained = None
 
-    if args.gpu_ids is not None:
-        cfg.gpu_ids = args.gpu_ids[0:1]
-        warnings.warn(
-            "`--gpu-ids` is deprecated, please use `--gpu-id`. "
-            "Because we only support single GPU mode in "
-            "non-distributed testing. Use the first GPU "
-            "in `gpu_ids` now."
-        )
-    else:
-        cfg.gpu_ids = [args.gpu_id]
+    cfg.gpu_ids = [args.gpu_id]
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == "none":
@@ -153,7 +130,14 @@ def main():
         init_dist(args.launcher, **cfg.dist_params)
 
     # build the dataloader
-    dataset = build_dataset(cfg.data.test, default_args=dict(test_mode=True))
+
+    if cfg.data.samples_per_gpu > 1:
+        # for now, force single batch
+        cfg.data.samples_per_gpu = 1
+        # Replace 'ImageToTensor' to 'DefaultFormatBundle'
+        # from pepper.datasets import replace_ImageToTensor
+        # cfg.data.test.pipeline = replace_ImageToTensor(cfg.data.test.pipeline)
+    dataset = build_dataset(cfg.data.test, default_args=dict(eval_mode=True))
     # the extra round_up data will be removed during gpu/cpu collect
     data_loader = build_dataloader(
         dataset,
@@ -162,6 +146,7 @@ def main():
         dist=distributed,
         shuffle=False,
         round_up=True,
+        is_val=True,
     )
 
     # build the model and load checkpoint
@@ -169,31 +154,24 @@ def main():
     fp16_cfg = cfg.get("fp16", None)
     if fp16_cfg is not None:
         wrap_fp16_model(model)
+
     checkpoint = load_checkpoint(model, args.checkpoint, map_location="cpu")
 
-    if "CLASSES" in checkpoint.get("meta", {}):
-        CLASSES = checkpoint["meta"]["CLASSES"]
+    # FIXME: NUM_PIDS might differ between train and test sets
+    if "NUM_PIDS" in checkpoint.get("meta", {}):
+        NUM_PIDS = checkpoint["meta"]["NUM_PIDS"]
     else:
-        from mmcls.datasets import ImageNet
+        NUM_PIDS = dataset.NUM_PIDS
 
-        warnings.simplefilter("once")
-        warnings.warn(
-            "Class names are not saved in the checkpoint's "
-            "meta data, use imagenet by default."
-        )
-        CLASSES = ImageNet.CLASSES
+    model.head.num_classes = NUM_PIDS
 
     if not distributed:
         if args.device == "cpu":
             model = model.cpu()
         else:
             model = MMDataParallel(model, device_ids=cfg.gpu_ids)
-            if not model.device_ids:
-                assert mmcv.digit_version(mmcv.__version__) >= (1, 4, 4), (
-                    "To test with CPU, please confirm your mmcv version "
-                    "is not lower than v1.4.4"
-                )
-        model.CLASSES = CLASSES
+
+        # TODO: add visualization with `show`
         show_kwargs = {} if args.show_options is None else args.show_options
         outputs = single_gpu_test(
             model, data_loader, args.show, args.show_dir, **show_kwargs
@@ -208,45 +186,53 @@ def main():
             model, data_loader, args.tmpdir, args.gpu_collect
         )
 
+    # do something with the outputs
+    # TODO: make this argparse
+    arg_metric = ["metric", "mAP", "CMC", "mINP"]
+    arg_metric_options = None
+    arg_use_metric_cuhk03 = False
+
     rank, _ = get_dist_info()
     if rank == 0:
         results = {}
         logger = get_root_logger()
-        if args.metrics:
-            eval_results = dataset.evaluate(
-                results=outputs,
-                metric=args.metrics,
-                metric_options=args.metric_options,
-                logger=logger,
-            )
-            results.update(eval_results)
-            for k, v in eval_results.items():
-                if isinstance(v, np.ndarray):
-                    v = [round(out, 2) for out in v.tolist()]
-                elif isinstance(v, Number):
-                    v = round(v, 2)
-                else:
-                    raise ValueError(f"Unsupport metric type: {type(v)}")
-                print(f"\n{k} : {v}")
-        if args.out:
-            if "none" not in args.out_items:
-                scores = np.vstack(outputs)
-                pred_score = np.max(scores, axis=1)
-                pred_label = np.argmax(scores, axis=1)
-                pred_class = [CLASSES[lb] for lb in pred_label]
-                res_items = {
-                    "class_scores": scores,
-                    "pred_score": pred_score,
-                    "pred_label": pred_label,
-                    "pred_class": pred_class,
-                }
-                if "all" in args.out_items:
-                    results.update(res_items)
-                else:
-                    for key in args.out_items:
-                        results[key] = res_items[key]
-            print(f"\ndumping results to {args.out}")
-            mmcv.dump(results, args.out)
+        eval_results = dataset.evaluate(
+            results=outputs,
+            metric=arg_metric,
+            metric_options=arg_metric_options,
+            use_metric_cuhk03=arg_use_metric_cuhk03,
+            logger=logger,
+        )
+        results.update(eval_results)
+        for k, v in eval_results.items():
+            if isinstance(v, np.ndarray):
+                v = [round(out, 2) for out in v.tolist()]
+            elif isinstance(v, Number):
+                v = round(v, 2)
+            else:
+                raise ValueError(f"Unsupport metric type: {type(v)}")
+            print(f"\n{k} : {v}")
+
+        # TODO: output to file
+        # if args.out:
+        #     if "none" not in args.out_items:
+        #         scores = np.vstack(outputs)
+        #         pred_score = np.max(scores, axis=1)
+        #         pred_label = np.argmax(scores, axis=1)
+        #         pred_class = [NUM_PIDS[lb] for lb in pred_label]
+        #         res_items = {
+        #             "class_scores": scores,
+        #             "pred_score": pred_score,
+        #             "pred_label": pred_label,
+        #             "pred_class": pred_class,
+        #         }
+        #         if "all" in args.out_items:
+        #             results.update(res_items)
+        #         else:
+        #             for key in args.out_items:
+        #                 results[key] = res_items[key]
+        #     print(f"\ndumping results to {args.out}")
+        #     mmcv.dump(results, args.out)
 
 
 if __name__ == "__main__":

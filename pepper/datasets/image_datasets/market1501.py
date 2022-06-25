@@ -7,6 +7,7 @@ from ..builder import DATASETS
 @DATASETS.register_module()
 class Market1501Dataset(ImageDataset):
     def evaluate(self, results, **kwargs):
+        _ = kwargs.pop("use_metric_cuhk03", False)
         return super().evaluate(
             results,
             use_metric_cuhk03=False,
