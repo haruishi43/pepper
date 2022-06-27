@@ -4,12 +4,12 @@ import torch
 
 from mmcv import Config
 
-from pepper.models.reid.image_reid import ImageReID
+from pepper.models.reid.video_reid import VideoReID
 
 
 def main():
 
-    cfg = Config.fromfile("configs/image/resnet/resnet50_b32_market1501.py")
+    cfg = Config.fromfile("configs/video/resnet/resnet50_b32_market1501.py")
     print(cfg.pretty_text)
 
     use_gpu = True
@@ -20,7 +20,7 @@ def main():
     img = torch.rand((bs, 3, h, w), dtype=torch.float)
     gt_label = torch.tensor([i % instances for i in range(bs)])
 
-    net = ImageReID(
+    net = VideoReID(
         backbone=cfg.model.backbone,
         neck=cfg.model.neck,
         head=cfg.model.head,

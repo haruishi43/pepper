@@ -2,6 +2,7 @@
 
 import warnings
 
+import torch
 import torch.nn as nn
 
 from mmcv.runner import BaseModule, auto_fp16, force_fp32
@@ -180,16 +181,35 @@ class LinearReIDHead(BaseHead):
             self.classifier = nn.Linear(self.out_channels, self.num_classes)
 
     @auto_fp16()
-    def forward_train(self, x):
-        """Model forward."""
+    def pre_logits(self, x):
+
+        # deals with tuple outputs from previous layers
+        if isinstance(x, tuple):
+            if len(x) > 1:
+                # use the last one
+                x = x[-1]
+            else:
+                x = x[0]
+
+        assert isinstance(x, torch.Tensor)
+
         for m in self.fcs:
             x = m(x)
         feats = self.fc_out(x)
+
+        return feats
+
+    @auto_fp16()
+    def forward_train(self, x):
+        """Model forward."""
+
+        # feats = self.pre_logits(x)
+
         if self.loss_cls:
-            feats_bn = self.bn(feats)
+            feats_bn = self.bn(x)
             cls_score = self.classifier(feats_bn)
-            return (feats, cls_score)
-        return (feats,)
+            return (x, cls_score)
+        return (x,)
 
     @force_fp32(apply_to=("feats", "cls_score"))
     def loss(self, gt_label, feats, cls_score=None):

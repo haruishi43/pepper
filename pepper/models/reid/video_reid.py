@@ -7,7 +7,7 @@ from .base import BaseReID
 
 
 @REID.register_module()
-class ImageReID(BaseReID):
+class VideoReID(BaseReID):
 
     _stage = ("backbone", "neck", "pre_logits")
 
@@ -21,7 +21,7 @@ class ImageReID(BaseReID):
         init_cfg=None,
         inference_stage=None,
     ):
-        super(ImageReID, self).__init__(init_cfg)
+        super(VideoReID, self).__init__(init_cfg)
 
         if pretrained is not None:
             self.init_cfg = dict(type="Pretrained", checkpoint=pretrained)
@@ -29,6 +29,8 @@ class ImageReID(BaseReID):
 
         if neck is not None:
             self.neck = build_neck(neck)
+
+        # TODO: add temporal necks?
 
         if head is not None:
             self.head = build_head(head)
@@ -129,14 +131,15 @@ class ImageReID(BaseReID):
             dict[str, Tensor]: a dictionary of loss components
         """
 
-        assert img.ndim == 4
+        assert (
+            img.ndim == 5
+        ), f"ERR: input img should be 5dim, but got {img.ndim}"
 
         # 1. compute features
         x = self.extract_feat(img)
         head_outputs = self.head.forward_train(x)
 
         # 2. compute losses
-        # TODO: move loss computation to head (dict and function)
         losses = dict()
         reid_loss = self.head.loss(gt_label, *head_outputs)
 

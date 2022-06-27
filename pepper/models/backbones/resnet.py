@@ -450,7 +450,7 @@ class ResNet(BaseBackbone):
         zero_init_residual (bool): Whether to use zero init for last norm layer
             in resblocks to let them behave as identity. Default: True.
     Example:
-        >>> from mmcls.models import ResNet
+        >>> from pepper.models.backbones import ResNet
         >>> import torch
         >>> self = ResNet(depth=18)
         >>> self.eval()

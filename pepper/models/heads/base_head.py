@@ -12,5 +12,9 @@ class BaseHead(BaseModule, metaclass=ABCMeta):
         super(BaseHead, self).__init__(init_cfg)
 
     @abstractmethod
+    def pre_logits(self, x, **kwargs):
+        pass
+
+    @abstractmethod
     def forward_train(self, x, gt_label, **kwargs):
         pass

@@ -24,6 +24,7 @@ model = dict(
         type="Pretrained",
         checkpoint="https://download.openmmlab.com/mmclassification/v0/resnet/resnet50_batch256_imagenet_20200708-cfb998bf.pth",  # noqa: E251  # noqa: E501
     ),
+    inference_stage="pre_logits",
 )
 sampler = dict(
     type="BalancedIdentityDistributedSampler",
