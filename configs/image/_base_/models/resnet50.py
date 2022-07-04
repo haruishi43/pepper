@@ -27,7 +27,7 @@ model = dict(
     inference_stage="pre_logits",
 )
 sampler = dict(
-    type="BalancedIdentityDistributedSampler",
+    type="InfiniteBalancedIdentityDistributedSampler",
     batch_size=32,
     num_instances=4,
     shuffle=True,

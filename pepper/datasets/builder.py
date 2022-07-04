@@ -107,8 +107,9 @@ def build_dataloader(
             )
         elif dist:
             # default to this when using distributed
+            # we also assume that the runner is IterBasedRunner
             sampler_cfg = dict(
-                type="BalancedIdentityDistributedSampler",
+                type="InfiniteBalancedIdentityDistributedSampler",
                 batch_size=batch_size,
                 num_instances=batch_size // 8,  # FIXME: hard-coded
                 shuffle=shuffle,
