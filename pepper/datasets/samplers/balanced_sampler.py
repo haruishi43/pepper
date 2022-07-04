@@ -6,10 +6,10 @@
   camids
 """
 
-from collections import defaultdict
 import copy
 import itertools
 import warnings
+from collections import defaultdict
 
 import numpy as np
 
@@ -31,6 +31,7 @@ class BalancedIdentitySampler(Sampler):
         round_up: bool = True,
     ) -> None:
         self.dataset = dataset
+
         assert not (batch_size > len(dataset))
         assert not (
             batch_size % num_instances
@@ -72,7 +73,8 @@ class BalancedIdentitySampler(Sampler):
         )
 
     def __len__(self):
-        return len(self.dataset)
+        # NOTE: changed this from len(self.dataset) since the total number of traning data shrinks
+        return self.total_size
 
     def __iter__(self):
         def remove_same_index(l: list, value):
@@ -223,6 +225,7 @@ class BalancedIdentityDistributedSampler(DistributedSampler):
             seed=seed,
             drop_last=False,
         )
+
         assert not (batch_size > len(dataset))
         assert not (
             batch_size % num_instances
@@ -251,6 +254,11 @@ class BalancedIdentityDistributedSampler(DistributedSampler):
         self.pids = sorted(list(self.index_of_pid.keys()))
         self.num_identities = len(self.pids)
 
+        # num_samples: the number of samples for each replicas
+
+        # FIXME: do we need to overwrite this?
+
+        # FIXME: num_iterations should not depend on identities!
         if self.round_up and self.num_identities % self.num_pids_per_batch != 0:
             self.num_iterations = (
                 self.num_identities // self.num_pids_per_batch + 1
@@ -261,6 +269,9 @@ class BalancedIdentityDistributedSampler(DistributedSampler):
         self.total_size = (
             self.num_iterations * self.num_pids_per_batch * self.num_instances
         )
+
+        # HACK: change the number of iterations (len(dataloader) calls len(sampler))
+        self.num_samples = self.total_size // self.num_replicas
 
     def __iter__(self):
 

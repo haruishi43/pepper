@@ -45,7 +45,8 @@ model = dict(
 #     ),
 # )
 sampler = dict(
-    type="BalancedIdentityDistributedSampler",
+    # type="BalancedIdentityDistributedSampler",
+    type="InfiniteBalancedIdentityDistributedSampler",
     batch_size=16,
     num_instances=4,
     shuffle=True,

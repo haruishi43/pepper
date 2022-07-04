@@ -16,6 +16,17 @@ lr_config = dict(
     warmup_ratio=1.0 / _wu,
 )
 
+# lr_config = dict(
+#     # -> policy config
+#     policy="step",
+#     step=[5],
+#     gamma=0.1,
+#     # -> warmup config
+#     warmup="linear",
+#     warmup_iters=1000,
+#     warmup_ratio=1.0 / 1000,
+# )
+
 # runner settings
 # runner = dict(type="EpochBasedRunner", max_epochs=200)
 runner = dict(type="IterBasedRunner", max_iters=8000)
@@ -24,6 +35,9 @@ runner = dict(type="IterBasedRunner", max_iters=8000)
 evaluation = dict(
     interval=2000, gpu_collect=True, metric=["metric", "CMC", "mAP"]
 )
+# evaluation = dict(
+#     interval=10, gpu_collect=True, metric=["metric", "CMC", "mAP"]
+# )
 
 # checkpoint
 checkpoint_config = dict(interval=2000)

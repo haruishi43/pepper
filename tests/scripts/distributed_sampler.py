@@ -52,6 +52,13 @@ def iterate_dataset(
 
     loader = data_loaders[0]
 
+    # print(loader._dataset_kind)
+    # print(len(loader._index_sampler))
+
+    # print("here")
+
+    # print(len(loader))
+
     print("iterating...")
     dist.barrier()
 
@@ -70,21 +77,22 @@ def iterate_dataset(
         print(f">>> {i}: camids {camids}")
         dist.barrier()
 
-    dist.barrier()
-    for i, data in enumerate(loader):
-        meta = data["img_metas"].data[0]
-        # print(meta)
-        camids = [m["camid"] for m in meta]
-        debug_idx = [m["debug_index"] for m in meta]
+    # 2nd path
+    # dist.barrier()
+    # for i, data in enumerate(loader):
+    #     meta = data["img_metas"].data[0]
+    #     # print(meta)
+    #     camids = [m["camid"] for m in meta]
+    #     debug_idx = [m["debug_index"] for m in meta]
 
-        # FIXME: need help flushing
-        # logger.info(f">>> {i}: {debug_idx}")  # logger only logs in rank 0
-        print(f">>> {i}: index {debug_idx}")
-        dist.barrier()
-        print(f">>> {i}: ids {data['gt_label'].data}")
-        dist.barrier()
-        print(f">>> {i}: camids {camids}")
-        dist.barrier()
+    #     # FIXME: need help flushing
+    #     # logger.info(f">>> {i}: {debug_idx}")  # logger only logs in rank 0
+    #     print(f">>> {i}: index {debug_idx}")
+    #     dist.barrier()
+    #     print(f">>> {i}: ids {data['gt_label'].data}")
+    #     dist.barrier()
+    #     print(f">>> {i}: camids {camids}")
+    #     dist.barrier()
 
 
 def parse_args():

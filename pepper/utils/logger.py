@@ -13,4 +13,4 @@ def get_root_logger(log_file=None, log_level=logging.INFO):
     Returns:
         :obj:`logging.Logger`: The obtained logger
     """
-    return get_logger("mmtrack", log_file, log_level)
+    return get_logger("pepper", log_file, log_level)
