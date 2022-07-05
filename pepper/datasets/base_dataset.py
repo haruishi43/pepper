@@ -7,6 +7,7 @@ from os import PathLike
 
 import numpy as np
 import torch
+from torch.nn import functional as F
 from torch.utils.data import Dataset
 
 from pepper.core.evaluation import evaluate
@@ -88,7 +89,6 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
 
         # add globals
         if num_pids is None:
-            # FIXME: don't use all pids... (this will be train + test ids)
             self.NUM_PIDS = len(np.unique(self.get_pids()))
         else:
             self.NUM_PIDS = num_pids
@@ -144,7 +144,12 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         results,
         metric=["metric", "mAP", "CMC"],
         metric_options=None,
+        normalize_features=False,
+        dist_metric="euclidean",
         use_metric_cuhk03=False,
+        use_aqe=False,
+        rerank=False,
+        use_roc=False,
         logger=None,
     ):
         """Evaluate the ReID dataset
@@ -186,11 +191,17 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         q_camids = camids[: self._num_query]
         g_camids = camids[self._num_query :]
 
+        if normalize_features:
+            # L2 normalization
+            q_feat = F.normalize(q_feat, p=2, dim=-1)
+            g_feat = F.normalize(g_feat, p=2, dim=-1)
+
         # results contains the keys:
         # 'CMC', 'mAP', 'mINP', 'metric', 'TPR@FPR', and 'Rank-#'
         # 'CMC' contains all ranks
         # rank-specific CMC are contained in 'Rank-#'
         # 'metric' = (mAP + cmc[0]) / 2 * 100
+
         results = evaluate(
             q_feat=q_feat,
             g_feat=g_feat,
@@ -198,23 +209,23 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
             g_pids=g_pids,
             q_camids=q_camids,
             g_camids=g_camids,
-            metric="euclidean",
+            metric=dist_metric,
             ranks=metric_options["rank_list"],
             use_metric_cuhk03=use_metric_cuhk03,
-            use_aqe=False,
+            use_aqe=use_aqe,
             qe_times=1,
             qe_k=5,
             alpha=3.0,
-            rerank=False,
+            rerank=rerank,
             k1=20,
             k2=6,
             lambda_value=0.3,
-            use_roc=False,
+            use_roc=use_roc,
         )
 
         eval_results = dict()
 
-        # FIXME: change returned results
+        # TODO: edit (finalize) returned results
         if "mAP" in metrics:
             eval_results["mAP"] = round(float(results["mAP"]), 3)
         if "CMC" in metrics:

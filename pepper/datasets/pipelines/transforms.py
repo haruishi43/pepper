@@ -464,6 +464,117 @@ class RandomResizedCrop(object):
 
 
 @PIPELINES.register_module()
+class ProbRandomResizedCrop(RandomResizedCrop):
+    def __init__(self, crop_prob=0.5, **kwargs):
+        super().__init__(**kwargs)
+        self.crop_prob = crop_prob
+
+    def __call__(self, results):
+        for key in results.get("img_fields", ["img"]):
+            img = results[key]
+
+            if np.random.random() > self.crop_prob:
+                # we will crop at some probability
+                if self.efficientnet_style:
+                    get_params_func = self.get_params_efficientnet_style
+                    get_params_args = dict(
+                        img=img,
+                        size=self.size,
+                        scale=self.scale,
+                        ratio=self.ratio,
+                        max_attempts=self.max_attempts,
+                        min_covered=self.min_covered,
+                        crop_padding=self.crop_padding,
+                    )
+                else:
+                    get_params_func = self.get_params
+                    get_params_args = dict(
+                        img=img,
+                        scale=self.scale,
+                        ratio=self.ratio,
+                        max_attempts=self.max_attempts,
+                    )
+                ymin, xmin, ymax, xmax = get_params_func(**get_params_args)
+                img = mmcv.imcrop(
+                    img, bboxes=np.array([xmin, ymin, xmax, ymax])
+                )
+
+            results[key] = mmcv.imresize(
+                img,
+                tuple(self.size[::-1]),
+                interpolation=self.interpolation,
+                backend=self.backend,
+            )
+        return results
+
+
+@PIPELINES.register_module()
+class SeqProbRandomResizedCrop(ProbRandomResizedCrop):
+
+    # FIXME: have not debugged!!!
+
+    def __call__(self, results):
+        """Call function.
+        For each dict in results, perform gray augmention for image in the
+        dict.
+        Args:
+            results (list[dict]): List of dict
+        Returns:
+            list[dict]: List of dict that contains augmented gray image.
+        """
+        will_crop = np.random.random() > self.crop_prob
+
+        params = None
+
+        outs = []
+        for _results in results:
+
+            for key in _results.get("img_fields", ["img"]):
+                img = _results[key]
+
+                if will_crop:
+
+                    # need to resue the same params for consistency?
+                    # or is it better to crop randomly?
+                    if params is None:
+                        if self.efficientnet_style:
+                            get_params_func = self.get_params_efficientnet_style
+                            get_params_args = dict(
+                                img=img,
+                                size=self.size,
+                                scale=self.scale,
+                                ratio=self.ratio,
+                                max_attempts=self.max_attempts,
+                                min_covered=self.min_covered,
+                                crop_padding=self.crop_padding,
+                            )
+                        else:
+                            get_params_func = self.get_params
+                            get_params_args = dict(
+                                img=img,
+                                scale=self.scale,
+                                ratio=self.ratio,
+                                max_attempts=self.max_attempts,
+                            )
+                        ymin, xmin, ymax, xmax = get_params_func(
+                            **get_params_args
+                        )
+                        params = [ymin, xmin, ymax, xmax]
+
+                    img = mmcv.imcrop(img, bboxes=np.array(params))
+
+                _results[key] = mmcv.imresize(
+                    img,
+                    tuple(self.size[::-1]),
+                    interpolation=self.interpolation,
+                    backend=self.backend,
+                )
+                outs.append(_results)
+
+        return outs
+
+
+@PIPELINES.register_module()
 class RandomGrayscale(object):
     """Randomly convert image to grayscale with a probability of gray_prob.
     Args:

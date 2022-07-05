@@ -13,9 +13,13 @@ model = dict(
         num_fcs=1,
         in_channels=2048,
         fc_channels=1024,
-        out_channels=128,
+        # out_channels=128,
+        out_channels=2048,  # match BoT Baseline
         num_classes=380,
-        loss=dict(type="CrossEntropyLoss", loss_weight=1.0),
+        # loss=dict(type="CrossEntropyLoss", loss_weight=1.0),
+        loss=dict(
+            type="LabelSmoothLoss", label_smooth_val=0.1, loss_weight=1.0
+        ),
         loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=0.3),
         norm_cfg=dict(type="BN1d"),
         act_cfg=dict(type="ReLU"),

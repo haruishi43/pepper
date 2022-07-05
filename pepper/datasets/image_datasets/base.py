@@ -62,8 +62,10 @@ class ImageDataset(BaseDataset):
             return data_infos
 
         if not self._is_eval:
+            # train
             data_infos = _get_annotations(self.ann_file, self.data_prefix)
         else:
+            # val/test
             query_infos = _get_annotations(
                 self.ann_file["query"],
                 self.data_prefix["query"],

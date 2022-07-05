@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+
 def no_index(a, b):
     assert isinstance(a, list)
     return [i for i, j in enumerate(a) if j != b]

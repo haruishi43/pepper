@@ -90,7 +90,7 @@ def binary_cross_entropy(
     class_weight=None,
     pos_weight=None,
 ):
-    r"""Calculate the binary CrossEntropy loss with logits.
+    """Calculate the binary CrossEntropy loss with logits.
     Args:
         pred (torch.Tensor): The prediction with shape (N, \*).
         label (torch.Tensor): The gt label with shape (N, \*).
