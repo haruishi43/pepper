@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import warnings
 
 import numpy as np
 import torch
@@ -11,20 +12,6 @@ from ..base_dataset import BaseDataset
 
 @DATASETS.register_module()
 class VideoDataset(BaseDataset):
-    def __init__(
-        self,
-        data_prefix,
-        pipeline,
-        ann_file=None,
-        eval_mode=False,
-    ):
-        super(VideoDataset, self).__init__(
-            data_prefix=data_prefix,
-            pipeline=pipeline,
-            ann_file=ann_file,
-            eval_mode=eval_mode,
-        )
-
     def load_annotations(self):
         """Load annotations from ImageNet style annotation file.
         Returns:
@@ -62,9 +49,7 @@ class VideoDataset(BaseDataset):
             del tmp_data
             return data_infos
 
-        if not self._is_eval:
-            data_infos = _get_annotations(self.ann_file, self.data_prefix)
-        else:
+        if self._is_query_gallery:
             query_infos = _get_annotations(
                 self.ann_file["query"],
                 self.data_prefix["query"],
@@ -80,6 +65,10 @@ class VideoDataset(BaseDataset):
 
             # dataloading needs a single list sos we concat it
             data_infos = query_infos + gallery_infos
+        else:
+            # training split
+            data_infos = _get_annotations(self.ann_file, self.data_prefix)
+
         return data_infos
 
     def prepare_data(self, data):
@@ -117,14 +106,24 @@ class VideoDataset(BaseDataset):
     def evaluate(
         self,
         results,
-        reduction="flatten",
+        reduction="average",
         **kwargs,
     ):
         """For sequential data, we need a better way of obtaining features"""
 
-        # prepare the results here if it haven't yet
-        if len(results) != len(self.data_infos):
-            # reduce the features to single dim
+        assert isinstance(results, list)
+
+        sample = results[0]
+
+        if sample.squeeze(0).dim() > 1:
+            # multi-dim features cannot be evaluated directly,
+            # we need to reduce the features to single dim
+            warnings.warn(
+                f"Multi-dim features detected (shape: {sample.shape})"
+                "we need to reduce the features to single dim."
+                f"Using {reduction} reduction method."
+            )
+
             new_results = []
             for r in results:
                 if reduction == "flatten":

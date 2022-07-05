@@ -909,7 +909,7 @@ class SeqRandomErasing(RandomErasing):
                     continue
 
                 if not self.share_params:
-                    img = results[key]
+                    img = _results[key]
                     img_h, img_w = img.shape[:2]
                     # convert to log aspect to ensure equal probability of aspect ratio
                     log_aspect_range = np.log(

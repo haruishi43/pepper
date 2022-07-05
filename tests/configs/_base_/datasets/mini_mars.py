@@ -6,28 +6,37 @@ train_pipeline = [
     dict(type="VideoSampler", method="random_crop", seq_len=num_frames),
     dict(type="LoadMultiImagesFromFile", to_float32=True),
     dict(
-        type="SeqResize",
-        size=(256, 128),  # (h, w)
-        interpolation="bilinear",
+        type="SeqProbRandomResizedCrop",
+        size=(256, 128),
+        scale=(0.5, 1.0),
+        crop_prob=0.5,
     ),
     dict(
         type="SeqRandomFlip",
         flip_prob=0.5,
         direction="horizontal",
     ),
+    dict(
+        type="SeqRandomErasing",
+        share_params=False,
+        erase_prob=0.5,
+        min_area_ratio=0.02,
+        max_area_ratio=0.4,
+    ),
     dict(type="SeqNormalize", **img_norm_cfg),
     dict(type="VideoCollect", keys=["img", "gt_label"]),
     dict(type="FormatBundle"),
 ]
 test_pipeline = [
-    dict(type="LoadMultiImageFromFile"),
+    dict(type="VideoSampler", method="evenly", seq_len=num_frames),
+    dict(type="LoadMultiImagesFromFile", to_float32=True),
     dict(
         type="SeqResize",
         size=(256, 128),  # (h, w)
         interpolation="bilinear",
     ),
     dict(type="SeqNormalize", **img_norm_cfg),
-    dict(type="VideoCollect", keys=["img"], meta_keys=[]),
+    dict(type="VideoCollect", keys=["img"]),
 ]
 data_type = "VideoDataset"
 data_root = "tests/data/mini_mars/"
@@ -36,20 +45,32 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         type=data_type,
-        data_prefix=data_root + "bbox_train",
+        data_prefix=data_root,
         ann_file=data_root + "gtPepper/train.json",
         pipeline=train_pipeline,
     ),
-    query=dict(
+    val=dict(
         type=data_type,
-        data_prefix=data_root + "bbox_test",
-        ann_file=data_root + "gtPepper/query.json",
+        data_prefix=dict(
+            query=data_root,
+            gallery=data_root,
+        ),
+        ann_file=dict(
+            query=data_root + "gtPepper/query.json",
+            gallery=data_root + "gtPepper/gallery.json",
+        ),
         pipeline=test_pipeline,
     ),
     test=dict(
         type=data_type,
-        data_prefix=data_root + "bbox_test",
-        ann_file=data_root + "gtPepper/gallery.json",
+        data_prefix=dict(
+            query=data_root,
+            gallery=data_root,
+        ),
+        ann_file=dict(
+            query=data_root + "gtPepper/query.json",
+            gallery=data_root + "gtPepper/gallery.json",
+        ),
         pipeline=test_pipeline,
     ),
 )

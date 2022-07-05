@@ -2,6 +2,7 @@
 
 import copy
 import os.path as osp
+import warnings
 from abc import ABCMeta, abstractmethod
 from os import PathLike
 
@@ -37,8 +38,11 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
     NUM_CAMIDS = None
     EVAL_KEYS = ("query", "gallery")
 
-    # eval mode
+    # eval mode  (default: false)
     _is_eval = False
+
+    # check if data is query and gallery (default: false)
+    _is_query_gallery = False
 
     # number of query images (to index `data_infos`)
     _num_query = None  # HACK: using this for indexing back query and gallery
@@ -59,8 +63,9 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         # we use `dict` for `data_prefix` and `ann_files` during val or test set.
         # The keys should be `query` and `gallery`
 
-        if eval_mode:
-            assert isinstance(data_prefix, dict) and isinstance(
+        if isinstance(data_prefix, dict):
+            # we assume we're loading query/gallery pairs
+            assert isinstance(
                 ann_file, dict
             ), "for validation, `data_prefix` and `ann_file` must be dict."
 
@@ -75,7 +80,17 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
                 assert key in self.EVAL_KEYS
                 _ann_file[key] = expanduser(ann_file[key])
             self.ann_file = _ann_file
+
+            self._is_query_gallery = True
+            self._is_eval = eval_mode
+
+            if not eval_mode:
+                warnings.warn("Using query/gallery as training data")
+
         else:
+            # we assume we're loading train split
+            assert not eval_mode, "training split cannot be used for evaluation"
+
             # does not check in case of `None` since we would like to run data
             # that doesn't have annotations
             self.data_prefix = expanduser(data_prefix)
@@ -106,11 +121,11 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         pass
 
     def get_query_infos(self):
-        assert self._is_eval
+        assert self._is_query_gallery and self._is_eval
         return self.data_infos[: self._num_query]
 
     def get_gallery_infos(self):
-        assert self._is_eval
+        assert self._is_query_gallery and self._is_eval
         return self.data_infos[self._num_query :]
 
     def prepare_data(self, data):
@@ -158,7 +173,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
 
         """
         assert self._is_eval, "ERR: not in eval mode"
-        # NOTE: we assume that the results are in order [query, gallery]
+        assert self._is_query_gallery, "ERR: dataset is not query/gallery mode"
 
         if metric_options is None:
             metric_options = dict(rank_list=[1, 5, 10, 20], max_rank=20)

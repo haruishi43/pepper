@@ -10,22 +10,6 @@ from ..base_dataset import BaseDataset
 
 @DATASETS.register_module()
 class ImageDataset(BaseDataset):
-    def __init__(
-        self,
-        data_prefix,
-        pipeline,
-        ann_file=None,
-        eval_mode=False,
-        **kwargs,
-    ):
-        super(ImageDataset, self).__init__(
-            data_prefix=data_prefix,
-            pipeline=pipeline,
-            ann_file=ann_file,
-            eval_mode=eval_mode,
-            **kwargs,
-        )
-
     def load_annotations(self):
         """Load annotations from ImageNet style annotation file.
         Returns:
@@ -61,11 +45,8 @@ class ImageDataset(BaseDataset):
             del tmp_data
             return data_infos
 
-        if not self._is_eval:
-            # train
-            data_infos = _get_annotations(self.ann_file, self.data_prefix)
-        else:
-            # val/test
+        if self._is_query_gallery:
+            # query/gallery pairs
             query_infos = _get_annotations(
                 self.ann_file["query"],
                 self.data_prefix["query"],
@@ -81,4 +62,8 @@ class ImageDataset(BaseDataset):
 
             # dataloading needs a single list so we concat it
             data_infos = query_infos + gallery_infos
+        else:
+            # training split
+            data_infos = _get_annotations(self.ann_file, self.data_prefix)
+
         return data_infos
