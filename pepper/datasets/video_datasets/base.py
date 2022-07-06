@@ -142,7 +142,7 @@ class VideoDataset(BaseDataset):
 
             results = new_results
 
-        super(VideoDataset, self).evaluate(
+        return super(VideoDataset, self).evaluate(
             results=results,
             **kwargs,
         )
