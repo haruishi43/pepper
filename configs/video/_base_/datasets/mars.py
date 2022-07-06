@@ -1,7 +1,7 @@
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True
 )
-num_frames = 12  # FIXME: we should use 16
+num_frames = 8  # FIXME: we should use 16
 train_pipeline = [
     dict(type="VideoSampler", method="random_crop", seq_len=num_frames),
     dict(type="LoadMultiImagesFromFile", to_float32=True),
