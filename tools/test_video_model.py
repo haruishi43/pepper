@@ -9,7 +9,7 @@ from pepper.models.reid.video_reid import VideoReID
 
 def main():
 
-    cfg = Config.fromfile("configs/video/resnet/resnet50_b32_mars.py")
+    cfg = Config.fromfile("configs/video/resnet/resnet50_b16_mars.py")
     print(cfg.pretty_text)
 
     use_gpu = True

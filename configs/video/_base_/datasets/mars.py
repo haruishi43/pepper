@@ -1,7 +1,7 @@
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True
 )
-num_frames = 16
+num_frames = 12  # FIXME: we should use 16
 train_pipeline = [
     dict(type="VideoSampler", method="random_crop", seq_len=num_frames),
     dict(type="LoadMultiImagesFromFile", to_float32=True),
@@ -36,14 +36,14 @@ test_pipeline = [
         interpolation="bilinear",
     ),
     dict(type="SeqNormalize", **img_norm_cfg),
-    dict(type="VideoToTensor", keys=["img"]),
     dict(type="VideoCollect", keys=["img"]),
+    dict(type="FormatVideoEval", as_list=False),
 ]
 data_type = "VideoDataset"
-data_root = "data/mars"
+data_root = "data/mars/"
 data = dict(
     samples_per_gpu=16,
-    workers_per_gpu=2,
+    workers_per_gpu=6,
     train=dict(
         type=data_type,
         data_prefix=data_root,

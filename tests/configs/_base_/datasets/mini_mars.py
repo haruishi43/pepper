@@ -37,7 +37,7 @@ test_pipeline = [
     ),
     dict(type="SeqNormalize", **img_norm_cfg),
     dict(type="VideoCollect", keys=["img"]),
-    dict(type="FormatVideoEval", as_list=True),
+    dict(type="FormatVideoEval", as_list=False),
 ]
 data_type = "VideoDataset"
 data_root = "tests/data/mini_mars/"

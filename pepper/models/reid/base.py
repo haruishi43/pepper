@@ -64,6 +64,7 @@ class BaseReID(BaseModule, metaclass=ABCMeta):
         if len(imgs) == 1:
             return self.simple_test(imgs[0], **kwargs)
         else:
+            # FIXME: when testing video sequence, this will result in error as well
             raise NotImplementedError("aug_test has not been implemented")
 
     @auto_fp16(apply_to=("img",))

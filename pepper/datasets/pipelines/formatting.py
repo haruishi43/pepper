@@ -389,8 +389,6 @@ class FormatVideoEval(object):
             len(results) > 1
         ), f"`results should be > 1 (but got {len(results)}"
 
-        print(results[0].keys())
-
         out = dict()
 
         if self.as_list:

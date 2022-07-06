@@ -137,17 +137,20 @@ class VideoReID(BaseReID):
     def simple_test(self, img, **kwargs):
         """Test without augmentation."""
 
+        # FIXME: this is ugly and we need a clean rule for inference
         if isinstance(img, list):
             # for inference, we can have a list of tensors
             num_imgs = len(img)
             img = torch.stack(img, dim=0)  # stack at batch direction
         elif isinstance(img, torch.Tensor):
-            if img.ndim == 3:
-                # single image
-                img = img.unsqueeze(0)
-            elif img.ndim == 4:
+            if img.ndim == 4:
                 # sequence of images
                 num_imgs = img.shape[0]
+                img = img.unsqueeze(0)
+            elif img.ndim == 5:
+                assert img.shape[0] == 1
+                num_imgs = img.shape[1]
+                img = img
             else:
                 raise ValueError(f"{img.shape} is not supported")
         else:
