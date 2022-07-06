@@ -7,6 +7,7 @@ from mmcv.utils import Registry
 MODELS = Registry("models", parent=MMCV_MODELS)
 
 BACKBONES = MODELS
+TEMPORAL = MODELS
 NECKS = MODELS
 HEADS = MODELS
 LOSSES = MODELS
@@ -25,6 +26,11 @@ def build_backbone(cfg):
 def build_neck(cfg):
     """Build neck."""
     return NECKS.build(cfg)
+
+
+def build_temporal_layer(cfg):
+    """Build temporal modeling layer"""
+    return TEMPORAL.build(cfg)
 
 
 def build_head(cfg):

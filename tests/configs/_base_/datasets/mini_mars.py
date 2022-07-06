@@ -29,7 +29,7 @@ train_pipeline = [
 ]
 test_pipeline = [
     dict(type="VideoSampler", method="evenly", seq_len=num_frames),
-    dict(type="LoadMultiImagesFromFile", to_float32=True),
+    dict(type="LoadMultiImagesFromFile"),
     dict(
         type="SeqResize",
         size=(256, 128),  # (h, w)
@@ -37,6 +37,7 @@ test_pipeline = [
     ),
     dict(type="SeqNormalize", **img_norm_cfg),
     dict(type="VideoCollect", keys=["img"]),
+    dict(type="FormatVideoEval", as_list=True),
 ]
 data_type = "VideoDataset"
 data_root = "tests/data/mini_mars/"

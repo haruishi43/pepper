@@ -1,20 +1,30 @@
 #!/usr/bin/env python3
 
+import torch
+
 from mmcv.runner import auto_fp16
 
-from ..builder import REID, build_backbone, build_head, build_neck
+from ..builder import (
+    REID,
+    build_backbone,
+    build_head,
+    build_neck,
+    build_temporal_layer,
+)
 from .base import BaseReID
 
 
 @REID.register_module()
 class VideoReID(BaseReID):
 
-    _stage = ("backbone", "neck", "pre_logits")
+    _stage = ("backbone", "neck", "temporal", "pre_logits")
+    _temporal_backbone = False
 
     def __init__(
         self,
         backbone,
         neck=None,
+        temporal=None,
         head=None,
         pretrained=None,
         train_cfg=None,
@@ -23,6 +33,8 @@ class VideoReID(BaseReID):
     ):
         super(VideoReID, self).__init__(init_cfg)
 
+        # backbone -> pool (neck) -> temporal -> head
+
         if pretrained is not None:
             self.init_cfg = dict(type="Pretrained", checkpoint=pretrained)
         self.backbone = build_backbone(backbone)
@@ -30,7 +42,11 @@ class VideoReID(BaseReID):
         if neck is not None:
             self.neck = build_neck(neck)
 
-        # TODO: add temporal necks?
+        if temporal is not None:
+            self.temporal = build_temporal_layer(temporal)
+        else:
+            # we assume that the backbone takes care of the temporal features
+            self._temporal_backbone = True
 
         if head is not None:
             self.head = build_head(head)
@@ -41,77 +57,44 @@ class VideoReID(BaseReID):
             ), f"ERR: {inference_stage} needs one of {self._stage}"
         self.overwrite_stage = inference_stage
 
+    @property
+    def with_temporal(self):
+        return hasattr(self, "temporal") and self.temporal is not None
+
     def extract_feat(self, img, stage="pre_logits"):
-        """Directly extract features from the specified stage.
-        Args:
-            img (Tensor): The input images. The shape of it should be
-                ``(num_samples, num_channels, *img_shape)``.
-            stage (str): Which stage to output the feature. Choose from
-                "backbone", "neck" and "pre_logits". Defaults to "pre_logits".
-        Returns:
-            tuple | Tensor: The output of specified stage.
-                The output depends on detailed implementation. In general, the
-                output of backbone and neck is a tuple and the output of
-                pre_logits is a tensor.
-
-        Examples:
-            1. Backbone output
-            >>> import torch
-            >>> from mmcv import Config
-            >>> from pepper.models import build_reid
-            >>>
-            >>> cfg = Config.fromfile('configs/resnet/resnet18_8xb32_in1k.py').model
-            >>> cfg.backbone.out_indices = (0, 1, 2, 3)  # Output multi-scale feature maps
-            >>> model = build_reid(cfg)
-            >>> outs = model.extract_feat(torch.rand(1, 3, 224, 224), stage='backbone')
-            >>> for out in outs:
-            ...     print(out.shape)
-            torch.Size([1, 64, 56, 56])
-            torch.Size([1, 128, 28, 28])
-            torch.Size([1, 256, 14, 14])
-            torch.Size([1, 512, 7, 7])
-
-            2. Neck output
-            >>> import torch
-            >>> from mmcv import Config
-            >>> from pepper.models import build_reid
-            >>>
-            >>> cfg = Config.fromfile('configs/resnet/resnet18_8xb32_in1k.py').model
-            >>> cfg.backbone.out_indices = (0, 1, 2, 3)  # Output multi-scale feature maps
-            >>> model = build_reid(cfg)
-            >>>
-            >>> outs = model.extract_feat(torch.rand(1, 3, 224, 224), stage='neck')
-            >>> for out in outs:
-            ...     print(out.shape)
-            torch.Size([1, 64])
-            torch.Size([1, 128])
-            torch.Size([1, 256])
-            torch.Size([1, 512])
-
-            3. Pre-logits output (without the final linear classifier head)
-            >>> import torch
-            >>> from mmcv import Config
-            >>> from pepper.models import build_reid
-            >>>
-            >>> cfg = Config.fromfile('configs/vision_transformer/vit-base-p16_pt-64xb64_in1k-224.py').model
-            >>> model = build_reid(cfg)
-            >>>
-            >>> out = model.extract_feat(torch.rand(1, 3, 224, 224), stage='pre_logits')
-            >>> print(out.shape)  # The hidden dims in head is 3072
-            torch.Size([1, 3072])
-        """  # noqa: E501
         assert (
             stage in self._stage
         ), f'Invalid output stage "{stage}", please choose from {self._stage}'
 
-        x = self.backbone(img)
+        if img.ndim == 4:
+            # force dim=5
+            img = img.unsqueeze(0)
 
+        if not self._temporal_backbone:
+            b, s, c, h, w = img.shape
+            img = img.view(b * s, c, h, w)
+            x = self.backbone(img)  # output is a tuple
+        else:
+            # TODO: might be different if we're using 3D Conv, but that should be another
+            # Model (this model is sequential)
+            x = self.backbone(img)
         if stage == "backbone":
             return x
 
         if self.with_neck:
             x = self.neck(x)
+            if not self._temporal_backbone:
+                if isinstance(x, tuple):
+                    x = tuple([_x.view(b, s, -1) for _x in x])
+                else:
+                    x = x.view(b, s, -1)  # unravel features
         if stage == "neck":
+            return x
+
+        if self.with_temporal:
+            # we assume tensor shape with (b, s, feat)
+            x = self.temporal(x)
+        if stage == "temporal":
             return x
 
         if self.with_head and hasattr(self.head, "pre_logits"):
@@ -131,6 +114,9 @@ class VideoReID(BaseReID):
             dict[str, Tensor]: a dictionary of loss components
         """
 
+        assert isinstance(
+            img, torch.Tensor
+        ), f"ERR: input img should be a tensor, but got {type(img)}"
         assert (
             img.ndim == 5
         ), f"ERR: input img should be 5dim, but got {img.ndim}"
@@ -150,21 +136,38 @@ class VideoReID(BaseReID):
     @auto_fp16(apply_to=("img",), out_fp32=True)
     def simple_test(self, img, **kwargs):
         """Test without augmentation."""
-        if img.nelement() > 0:
-            if self.overwrite_stage is not None:
-                stage = self.overwrite_stage
-                feats = self.extract_feat(img, stage=stage)
-            else:
-                feats = self.extract_feat(img)
 
-            # FIXME: handle mutliple outputs
-            # mainly features from various levels in the backbone
-            if isinstance(feats, tuple):
-                if len(feats) > 1:
-                    # if features from multiple layers are returned, we use the last feature
-                    feats = feats[-1]
-                else:
-                    feats = feats[0]
-            return feats
+        if isinstance(img, list):
+            # for inference, we can have a list of tensors
+            num_imgs = len(img)
+            img = torch.stack(img, dim=0)  # stack at batch direction
+        elif isinstance(img, torch.Tensor):
+            if img.ndim == 3:
+                # single image
+                img = img.unsqueeze(0)
+            elif img.ndim == 4:
+                # sequence of images
+                num_imgs = img.shape[0]
+            else:
+                raise ValueError(f"{img.shape} is not supported")
         else:
-            return img.new_zeros(0, self.head.out_channels)
+            raise ValueError(f"{type(img)} is not supported")
+
+        if self.overwrite_stage is not None:
+            stage = self.overwrite_stage
+            feats = self.extract_feat(img, stage=stage)
+        else:
+            feats = self.extract_feat(img)
+
+        # TODO: might need to post process if feature size is not what we want
+        # for example, the number of features are not 1, but `num_imgs`
+
+        # FIXME: handle mutliple outputs
+        # mainly features from various levels in the backbone
+        if isinstance(feats, tuple):
+            if len(feats) > 1:
+                # if features from multiple layers are returned, we use the last feature
+                feats = feats[-1]
+            else:
+                feats = feats[0]
+        return feats

@@ -9,20 +9,22 @@ from pepper.models.reid.video_reid import VideoReID
 
 def main():
 
-    cfg = Config.fromfile("configs/video/resnet/resnet50_b32_market1501.py")
+    cfg = Config.fromfile("configs/video/resnet/resnet50_b32_mars.py")
     print(cfg.pretty_text)
 
     use_gpu = True
     train_mode = True
-    bs = 32
+    bs = 8
+    seq_len = 16
     instances = 4
     h, w = 256, 128
-    img = torch.rand((bs, 3, h, w), dtype=torch.float)
+    img = torch.rand((bs, seq_len, 3, h, w), dtype=torch.float)
     gt_label = torch.tensor([i % instances for i in range(bs)])
 
     net = VideoReID(
         backbone=cfg.model.backbone,
         neck=cfg.model.neck,
+        temporal=cfg.model.temporal,
         head=cfg.model.head,
         init_cfg=cfg.model.init_cfg,
     )

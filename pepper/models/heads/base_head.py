@@ -18,3 +18,7 @@ class BaseHead(BaseModule, metaclass=ABCMeta):
     @abstractmethod
     def forward_train(self, x, gt_label, **kwargs):
         pass
+
+    def forward(self, x, **kwargs):
+        x = self.pre_logits(x, **kwargs)
+        return x

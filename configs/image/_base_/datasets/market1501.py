@@ -38,7 +38,7 @@ test_pipeline = [
     ),
     dict(type="Normalize", **img_norm_cfg),
     dict(type="ImageToTensor", keys=["img"]),
-    dict(type="Collect", keys=["img"], meta_keys=[]),
+    dict(type="Collect", keys=["img"]),
 ]
 data_type = "Market1501Dataset"
 data_root = "data/market1501/Market-1501-v15.09.15/"

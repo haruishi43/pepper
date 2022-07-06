@@ -8,6 +8,9 @@ model = dict(
         style="pytorch",
     ),
     neck=dict(type="KernelGlobalAveragePooling", kernel_size=(8, 4), stride=1),
+    temporal=dict(type="TemporalPooling"),
+    # temporal=dict(type="RNN", in_channels=2048),
+    # temporal=dict(type="TemporalAttention", in_channels=2048, seq_len=16),
     head=dict(
         type="LinearReIDHead",
         num_fcs=1,

@@ -29,14 +29,15 @@ train_pipeline = [
 ]
 test_pipeline = [
     dict(type="VideoSampler", method="evenly", seq_len=num_frames),
-    dict(type="LoadMultiImageFromFile"),
+    dict(type="LoadMultiImagesFromFile"),
     dict(
         type="SeqResize",
         size=(256, 128),  # (h, w)
         interpolation="bilinear",
     ),
     dict(type="SeqNormalize", **img_norm_cfg),
-    dict(type="VideoCollect", keys=["img"], meta_keys=[]),
+    dict(type="VideoToTensor", keys=["img"]),
+    dict(type="VideoCollect", keys=["img"]),
 ]
 data_type = "VideoDataset"
 data_root = "data/mars"

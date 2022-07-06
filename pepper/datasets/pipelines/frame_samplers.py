@@ -39,6 +39,8 @@ class VideoSampler:
         Randomly samples seq_len images from a tracklet of length num_imgs,
         if num_imgs is smaller than seq_len, then replicates images
         """
+
+        # TODO: add deterministic random sampling (generator)
         indices = np.arange(num_imgs)
         replace = False if num_imgs >= seq_len else True
         indices = np.random.choice(

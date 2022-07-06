@@ -1,38 +1,27 @@
 #!/usr/bin/env python3
 
 import torch
-import torch.nn as nn
+
+from .base import BaseTemporalLayer
+from ..builder import TEMPORAL
 
 
-class TemporalPooling(nn.Module):
+@TEMPORAL.register_module()
+class TemporalPooling(BaseTemporalLayer):
 
-    _pool_types = "avg"
+    _pool_types = ("mean", "median")
 
-    def __init__(self, pooling_method="avg"):
+    def __init__(self, pooling_method="mean"):
         super().__init__()
 
         assert (
             pooling_method in self._pool_types
         ), f"pooling_method must be in {self._pool_types}"
+        self.method = pooling_method
 
-        if pooling_method == "avg":
-            self.pool = nn.AdaptiveAvgPool2d(1)
-        else:
-            raise ValueError()
-
-    def forward(self, inputs):
-        if isinstance(inputs, tuple):
-            inputs = tuple([x.transpose(-1, -2) for x in inputs])
-            # inputs = tuple([x.permute(0, 2, 1) for x in inputs])
-            outs = tuple([self.pool(x) for x in inputs])
-            outs = tuple(
-                [out.view(x.size(0), -1) for out, x in zip(outs, inputs)]
-            )
-        elif isinstance(inputs, torch.Tensor):
-            inputs = inputs.transpose(-1, -2)
-            # inputs = inputs.permute(0, 2, 1)
-            outs = self.pool(inputs)
-            outs = outs.view(inputs.size(0), -1)
-        else:
-            raise TypeError("neck inputs should be tuple or torch.tensor")
-        return outs
+    def _forward(self, x, **kwargs):
+        if self.method == "mean":
+            x = torch.mean(x, dim=1)
+        elif self.method == "median":
+            x = torch.median(x, dim=1)
+        return x

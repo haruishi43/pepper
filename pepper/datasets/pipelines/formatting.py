@@ -66,6 +66,23 @@ class ImageToTensor(object):
 
 
 @PIPELINES.register_module()
+class VideoToTensor(object):
+    def __init__(self, keys):
+        self.keys = keys
+
+    def __call__(self, results):
+        for result in results:
+            for key in self.keys:
+                img = result[key]
+                img = np.ascontiguousarray(img.transpose(2, 0, 1))
+                result[key] = to_tensor(img)
+        return results
+
+    def __repr__(self):
+        return self.__class__.__name__ + f"(keys={self.keys})"
+
+
+@PIPELINES.register_module()
 class Transpose(object):
     def __init__(self, keys, order):
         self.keys = keys
@@ -300,9 +317,12 @@ class FormatBundle(object):
             inputs["img"] = np.stack(
                 [_results["img"] for _results in results], axis=3
             )
-            inputs["gt_label"] = np.stack(
-                [_results["gt_label"] for _results in results], axis=0
-            )
+
+            # Don't Stack! Just get a single label
+            # inputs["gt_label"] = np.stack(
+            #     [_results["gt_label"] for _results in results], axis=0
+            # )
+            inputs["gt_label"] = results[0]["gt_label"]
             inputs["img_metas"] = [
                 _results["img_metas"] for _results in results
             ]
@@ -345,6 +365,49 @@ class FormatBundle(object):
             else:
                 raise KeyError(f"key {key} is not supported")
         return results
+
+
+@PIPELINES.register_module()
+class FormatVideoEval(object):
+    """
+    Instead of list of dicts, we need dict('img', 'img_metas') instead
+    for video data (mainly evaluation).
+
+    Similar to FormatBundle.
+
+    `as_list` (bool): instead of stacking the imgs, we return list of tensors
+        (which is how the model is intended to be used for inference).
+    """
+
+    def __init__(self, as_list=True):
+        super().__init__()
+        self.as_list = as_list
+
+    def __call__(self, results):
+        assert isinstance(results, list), "`results` should be sequential data"
+        assert (
+            len(results) > 1
+        ), f"`results should be > 1 (but got {len(results)}"
+
+        print(results[0].keys())
+
+        out = dict()
+
+        if self.as_list:
+            imgs = []
+            for _results in results:
+                img = _results["img"]
+                img = np.ascontiguousarray(img.transpose(2, 0, 1))
+                imgs.append(to_tensor(img))
+            out["img"] = imgs
+        else:
+            img = np.stack([_results["img"] for _results in results], axis=3)
+            img = np.ascontiguousarray(img.transpose(3, 2, 0, 1))
+            out["img"] = to_tensor(img)
+
+        out["img_metas"] = [_results["img_metas"] for _results in results]
+
+        return out
 
 
 @PIPELINES.register_module()
