@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
 import os.path as osp
-import pickle
-import shutil
-import tempfile
 import time
 
 import mmcv
