@@ -64,8 +64,10 @@ class ConcatTrainDataset(Dataset):
                 data_infos.append(new_info)
                 index += 1
 
-            cum_pids += len(dataset.get_pids())  # len of numpy array
-            cum_camids += len(dataset.get_camids())  # len of numpy array
+            cum_pids += len(np.unique(dataset.get_pids()))  # len of numpy array
+            cum_camids += len(
+                np.unique(dataset.get_camids())
+            )  # len of numpy array
 
         return data_infos
 

@@ -174,32 +174,62 @@ def train_model(
 
     # register eval hooks
     if validate:
-        # Support batch_size > 1 in validation
-        val_samples_per_gpu = cfg.data.val.pop("samples_per_gpu", 1)
-        if val_samples_per_gpu > 1:
-            # Replace 'ImageToTensor' to 'DefaultFormatBundle'
-            cfg.data.val.pipeline = replace_ImageToTensor(cfg.data.val.pipeline)
+        if isinstance(cfg.data.val, (list, tuple)):
+            for val_cfg in cfg.data.val:
+                # Support batch_size > 1 in validation
+                val_samples_per_gpu = val_cfg.pop("samples_per_gpu", 1)
+                if val_samples_per_gpu > 1:
+                    # Replace 'ImageToTensor' to 'DefaultFormatBundle'
+                    val_cfg.pipeline = replace_ImageToTensor(val_cfg.pipeline)
 
-        # TODO: multiple dataset evaluation (indpendent runs/hook)
-        val_dataset = build_dataset(cfg.data.val, dict(eval_mode=True))
+                val_dataset = build_dataset(val_cfg, dict(eval_mode=True))
 
-        val_dataloader = build_dataloader(
-            val_dataset,
-            samples_per_gpu=val_samples_per_gpu,
-            workers_per_gpu=cfg.data.workers_per_gpu,
-            dist=distributed,
-            shuffle=False,
-            round_up=True,
-            is_val=True,
-        )
-        eval_cfg = cfg.get("evaluation", {})
-        eval_cfg["by_epoch"] = cfg.runner["type"] != "IterBasedRunner"
-        eval_hook = DistEvalHook if distributed else EvalHook
-        # In this PR (https://github.com/open-mmlab/mmcv/pull/1193), the
-        # priority of IterTimerHook has been modified from 'NORMAL' to 'LOW'.
-        runner.register_hook(
-            eval_hook(val_dataloader, **eval_cfg), priority="LOW"
-        )
+                val_dataloader = build_dataloader(
+                    val_dataset,
+                    samples_per_gpu=val_samples_per_gpu,
+                    workers_per_gpu=cfg.data.workers_per_gpu,
+                    dist=distributed,
+                    shuffle=False,
+                    round_up=True,
+                    is_val=True,
+                )
+                eval_cfg = cfg.get("evaluation", {})
+                eval_cfg["by_epoch"] = cfg.runner["type"] != "IterBasedRunner"
+                eval_hook = DistEvalHook if distributed else EvalHook
+                # In this PR (https://github.com/open-mmlab/mmcv/pull/1193), the
+                # priority of IterTimerHook has been modified from 'NORMAL' to 'LOW'.
+                runner.register_hook(
+                    eval_hook(val_dataloader, **eval_cfg), priority="LOW"
+                )
+
+        else:
+            # Support batch_size > 1 in validation
+            val_samples_per_gpu = cfg.data.val.pop("samples_per_gpu", 1)
+            if val_samples_per_gpu > 1:
+                # Replace 'ImageToTensor' to 'DefaultFormatBundle'
+                cfg.data.val.pipeline = replace_ImageToTensor(
+                    cfg.data.val.pipeline
+                )
+
+            val_dataset = build_dataset(cfg.data.val, dict(eval_mode=True))
+
+            val_dataloader = build_dataloader(
+                val_dataset,
+                samples_per_gpu=val_samples_per_gpu,
+                workers_per_gpu=cfg.data.workers_per_gpu,
+                dist=distributed,
+                shuffle=False,
+                round_up=True,
+                is_val=True,
+            )
+            eval_cfg = cfg.get("evaluation", {})
+            eval_cfg["by_epoch"] = cfg.runner["type"] != "IterBasedRunner"
+            eval_hook = DistEvalHook if distributed else EvalHook
+            # In this PR (https://github.com/open-mmlab/mmcv/pull/1193), the
+            # priority of IterTimerHook has been modified from 'NORMAL' to 'LOW'.
+            runner.register_hook(
+                eval_hook(val_dataloader, **eval_cfg), priority="LOW"
+            )
 
     resume_from = None
     if cfg.resume_from is None and cfg.get("auto_resume"):
