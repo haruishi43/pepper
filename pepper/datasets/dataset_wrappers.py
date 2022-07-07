@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 
-"""
-Only for training!
-"""
-
 from copy import deepcopy
 
 import numpy as np
@@ -14,7 +10,12 @@ from .builder import DATASETS
 
 @DATASETS.register_module()
 class ConcatTrainDataset(Dataset):
-    """A wrapper of concatenated dataset."""
+    """Concat training datasets into a single `Dataset` class
+
+    This class is useful for training multiple dataset (or concat
+    query/gallery of the same dataset) to increase the size of
+    the dataset.
+    """
 
     NUM_PIDS = None
     NUM_CAMIDS = None
@@ -64,10 +65,8 @@ class ConcatTrainDataset(Dataset):
                 data_infos.append(new_info)
                 index += 1
 
-            cum_pids += len(np.unique(dataset.get_pids()))  # len of numpy array
-            cum_camids += len(
-                np.unique(dataset.get_camids())
-            )  # len of numpy array
+            cum_pids += len(np.unique(dataset.get_pids()))
+            cum_camids += len(np.unique(dataset.get_camids()))
 
         return data_infos
 
@@ -91,6 +90,7 @@ class ConcatTrainDataset(Dataset):
         return self.prepare_data(data)
 
     def get_gt_labels(self):
+        # NOTE: no use for this function
         gt_labels = np.array([data["gt_label"] for data in self.data_infos])
         return gt_labels
 
