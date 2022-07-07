@@ -16,19 +16,31 @@ optimizer_config = dict(grad_clip=None)
 #     warmup_ratio=1.0 / _wu,
 # )
 
+# lr_config = dict(
+#     # -> policy config
+#     policy="step",
+#     step=[2000, 4000],  # [5]
+#     gamma=0.1,
+#     # -> warmup config
+#     warmup="linear",
+#     warmup_iters=1000,
+#     warmup_ratio=0.1,
+# )
+
+# configs based on BoT
 lr_config = dict(
     # -> policy config
     policy="step",
-    step=[2000, 4000],  # [5]
+    step=[2000, 3500, 6000],
     gamma=0.1,
     # -> warmup config
     warmup="linear",
-    warmup_iters=1000,
+    warmup_iters=500,
     warmup_ratio=0.1,
 )
 
 # runner settings
-runner = dict(type="IterBasedRunner", max_iters=8000)
+runner = dict(type="IterBasedRunner", max_iters=10000)
 
 # evaluation
 evaluation = dict(
