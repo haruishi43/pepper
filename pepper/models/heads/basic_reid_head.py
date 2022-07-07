@@ -14,11 +14,9 @@ from ..losses import Accuracy
 
 @HEADS.register_module()
 class BasicReIDHead(BaseHead):
-    """Linear head for re-identification.
+    """Basic head for re-identification.
     Args:
-        num_fcs (int): Number of fcs.
         in_channels (int): Number of channels in the input.
-        out_channels (int): Number of channels in the output.
         norm_cfg (dict, optional): Configuration of normlization method
             after fc. Defaults to None.
         act_cfg (dict, optional): Configuration of activation method after fc.
@@ -38,8 +36,6 @@ class BasicReIDHead(BaseHead):
         self,
         num_fcs,
         in_channels,
-        fc_channels,
-        out_channels,
         norm_cfg=None,
         act_cfg=None,
         num_classes=None,
@@ -77,8 +73,6 @@ class BasicReIDHead(BaseHead):
 
         self.num_fcs = num_fcs
         self.in_channels = in_channels
-        self.fc_channels = fc_channels
-        self.out_channels = out_channels
         self.norm_cfg = norm_cfg
         self.act_cfg = act_cfg
         self.num_classes = num_classes
@@ -89,12 +83,9 @@ class BasicReIDHead(BaseHead):
 
     def _init_layers(self):
         """Initialize fc layers."""
-        self.fcs = nn.ModuleList()
-        self.fc_out = nn.Linear(self.in_channels, self.out_channels)
-
         if self.loss_cls:
-            self.bn = nn.BatchNorm1d(self.out_channels)
-            self.classifier = nn.Linear(self.out_channels, self.num_classes)
+            self.bn = nn.BatchNorm1d(self.in_channels)
+            self.classifier = nn.Linear(self.in_channels, self.num_classes)
 
     @auto_fp16()
     def pre_logits(self, x):
@@ -109,9 +100,7 @@ class BasicReIDHead(BaseHead):
 
         assert isinstance(x, torch.Tensor)
 
-        feats = self.fc_out(x)
-
-        return feats
+        return x
 
     @auto_fp16()
     def forward_train(self, x):
