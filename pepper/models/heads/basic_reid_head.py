@@ -34,7 +34,6 @@ class BasicReIDHead(BaseHead):
 
     def __init__(
         self,
-        num_fcs,
         in_channels,
         norm_cfg=None,
         act_cfg=None,
@@ -71,7 +70,6 @@ class BasicReIDHead(BaseHead):
         self.loss_cls = build_loss(loss) if loss else None
         self.loss_triplet = build_loss(loss_pairwise) if loss_pairwise else None
 
-        self.num_fcs = num_fcs
         self.in_channels = in_channels
         self.norm_cfg = norm_cfg
         self.act_cfg = act_cfg
