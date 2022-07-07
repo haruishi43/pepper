@@ -147,21 +147,21 @@ class ImageReID(BaseReID):
     @auto_fp16(apply_to=("img",), out_fp32=True)
     def simple_test(self, img, **kwargs):
         """Test without augmentation."""
-        if img.nelement() > 0:
-            if self.overwrite_stage is not None:
-                stage = self.overwrite_stage
-                feats = self.extract_feat(img, stage=stage)
-            else:
-                feats = self.extract_feat(img)
-
-            # FIXME: handle mutliple outputs
-            # mainly features from various levels in the backbone
-            if isinstance(feats, tuple):
-                if len(feats) > 1:
-                    # if features from multiple layers are returned, we use the last feature
-                    feats = feats[-1]
-                else:
-                    feats = feats[0]
-            return feats
+        if self.overwrite_stage is not None:
+            stage = self.overwrite_stage
+            feats = self.extract_feat(img, stage=stage)
         else:
-            return img.new_zeros(0, self.head.out_channels)
+            feats = self.extract_feat(img)
+
+        # FIXME: handle mutliple outputs
+        # mainly features from various levels in the backbone
+        if isinstance(feats, tuple):
+            if len(feats) > 1:
+                # if features from multiple layers are returned, we use the last feature
+                feats = feats[-1]
+            else:
+                feats = feats[0]
+
+        # need to convert to cpu before sending
+        feats = feats.cpu().squeeze()
+        return feats

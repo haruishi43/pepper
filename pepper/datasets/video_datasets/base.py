@@ -115,7 +115,7 @@ class VideoDataset(BaseDataset):
 
         sample = results[0]
 
-        if sample.squeeze(0).dim() > 1:
+        if sample.dim() > 1:
             # multi-dim features cannot be evaluated directly,
             # we need to reduce the features to single dim
             warnings.warn(

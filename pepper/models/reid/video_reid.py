@@ -173,4 +173,7 @@ class VideoReID(BaseReID):
                 feats = feats[-1]
             else:
                 feats = feats[0]
+
+        # need to convert to cpu before returning
+        feats = feats.cpu().squeeze()
         return feats

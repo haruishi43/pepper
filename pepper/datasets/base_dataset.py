@@ -192,7 +192,6 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
                 raise KeyError(f"metric {metric} is not supported.")
 
         # assert that results is list of tensors
-        results = [result.data.cpu().squeeze() for result in results]
         features = torch.stack(results)
         pids = self.get_pids()
         camids = self.get_camids()

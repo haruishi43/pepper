@@ -105,7 +105,7 @@ class BaseReID(BaseModule, metaclass=ABCMeta):
         for loss_name, loss_value in log_vars.items():
             # reduce loss when distributed training
             if dist.is_available() and dist.is_initialized():
-                loss_value = loss_value.data.clone()
+                loss_value = loss_value.detach().clone()
                 dist.all_reduce(loss_value.div_(dist.get_world_size()))
             log_vars[loss_name] = loss_value.item()
 
@@ -137,7 +137,7 @@ class BaseReID(BaseModule, metaclass=ABCMeta):
         loss, log_vars = self._parse_losses(losses)
 
         outputs = dict(
-            loss=loss, log_vars=log_vars, num_samples=len(data["img"].data)
+            loss=loss, log_vars=log_vars, num_samples=len(data["img"].detach())
         )
 
         return outputs
@@ -166,7 +166,7 @@ class BaseReID(BaseModule, metaclass=ABCMeta):
         loss, log_vars = self._parse_losses(losses)
 
         outputs = dict(
-            loss=loss, log_vars=log_vars, num_samples=len(data["img"].data)
+            loss=loss, log_vars=log_vars, num_samples=len(data["img"].detach())
         )
 
         return outputs

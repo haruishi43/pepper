@@ -7,7 +7,7 @@ _base_ = [
 # batch size of 32 and num_frames=16 would use up ~8x7GB of memory
 # batch size 32 and num_frames=8 used around 20GB
 # batch size 14 and num_frames=8 barely fits on 11GB GPU
-num_frames = 4  # FIXME: we should be using 16
+num_frames = 8  # FIXME: we should be using 16
 model = dict(
     temporal=dict(type="TemporalPooling"),
     # temporal=dict(type="RNN", in_channels=2048),
