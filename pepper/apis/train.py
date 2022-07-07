@@ -179,6 +179,8 @@ def train_model(
         if val_samples_per_gpu > 1:
             # Replace 'ImageToTensor' to 'DefaultFormatBundle'
             cfg.data.val.pipeline = replace_ImageToTensor(cfg.data.val.pipeline)
+
+        # TODO: multiple dataset evaluation (indpendent runs/hook)
         val_dataset = build_dataset(cfg.data.val, dict(eval_mode=True))
 
         val_dataloader = build_dataloader(

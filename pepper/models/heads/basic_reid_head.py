@@ -5,91 +5,19 @@ import warnings
 import torch
 import torch.nn as nn
 
-from mmcv.runner import BaseModule, auto_fp16, force_fp32
-from mmcv.cnn import build_activation_layer, build_norm_layer
+from mmcv.runner import auto_fp16, force_fp32
 
 from .base_head import BaseHead
 from ..builder import HEADS, build_loss
 from ..losses import Accuracy
 
-# from mmcls.models.losses import Accuracy
-
-
-class FcModule(BaseModule):
-    """Fully-connected layer module.
-    Args:
-        in_channels (int): Input channels.
-        out_channels (int): Ourput channels.
-        norm_cfg (dict, optional): Configuration of normlization method
-            after fc. Defaults to None.
-        act_cfg (dict, optional): Configuration of activation method after fc.
-            Defaults to dict(type='ReLU').
-        inplace (bool, optional): Whether inplace the activatation module.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
-            Defaults to dict(type='Kaiming', layer='Linear').
-    """
-
-    def __init__(
-        self,
-        in_channels,
-        out_channels,
-        norm_cfg=None,
-        act_cfg=dict(type="ReLU"),
-        inplace=True,
-        init_cfg=dict(type="Kaiming", layer="Linear"),
-    ):
-        super(FcModule, self).__init__(init_cfg)
-        assert norm_cfg is None or isinstance(norm_cfg, dict)
-        assert act_cfg is None or isinstance(act_cfg, dict)
-        self.norm_cfg = norm_cfg
-        self.act_cfg = act_cfg
-        self.inplace = inplace
-
-        self.with_norm = norm_cfg is not None
-        self.with_activation = act_cfg is not None
-
-        self.fc = nn.Linear(in_channels, out_channels)
-        # build normalization layers
-        if self.with_norm:
-            self.norm_name, norm = build_norm_layer(norm_cfg, out_channels)
-            self.add_module(self.norm_name, norm)
-
-        # build activation layer
-        if self.with_activation:
-            act_cfg_ = act_cfg.copy()
-            # nn.Tanh has no 'inplace' argument
-            if act_cfg_["type"] not in [
-                "Tanh",
-                "PReLU",
-                "Sigmoid",
-                "HSigmoid",
-                "Swish",
-            ]:
-                act_cfg_.setdefault("inplace", inplace)
-            self.activate = build_activation_layer(act_cfg_)
-
-    @property
-    def norm(self):
-        """Normalization."""
-        return getattr(self, self.norm_name)
-
-    def forward(self, x, activate=True, norm=True):
-        """Model forward."""
-        x = self.fc(x)
-        if norm and self.with_norm:
-            x = self.norm(x)
-        if activate and self.with_activation:
-            x = self.activate(x)
-        return x
-
 
 @HEADS.register_module()
-class LinearReIDHead(BaseHead):
+class BasicReIDHead(BaseHead):
     """Linear head for re-identification.
     Args:
         num_fcs (int): Number of fcs.
         in_channels (int): Number of channels in the input.
-        fc_channels (int): Number of channels in the fcs.
         out_channels (int): Number of channels in the output.
         norm_cfg (dict, optional): Configuration of normlization method
             after fc. Defaults to None.
@@ -110,6 +38,7 @@ class LinearReIDHead(BaseHead):
         self,
         num_fcs,
         in_channels,
+        fc_channels,
         out_channels,
         norm_cfg=None,
         act_cfg=None,
@@ -119,7 +48,7 @@ class LinearReIDHead(BaseHead):
         topk=(1,),
         init_cfg=dict(type="Normal", layer="Linear", mean=0, std=0.01, bias=0),
     ):
-        super(LinearReIDHead, self).__init__(init_cfg)
+        super(BasicReIDHead, self).__init__(init_cfg)
         assert isinstance(topk, (int, tuple))
         if isinstance(topk, int):
             topk = (topk,)
@@ -148,8 +77,8 @@ class LinearReIDHead(BaseHead):
 
         self.num_fcs = num_fcs
         self.in_channels = in_channels
+        self.fc_channels = fc_channels
         self.out_channels = out_channels
-
         self.norm_cfg = norm_cfg
         self.act_cfg = act_cfg
         self.num_classes = num_classes
@@ -160,6 +89,9 @@ class LinearReIDHead(BaseHead):
 
     def _init_layers(self):
         """Initialize fc layers."""
+        self.fcs = nn.ModuleList()
+        self.fc_out = nn.Linear(self.in_channels, self.out_channels)
+
         if self.loss_cls:
             self.bn = nn.BatchNorm1d(self.out_channels)
             self.classifier = nn.Linear(self.out_channels, self.num_classes)
@@ -176,7 +108,10 @@ class LinearReIDHead(BaseHead):
                 x = x[0]
 
         assert isinstance(x, torch.Tensor)
-        return x
+
+        feats = self.fc_out(x)
+
+        return feats
 
     @auto_fp16()
     def forward_train(self, x):

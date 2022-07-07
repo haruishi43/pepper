@@ -16,14 +16,15 @@ SAMPLERS = Registry("sampler")
 
 
 def build_dataset(cfg, default_args=None):
-    from .dataset_wrappers import ConcatDataset
+    from .dataset_wrappers import ConcatTrainDataset
 
     if isinstance(cfg, (list, tuple)):
-        dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
+        dataset = ConcatTrainDataset(
+            [build_dataset(c, default_args) for c in cfg]
+        )
     elif cfg["type"] == "ConcatDataset":
-        dataset = ConcatDataset(
+        dataset = ConcatTrainDataset(
             [build_dataset(c, default_args) for c in cfg["datasets"]],
-            separate_eval=cfg.get("separate_eval", True),
         )
     else:
         dataset = build_from_cfg(cfg, DATASETS, default_args)
