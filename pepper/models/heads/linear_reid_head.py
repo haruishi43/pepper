@@ -110,6 +110,7 @@ class LinearReIDHead(BaseHead):
         self,
         num_fcs,
         in_channels,
+        fc_channels,
         out_channels,
         norm_cfg=None,
         act_cfg=None,
@@ -148,8 +149,8 @@ class LinearReIDHead(BaseHead):
 
         self.num_fcs = num_fcs
         self.in_channels = in_channels
+        self.fc_channels = fc_channels
         self.out_channels = out_channels
-
         self.norm_cfg = norm_cfg
         self.act_cfg = act_cfg
         self.num_classes = num_classes
@@ -160,6 +161,21 @@ class LinearReIDHead(BaseHead):
 
     def _init_layers(self):
         """Initialize fc layers."""
+        self.fcs = nn.ModuleList()
+
+        for i in range(self.num_fcs):
+            in_channels = self.in_channels if i == 0 else self.fc_channels
+            self.fcs.append(
+                FcModule(
+                    in_channels, self.fc_channels, self.norm_cfg, self.act_cfg
+                )
+            )
+        in_channels = (
+            self.in_channels if self.num_fcs == 0 else self.fc_channels
+        )
+
+        self.fc_out = nn.Linear(in_channels, self.out_channels)
+
         if self.loss_cls:
             self.bn = nn.BatchNorm1d(self.out_channels)
             self.classifier = nn.Linear(self.out_channels, self.num_classes)
@@ -176,7 +192,12 @@ class LinearReIDHead(BaseHead):
                 x = x[0]
 
         assert isinstance(x, torch.Tensor)
-        return x
+
+        for m in self.fcs:
+            x = m(x)
+        feats = self.fc_out(x)
+
+        return feats
 
     @auto_fp16()
     def forward_train(self, x):
