@@ -3,28 +3,28 @@ img_norm_cfg = dict(
 )
 train_pipeline = [
     dict(type="LoadImageFromFile", to_float32=True),
-    # dict(
-    #     type="Resize",
-    #     size=(256, 128),  # (h, w)
-    #     interpolation="bilinear",
-    # ),
     dict(
-        type="ProbRandomResizedCrop",
-        size=(256, 128),
-        scale=(0.5, 1.0),
-        crop_prob=0.5,
+        type="Resize",
+        size=(256, 128),  # (h, w)
+        interpolation="bilinear",
     ),
+    # dict(
+    #     type="ProbRandomResizedCrop",
+    #     size=(256, 128),
+    #     scale=(0.75, 1.0),
+    #     crop_prob=0.5,
+    # ),
     dict(
         type="RandomFlip",
         flip_prob=0.5,
         direction="horizontal",
     ),
-    dict(
-        type="RandomErasing",
-        erase_prob=0.5,
-        min_area_ratio=0.02,
-        max_area_ratio=0.4,
-    ),
+    # dict(
+    #     type="RandomErasing",
+    #     erase_prob=0.5,
+    #     min_area_ratio=0.02,
+    #     max_area_ratio=0.4,
+    # ),
     dict(type="Normalize", **img_norm_cfg),
     dict(type="Collect", keys=["img", "gt_label"]),
     dict(type="FormatBundle"),
