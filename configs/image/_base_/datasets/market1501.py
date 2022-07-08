@@ -19,12 +19,12 @@ train_pipeline = [
         flip_prob=0.5,
         direction="horizontal",
     ),
-    # dict(
-    #     type="RandomErasing",
-    #     erase_prob=0.5,
-    #     min_area_ratio=0.02,
-    #     max_area_ratio=0.4,
-    # ),
+    dict(
+        type="RandomErasing",
+        erase_prob=0.5,
+        min_area_ratio=0.02,
+        max_area_ratio=0.4,
+    ),
     dict(type="Normalize", **img_norm_cfg),
     dict(type="Collect", keys=["img", "gt_label"]),
     dict(type="FormatBundle"),

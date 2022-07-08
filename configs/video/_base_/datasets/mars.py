@@ -8,7 +8,7 @@ train_pipeline = [
     dict(
         type="SeqProbRandomResizedCrop",
         size=(256, 128),
-        scale=(0.5, 1.0),
+        scale=(0.888, 1.0),
         crop_prob=0.5,
     ),
     dict(
