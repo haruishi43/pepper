@@ -178,6 +178,7 @@ class LinearReIDHead(BaseHead):
 
         if self.loss_cls:
             self.bn = nn.BatchNorm1d(self.out_channels)
+            self.bn.bias.requires_grad_(False)
             self.classifier = nn.Linear(self.out_channels, self.num_classes)
 
     @auto_fp16()

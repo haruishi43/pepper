@@ -9,7 +9,6 @@ _base_ = [
 # batch size 14 and num_frames=8 barely fits on 11GB GPU
 num_frames = 4  # FIXME: we should be using 16
 model = dict(
-    # temporal=dict(type="RNN", in_channels=2048),
     temporal=dict(
         type="TemporalAttention", in_channels=2048, seq_len=num_frames
     ),

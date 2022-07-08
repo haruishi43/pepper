@@ -119,6 +119,10 @@ def train_model(
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
+    # TODO: add center loss optimizer
+    # TODO: OptimizerHook doesn't support multiple losses
+    # instead we should directly optimize in the `train_step`
+    # cfg.optimizer_cfg = None  # this should make it so that OptimizerHook won't initialize
 
     if cfg.get("runner") is None:
         cfg.runner = {

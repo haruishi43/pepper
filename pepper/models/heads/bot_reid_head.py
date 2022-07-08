@@ -13,7 +13,7 @@ from ..losses import Accuracy
 
 
 @HEADS.register_module()
-class BasicReIDHead(BaseHead):
+class BoTReIDHead(BaseHead):
     """Basic head for re-identification.
     Args:
         in_channels (int): Number of channels in the input.
@@ -40,10 +40,11 @@ class BasicReIDHead(BaseHead):
         num_classes=None,
         loss=None,
         loss_pairwise=None,
+        loss_center=None,
         topk=(1,),
         init_cfg=dict(type="Normal", layer="Linear", mean=0, std=0.01, bias=0),
     ):
-        super(BasicReIDHead, self).__init__(init_cfg)
+        super(BoTReIDHead, self).__init__(init_cfg)
         assert isinstance(topk, (int, tuple))
         if isinstance(topk, int):
             topk = (topk,)
@@ -69,6 +70,12 @@ class BasicReIDHead(BaseHead):
             )
         self.loss_cls = build_loss(loss) if loss else None
         self.loss_triplet = build_loss(loss_pairwise) if loss_pairwise else None
+        if loss_center:
+            loss_center.num_classes = num_classes
+            loss_center.feat_dim = in_channels
+            self.loss_center = build_loss(loss_center)
+        else:
+            self.loss_center = None
 
         self.in_channels = in_channels
         self.norm_cfg = norm_cfg
@@ -99,19 +106,21 @@ class BasicReIDHead(BaseHead):
 
         assert isinstance(x, torch.Tensor)
 
-        return x
+        # we use batch norm layer's output for inference
+        bn_x = self.bn(x)
+
+        return (x, bn_x)
 
     @auto_fp16()
     def forward_train(self, x):
         """Model forward."""
 
-        # feats = self.pre_logits(x)
+        assert len(x) == 2
 
-        if self.loss_cls:
-            feats_bn = self.bn(x)
-            cls_score = self.classifier(feats_bn)
-            return (x, cls_score)
-        return (x,)
+        feats, feats_bn = x
+
+        cls_score = self.classifier(feats_bn)
+        return (feats, cls_score)
 
     @force_fp32(apply_to=("feats", "cls_score"))
     def loss(self, gt_label, feats, cls_score=None):
@@ -120,6 +129,10 @@ class BasicReIDHead(BaseHead):
 
         if self.loss_triplet:
             losses["triplet_loss"] = self.loss_triplet(feats, gt_label)
+
+        if self.loss_center:
+            assert cls_score is not None
+            losses["center_loss"] = self.loss_center(feats, cls_score)
 
         if self.loss_cls:
             assert cls_score is not None

@@ -1,7 +1,7 @@
 _base_ = [
     "../_base_/models/basic_resnet50.py",
-    "../_base_/datasets/market1501_and_dukemtmc.py",
-    "../_base_/schedules/trick_schedule.py",
+    "../_base_/datasets/dukemtmc.py",
+    "../_base_/schedules/bot_schedule.py",
     "../_base_/default_runtime.py",
 ]
 data = dict(

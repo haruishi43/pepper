@@ -9,7 +9,9 @@ from pepper.models.reid.image_reid import ImageReID
 
 def main():
 
-    cfg = Config.fromfile("configs/image/resnet/resnet50_b32_market1501.py")
+    cfg = Config.fromfile(
+        "configs/image/bot_resnet/bot_resnet50_b64_market1501.py"
+    )
     print(cfg.pretty_text)
 
     use_gpu = True
