@@ -2,14 +2,25 @@ img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True
 )
 num_frames = 4  # FIXME: we should use 16
+frame_size = (224, 112)
 train_pipeline = [
     dict(type="VideoSampler", method="random_crop", seq_len=num_frames),
     dict(type="LoadMultiImagesFromFile", to_float32=True),
     # dict(
     #     type="SeqProbRandomResizedCrop",
-    #     size=(256, 128),
+    #     size=frame_size,
     #     scale=(0.888, 1.0),
     #     crop_prob=0.5,
+    # ),
+    dict(
+        type="SeqResize",
+        size=frame_size,
+        interpolation="bilinear",
+    ),
+    # dict(
+    #     type="SeqRandomCrop",
+    #     size=frame_size,
+    #     padding=(10, 10, 10, 10),
     # ),
     dict(
         type="SeqRandomFlip",
@@ -32,7 +43,7 @@ test_pipeline = [
     dict(type="LoadMultiImagesFromFile"),
     dict(
         type="SeqResize",
-        size=(256, 128),  # (h, w)
+        size=frame_size,
         interpolation="bilinear",
     ),
     dict(type="SeqNormalize", **img_norm_cfg),

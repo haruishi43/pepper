@@ -9,7 +9,8 @@ model = dict(
         style="pytorch",
     ),
     # is this different from normal AdaptiveAveragePooling?
-    neck=dict(type="KernelGlobalAveragePooling", kernel_size=(16, 8), stride=1),
+    # neck=dict(type="KernelGlobalAveragePooling", kernel_size=(16, 8), stride=1),
+    neck=dict(type="GlobalAveragePooling", dim=2),
     head=dict(
         type="BoTReIDHead",
         in_channels=2048,

@@ -7,7 +7,8 @@ model = dict(
         out_indices=(3,),
         style="pytorch",
     ),
-    neck=dict(type="KernelGlobalAveragePooling", kernel_size=(8, 4), stride=1),
+    # neck=dict(type="KernelGlobalAveragePooling", kernel_size=(8, 4), stride=1),
+    neck=dict(type="GlobalAveragePooling", dim=2),
     head=dict(
         type="BasicReIDHead",
         in_channels=2048,
