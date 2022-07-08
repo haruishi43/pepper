@@ -25,10 +25,6 @@ model = dict(
         type="Pretrained",
         checkpoint="https://download.openmmlab.com/mmclassification/v0/resnet/resnet50_batch256_imagenet_20200708-cfb998bf.pth",  # noqa: E251  # noqa: E501
     ),
-    # init_cfg=dict(
-    #     type="Pretrained",
-    #     checkpoint="https://download.pytorch.org/models/resnet50-19c8e357.pth",
-    # ),
     inference_stage="pre_logits",
 )
 sampler = dict(
