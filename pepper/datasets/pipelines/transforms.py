@@ -23,6 +23,12 @@ except ImportError:
 
 @PIPELINES.register_module()
 class Random2DTranslation(object):
+    """TorchReID augmentation
+
+    Resize by 1.125 and crop to the desired `size`.
+    Otherwise, it will just resize to the desired `size`
+    """
+
     def __init__(
         self,
         size,
@@ -52,7 +58,10 @@ class Random2DTranslation(object):
             )
 
         assert 0 < scale
-        self.resize_value = (int(self.size[1] * scale), int(self.size[0] * scale))
+        self.resize_value = (
+            int(self.size[1] * scale),
+            int(self.size[0] * scale),
+        )
         self.prob = prob
         self.interpolation = interpolation
         self.backend = backend
