@@ -96,6 +96,16 @@ class Random2DTranslation(object):
                         ]
                     ),
                 )
+        else:
+            # just resize
+            for key in results.get("img_fields", ["img"]):
+                img = results[key]
+                results[key] = mmcv.imresize(
+                    img,
+                    tuple(self.size[::-1]),
+                    interpolation=self.interpolation,
+                    backend=self.backend,
+                )
         return results
 
 
