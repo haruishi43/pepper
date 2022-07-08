@@ -11,7 +11,7 @@ train_pipeline = [
     dict(
         type="RandomCrop",
         size=(256, 128),
-        padding=[10, 10, 10, 10]
+        padding=(10, 10, 10, 10),
     ),
     # dict(
     #     type="ProbRandomResizedCrop",
