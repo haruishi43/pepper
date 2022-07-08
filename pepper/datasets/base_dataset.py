@@ -241,16 +241,16 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
 
         # TODO: edit (finalize) returned results
         if "mAP" in metrics:
-            eval_results["mAP"] = round(float(results["mAP"]), 3)
+            eval_results["mAP"] = round(float(results["mAP"]), 4)
         if "CMC" in metrics:
             for rank in metric_options["rank_list"]:
                 eval_results[f"Rank-{rank}"] = round(
                     float(results[f"Rank-{rank}"]),
-                    3,
+                    4,
                 )
         if "metric" in metrics:
-            eval_results["metric"] = round(float(results["metric"]), 3)
+            eval_results["metric"] = round(float(results["metric"]), 4)
         if "mINP" in metrics:
-            eval_results["mINP"] = round(float(results["mINP"]), 3)
+            eval_results["mINP"] = round(float(results["mINP"]), 4)
 
         return eval_results

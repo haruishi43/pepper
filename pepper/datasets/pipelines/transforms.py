@@ -22,6 +22,84 @@ except ImportError:
 
 
 @PIPELINES.register_module()
+class Random2DTranslation(object):
+    def __init__(
+        self,
+        size,
+        prob=0.5,
+        scale=1.125,
+        interpolation="bilinear",
+        backend="cv2",
+    ):
+        if isinstance(size, (tuple, list)):
+            self.size = size
+        else:
+            self.size = (size, size)
+
+        assert len(self.size) == 2
+
+        assert interpolation in (
+            "nearest",
+            "bilinear",
+            "bicubic",
+            "area",
+            "lanczos",
+        )
+        if backend not in ["cv2", "pillow"]:
+            raise ValueError(
+                f"backend: {backend} is not supported for resize."
+                'Supported backends are "cv2", "pillow"'
+            )
+
+        assert 0 < scale
+        self.resize_value = (int(self.size[1] * scale), int(self.size[0] * scale))
+        self.prob = prob
+        self.interpolation = interpolation
+        self.backend = backend
+
+    @staticmethod
+    def get_params(img, output_size):
+        height = img.shape[0]
+        width = img.shape[1]
+        target_height, target_width = output_size
+        if width == target_width and height == target_height:
+            return 0, 0, height, width
+
+        ymin = random.randint(0, height - target_height)
+        xmin = random.randint(0, width - target_width)
+
+        ymax = ymin + target_height - 1
+        xmax = xmin + target_width - 1
+        return ymin, xmin, ymax, xmax
+
+    def __call__(self, results):
+        if np.random.random() > self.prob:
+            for key in results.get("img_fields", ["img"]):
+                img = results[key]
+
+                img = mmcv.imresize(
+                    img,
+                    tuple(self.resize_value),  # (w, h)
+                    interpolation=self.interpolation,
+                    backend=self.backend,
+                )
+
+                ymin, xmin, ymax, xmax = self.get_params(img, self.size)
+                results[key] = mmcv.imcrop(
+                    img,
+                    bboxes=np.array(
+                        [
+                            xmin,
+                            ymin,
+                            xmax,
+                            ymax,
+                        ]
+                    ),
+                )
+        return results
+
+
+@PIPELINES.register_module()
 class RandomCrop(object):
     """Crop the given Image at a random location.
     Args:

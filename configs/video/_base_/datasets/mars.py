@@ -5,12 +5,12 @@ num_frames = 4  # FIXME: we should use 16
 train_pipeline = [
     dict(type="VideoSampler", method="random_crop", seq_len=num_frames),
     dict(type="LoadMultiImagesFromFile", to_float32=True),
-    dict(
-        type="SeqProbRandomResizedCrop",
-        size=(256, 128),
-        scale=(0.888, 1.0),
-        crop_prob=0.5,
-    ),
+    # dict(
+    #     type="SeqProbRandomResizedCrop",
+    #     size=(256, 128),
+    #     scale=(0.888, 1.0),
+    #     crop_prob=0.5,
+    # ),
     dict(
         type="SeqRandomFlip",
         flip_prob=0.5,
