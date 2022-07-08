@@ -3,17 +3,22 @@ img_norm_cfg = dict(
 )
 train_pipeline = [
     dict(type="LoadImageFromFile", to_float32=True),
-    # dict(
-    #     type="Resize",
-    #     size=(256, 128),  # (h, w)
-    #     interpolation="bilinear",
-    # ),
     dict(
-        type="ProbRandomResizedCrop",
-        size=(256, 128),
-        scale=(0.888, 1.0),
-        crop_prob=0.5,
+        type="Resize",
+        size=(256, 128),  # (h, w)
+        interpolation="bilinear",
     ),
+    dict(
+        type="RandomCrop",
+        size=(256, 128),
+        padding=[10, 10, 10, 10]
+    ),
+    # dict(
+    #     type="ProbRandomResizedCrop",
+    #     size=(256, 128),
+    #     scale=(0.95, 1.0),
+    #     crop_prob=0.5,
+    # ),
     dict(
         type="RandomFlip",
         flip_prob=0.5,
