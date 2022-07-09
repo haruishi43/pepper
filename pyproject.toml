@@ -14,5 +14,6 @@ exclude = '''
   | \.readme
   | /configs
   | /notebooks
+  | work_dirs
 )/
 '''
