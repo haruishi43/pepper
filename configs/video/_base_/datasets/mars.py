@@ -21,12 +21,6 @@ train_pipeline = [
         size=frame_size,
         prob=0.5,
     ),
-    # dict(
-    #     type="SeqProbRandomResizedCrop",
-    #     size=frame_size,
-    #     scale=(0.888, 1.0),
-    #     crop_prob=0.5,
-    # ),
     dict(
         type="SeqRandomFlip",
         flip_prob=0.5,

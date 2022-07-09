@@ -1,7 +1,8 @@
 # optimizer
 # optimizer = dict(type="SGD", lr=0.1, momentum=0.9, weight_decay=0.0001)
 optimizer = dict(type="Adam", lr=0.00035, weight_decay=5e-04, betas=(0.9, 0.99))
-optimizer_config = dict(grad_clip=None)
+optimizer_config = dict(grad_clip=dict(max_norm=5.0, norm_type=2))
+# optimizer_config = dict(grad_clip=None)
 
 # learning policy
 # _wu = 1000  # 1000
@@ -16,16 +17,16 @@ optimizer_config = dict(grad_clip=None)
 #     warmup_ratio=1.0 / _wu,
 # )
 
-lr_config = dict(
-    # -> policy config
-    policy="step",
-    step=[2000, 4000],
-    gamma=0.1,
-    # -> warmup config
-    warmup="linear",
-    warmup_iters=1000,
-    warmup_ratio=0.1,
-)
+# lr_config = dict(
+#     # -> policy config
+#     policy="step",
+#     step=[2000, 4000],
+#     gamma=0.1,
+#     # -> warmup config
+#     warmup="linear",
+#     warmup_iters=1000,
+#     warmup_ratio=0.1,
+# )
 
 # paper
 lr_config = dict(
