@@ -13,6 +13,7 @@ model = dict(
         type="BasicReIDHead",
         in_channels=2048,
         num_classes=380,
+        # loss=dict(type="CrossEntropyLoss", loss_weight=1.0),
         loss=dict(
             type="LabelSmoothLoss", label_smooth_val=0.1, loss_weight=1.0
         ),

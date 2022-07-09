@@ -7,20 +7,25 @@ train_pipeline = [
     dict(type="VideoSampler", method="random_crop", seq_len=num_frames),
     dict(type="LoadMultiImagesFromFile", to_float32=True),
     # dict(
-    #     type="SeqProbRandomResizedCrop",
+    #     type="SeqResize",
     #     size=frame_size,
-    #     scale=(0.888, 1.0),
-    #     crop_prob=0.5,
+    #     interpolation="bilinear",
     # ),
-    dict(
-        type="SeqResize",
-        size=frame_size,
-        interpolation="bilinear",
-    ),
     # dict(
     #     type="SeqRandomCrop",
     #     size=frame_size,
     #     padding=(10, 10, 10, 10),
+    # ),
+    dict(
+        type="SeqResizeOrRandom2DTranslation",
+        size=frame_size,
+        prob=0.5,
+    ),
+    # dict(
+    #     type="SeqProbRandomResizedCrop",
+    #     size=frame_size,
+    #     scale=(0.888, 1.0),
+    #     crop_prob=0.5,
     # ),
     dict(
         type="SeqRandomFlip",

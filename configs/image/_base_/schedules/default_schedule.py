@@ -1,5 +1,4 @@
 # optimizer
-# optimizer = dict(type="SGD", lr=0.1, momentum=0.9, weight_decay=0.0001)
 optimizer = dict(type="Adam", lr=0.00035, weight_decay=5e-04, betas=(0.9, 0.99))
 optimizer_config = dict(grad_clip=None)
 
@@ -27,7 +26,7 @@ optimizer_config = dict(grad_clip=None)
 #     warmup_ratio=0.1,
 # )
 
-# configs based on BoT
+# learning rate configs (added warmup by default)
 lr_config = dict(
     # -> policy config
     policy="step",
@@ -36,15 +35,15 @@ lr_config = dict(
     # -> warmup config
     warmup="linear",
     warmup_iters=500,
-    warmup_ratio=0.1,
+    warmup_ratio=1.0 / 3,
 )
 
 # runner settings
 runner = dict(type="IterBasedRunner", max_iters=10000)
 
-# evaluation
+# evaluation (euclidean distance by default)
 evaluation = dict(
-    interval=2000,
+    interval=2500,
     gpu_collect=True,
     metric=["metric", "CMC", "mAP"],
     normalize_features=False,
@@ -54,4 +53,4 @@ evaluation = dict(
 )
 
 # checkpoint
-checkpoint_config = dict(interval=2000)
+checkpoint_config = dict(interval=2500)

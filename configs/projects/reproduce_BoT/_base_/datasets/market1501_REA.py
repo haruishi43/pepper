@@ -18,12 +18,6 @@ train_pipeline = [
         size=(256, 128),
         prob=0.5,
     ),
-    # dict(
-    #     type="ProbRandomResizedCrop",
-    #     size=(256, 128),
-    #     scale=(0.888, 1.0),
-    #     crop_prob=0.5,
-    # ),
     dict(
         type="RandomFlip",
         flip_prob=0.5,

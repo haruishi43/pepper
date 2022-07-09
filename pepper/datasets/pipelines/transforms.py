@@ -22,8 +22,10 @@ except ImportError:
 
 
 @PIPELINES.register_module()
-class Random2DTranslation(object):
+class ResizeOrRandom2DTranslation(object):
     """TorchReID augmentation
+
+    Adds resize by defualt to remove redundancy (i.e., no need to resize twice)
 
     Resize by 1.125 and crop to the desired `size`.
     Otherwise, it will just resize to the desired `size`
@@ -81,41 +83,55 @@ class Random2DTranslation(object):
         xmax = xmin + target_width - 1
         return ymin, xmin, ymax, xmax
 
-    def __call__(self, results):
+    def process(self, img):
         if np.random.random() > self.prob:
-            for key in results.get("img_fields", ["img"]):
-                img = results[key]
+            img = mmcv.imresize(
+                img,
+                tuple(self.resize_value),  # (w, h)
+                interpolation=self.interpolation,
+                backend=self.backend,
+            )
 
-                img = mmcv.imresize(
-                    img,
-                    tuple(self.resize_value),  # (w, h)
-                    interpolation=self.interpolation,
-                    backend=self.backend,
-                )
-
-                ymin, xmin, ymax, xmax = self.get_params(img, self.size)
-                results[key] = mmcv.imcrop(
-                    img,
-                    bboxes=np.array(
-                        [
-                            xmin,
-                            ymin,
-                            xmax,
-                            ymax,
-                        ]
-                    ),
-                )
+            ymin, xmin, ymax, xmax = self.get_params(img, self.size)
+            img = mmcv.imcrop(
+                img,
+                bboxes=np.array(
+                    [
+                        xmin,
+                        ymin,
+                        xmax,
+                        ymax,
+                    ]
+                ),
+            )
         else:
-            # just resize
-            for key in results.get("img_fields", ["img"]):
-                img = results[key]
-                results[key] = mmcv.imresize(
-                    img,
-                    tuple(self.size[::-1]),
-                    interpolation=self.interpolation,
-                    backend=self.backend,
-                )
+            img = mmcv.imresize(
+                img,
+                tuple(self.size[::-1]),
+                interpolation=self.interpolation,
+                backend=self.backend,
+            )
+
+        return img
+
+    def __call__(self, results):
+        for key in results.get("img_fields", ["img"]):
+            img = results[key]
+
+            results[key] = self.process(img)
         return results
+
+
+@PIPELINES.register_module()
+class SeqResizeOrRandom2DTranslation(ResizeOrRandom2DTranslation):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def __call__(self, results):
+        outs = []
+        for _results in results:
+            outs.append(super().__call__(_results))
+        return outs
 
 
 @PIPELINES.register_module()
@@ -1254,7 +1270,7 @@ class SeqResize(Resize):
             are added into result dict.
         """
         outs = []
-        for i, _results in enumerate(results):
+        for _results in results:
             _results = super().__call__(_results)
             outs.append(_results)
         return outs

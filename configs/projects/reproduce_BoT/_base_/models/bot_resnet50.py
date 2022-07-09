@@ -8,7 +8,6 @@ model = dict(
         out_indices=(3,),
         style="pytorch",
     ),
-    # neck=dict(type="KernelGlobalAveragePooling", kernel_size=(16, 8), stride=1),
     neck=dict(type="GlobalAveragePooling", dim=2),
     head=dict(
         type="BoTReIDHead",

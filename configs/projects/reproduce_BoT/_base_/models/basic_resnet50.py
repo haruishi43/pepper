@@ -4,19 +4,15 @@ model = dict(
         type="ResNet",
         depth=50,
         num_stages=4,
-        strides=(1, 2, 2, 1),  # increases final features by x2
         out_indices=(3,),
         style="pytorch",
     ),
-    # neck=dict(type="KernelGlobalAveragePooling", kernel_size=(16, 8), stride=1),
     neck=dict(type="GlobalAveragePooling", dim=2),
     head=dict(
-        type="BoTReIDHead",
+        type="BasicReIDHead",
         in_channels=2048,
         num_classes=380,
-        loss=dict(
-            type="LabelSmoothLoss", label_smooth_val=0.1, loss_weight=1.0
-        ),
+        loss=dict(type="CrossEntropyLoss", loss_weight=1.0),
         loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=1.0),
         norm_cfg=dict(type="BN1d"),
         act_cfg=dict(type="ReLU"),
