@@ -33,7 +33,7 @@ Results using `pepper`:
 | [+REA](bot_resnet/baseline_warmup_REA_market1501.py)                 | 81.4 | 92.3   |
 | [+LS](bot_resnet/baseline_warmup_REA_LS_market1501.py)               | 81.7 | 92.9   |
 | [+stride=1](bot_resnet/baseline_warmup_REA_LS_stride1_market1501.py) | 83.8 | 93.9   |
-| [+BNNeck](bot_resnet/bot_market1501.py)                              | --   | --     |
+| [+BNNeck](bot_resnet/bot_market1501.py)                              | 82.3 | 92.8   |
 | +center loss                                                         | --   | --     |
 
 Results from the original paper:
@@ -51,7 +51,8 @@ Results from the original paper:
 Notes:
 - Differences from the original implementation:
   - original paper uses `Padding` + `RandomCropping`; I used [`Random2DTranslation`](https://github.com/KaiyangZhou/deep-person-reid/blob/master/torchreid/data/transforms.py)
-- I'll try to implement "center loss"
+- `BNNeck` should be the same as the original implementation, but there are not much improvements.
+- "center loss" has not been implemented here yet
 
 ---
 

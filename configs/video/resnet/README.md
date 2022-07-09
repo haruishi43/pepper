@@ -15,7 +15,7 @@ Results using `pepper`:
 
 | Model (T=4)                                         | mAP  | Rank-1 |
 |-----------------------------------------------------|------|--------|
-| [Temporal Avg. Pooling](tp_resnet50_b32_t4_mars.py) | --   | --     |
+| [Temporal Avg. Pooling](tp_resnet50_b32_t4_mars.py) | 76.5 | 84.1   |
 | [Temporal Att.*](ta_resnet50_b32_t4_mars.py)        | 75.5 | 83.0   |
 | [Temporal Att.](ta_resnet50_b32_t4_mars.py)         | --   | --     |
 | [RNN](rnn_resnet50_b32_t4_mars.py)                  | 76.1 | 83.2   |

@@ -71,6 +71,7 @@ class BoTReIDHead(BaseHead):
         self.loss_cls = build_loss(loss) if loss else None
         self.loss_triplet = build_loss(loss_pairwise) if loss_pairwise else None
         if loss_center:
+            # TODO: implement center loss here
             loss_center.num_classes = num_classes
             loss_center.feat_dim = in_channels
             self.loss_center = build_loss(loss_center)
@@ -84,13 +85,15 @@ class BoTReIDHead(BaseHead):
         self.accuracy = Accuracy(topk=self.topk)
         self.fp16_enabled = False
 
+        # Batch norm is always used (output for inference)
+        self.bn = nn.BatchNorm1d(self.in_channels)
+        self.bn.bias.requires_grad_(False)  # no shift (BoT)
+
         self._init_layers()
 
     def _init_layers(self):
         """Initialize fc layers."""
         if self.loss_cls:
-            self.bn = nn.BatchNorm1d(self.in_channels)
-            self.bn.bias.requires_grad_(False)  # no shift (BoT)
             self.classifier = nn.Linear(self.in_channels, self.num_classes)
 
     @auto_fp16()

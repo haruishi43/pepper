@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+# import torch
 from torch import nn
 from torch.nn import functional as F
 
@@ -59,6 +60,22 @@ class RNN(BaseTemporalLayer):
             if bidirectional and not return_hidden
             else self.in_channels
         )
+
+        self._init_layers()
+
+    def _init_layers(self):
+        """Initialize fc layers."""
+        # for m in self.modules():
+        #     if type(m) in [nn.GRU, nn.LSTM, nn.RNN]:
+        #         for name, param in m.named_parameters():
+        #             if 'weight_ih' in name:
+        #                 torch.nn.init.xavier_uniform_(param.data)
+        #             elif 'weight_hh' in name:
+        #                 torch.nn.init.orthogonal_(param.data)
+        #             elif 'bias' in name:
+        #                 param.data.fill_(0)
+        ...
+        # TODO: better initialization
 
     def _forward(self, x, **kwargs):
         assert len(x.shape) == 3

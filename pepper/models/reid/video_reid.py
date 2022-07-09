@@ -88,6 +88,17 @@ class VideoReID(BaseReID):
                     x = tuple([_x.view(b, s, -1) for _x in x])
                 else:
                     x = x.view(b, s, -1)  # unravel features
+        else:
+            if not self._temporal_backbone:
+                if isinstance(x, tuple):
+                    _x = []
+                    for xi in x:
+                        _, fdim, _h, _w = xi.shape
+                        _x.append(xi.view(b, s, fdim, _h, _w))
+                    x = tuple(_x)
+                else:
+                    _, fdim, _h, _w = x.shape
+                    x = x.view(b, s, fdim, _h, _w)
         if stage == "neck":
             return x
 
