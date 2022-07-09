@@ -12,6 +12,32 @@ Goals:
 - Fast: training and evaluations are done using distributed processing
 - Robust: borrows techniques from other frameworks and projects to make training robust
 
+## Installation
+
+Clone the project:
+```Bash
+git clone --recursive git@github.com:haruishi43/pepper.git
+cd pepper
+```
+
+### Dependencies:
+
+- `torch` and `torchvision`
+- `mmcv`
+- `faiss-gpu`
+
+Other dependencies can be installed using the following command:
+
+```Bash
+pip install -r requirements.txt
+```
+
+### Build evaluation module:
+
+```Bash
+cd pepper/core/evaluation/rank_cylib; make all
+```
+
 ## Projects
 
 - [Bag-of-Tricks](configs/projects/reproduce_BoT/README.md)
