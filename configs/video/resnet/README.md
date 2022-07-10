@@ -17,7 +17,7 @@ Results using `pepper`:
 |-----------------------------------------------------|------|--------|
 | [Temporal Avg. Pooling](tp_resnet50_b32_t4_mars.py) | 76.5 | 84.1   |
 | [Temporal Att.*](ta_resnet50_b32_t4_mars.py)        | 75.5 | 83.0   |
-| [Temporal Conv Att.](tca_resnet50_b32_t4_mars.py)   | 68.4 | 77.0   |
+| [Temporal Conv Att.](tca_resnet50_b32_t4_mars.py)   | 76.5 | 84.4   |
 | [LSTM](lstm_resnet50_b32_t4_mars.py)                | 76.1 | 83.2   |
 | [GRU](gru_resnet50_b32_t4_mars.py)                  | --   | --     |
 | [RNN](rnn_resnet50_b32_t4_mars.py)                  | --   | --     |

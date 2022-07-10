@@ -45,7 +45,7 @@ class RNN(BaseTemporalLayer):
                 bidirectional=bidirectional,
             )
         elif rnn_type == "gru":
-            self.gru = nn.GRU(
+            self.rnn = nn.GRU(
                 input_size=self.in_channels,
                 hidden_size=self.in_channels,
                 num_layers=num_layers,

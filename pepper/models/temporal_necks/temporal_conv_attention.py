@@ -55,12 +55,15 @@ class TemporalConvAttention(BaseTemporalLayer):
         b, s, f_dim, h, w = x.shape
         x = x.view(b * s, f_dim, h, w)
 
+        # spatial conv
         a = F.relu(self.att_conv(x))
         a = a.view(b, s, self.mid_dim)
         a = a.permute(0, 2, 1)
+        # temporal conv
         a = F.relu(self.att_temp_conv(a))
         a = a.view(b, s)
 
+        # normalize attention scores
         if self.att_gen == "softmax":
             # NOTE: gives harsh values that are either too small or too large at first
             # then settles to none harsh values
