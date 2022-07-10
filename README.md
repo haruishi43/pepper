@@ -44,6 +44,10 @@ pip install -r requirements.txt
 cd pepper/core/evaluation/rank_cylib; make all
 ```
 
+## Preparing for training/evaluation:
+
+WIP
+
 ## Projects
 
 - [Bag-of-Tricks](configs/projects/reproduce_BoT/README.md)

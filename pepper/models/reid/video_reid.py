@@ -103,7 +103,7 @@ class VideoReID(BaseReID):
             return x
 
         if self.with_temporal:
-            # we assume tensor shape with (b, s, feat)
+            # we assume tensor shape with (b, s, feat) or (b, s, feat, h, w)
             x = self.temporal(x)
         if stage == "temporal":
             return x
