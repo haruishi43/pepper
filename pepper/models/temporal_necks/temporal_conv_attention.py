@@ -61,8 +61,6 @@ class TemporalConvAttention(BaseTemporalLayer):
         a = F.relu(self.att_temp_conv(a))
         a = a.view(b, s)
 
-        x = F.avg_pool2d(x, x.shape[2:])
-
         if self.att_gen == "softmax":
             # NOTE: gives harsh values that are either too small or too large at first
             # then settles to none harsh values
@@ -76,7 +74,10 @@ class TemporalConvAttention(BaseTemporalLayer):
                 f"Unsupported attention generation function: {self.att_gen}"
             )
 
+        # GAP
+        x = F.avg_pool2d(x, x.shape[2:])
         x = x.view(b, s, -1)
+
         a = a.unsqueeze(-1)
         a = a.expand(b, s, self.last_dim)
         att_x = torch.mul(x, a)
