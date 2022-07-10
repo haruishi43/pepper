@@ -36,8 +36,7 @@ class TemporalConvAttention(BaseTemporalLayer):
             mid_dim,
             kernel_size=kernel_size,
         )
-        self.att_t_conv = nn.Conv2d(self.mid_dim, 1, 3, padding=1)
-        self.relu = nn.ReLU(inplace=True)
+        self.att_temp_conv = nn.Conv1d(self.mid_dim, 1, 3, padding=1)
 
         self._init_params()
 
@@ -56,10 +55,10 @@ class TemporalConvAttention(BaseTemporalLayer):
         b, s, f_dim, h, w = x.shape
         x = x.view(b * s, f_dim, h, w)
 
-        a = self.relu(self.att_conv(x))
-        a = a.view(b, s, -1)
-        a = a.permute(0, 2, 1).unsqueeze(-1)
-        a = self.relu(self.att_t_conv(a))
+        a = F.relu(self.att_conv(x))
+        a = a.view(b, s, self.mid_dim)
+        a = a.permute(0, 2, 1)
+        a = F.relu(self.att_temp_conv(a))
         a = a.view(b, s)
 
         x = F.avg_pool2d(x, x.shape[2:])
@@ -80,8 +79,8 @@ class TemporalConvAttention(BaseTemporalLayer):
         x = x.view(b, s, -1)
         a = a.unsqueeze(-1)
         a = a.expand(b, s, self.last_dim)
-        x = torch.mul(x, a)
-        x = torch.sum(x, 1)
-        x = x.view(b, self.last_dim)
+        att_x = torch.mul(x, a)
+        att_x = torch.sum(x, 1)
+        f = att_x.view(b, self.last_dim)
 
-        return x
+        return f
