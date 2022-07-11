@@ -238,6 +238,7 @@ if __name__ == "__main__":
     print("total pids", total_pids)
 
     print("total samples", len(img_metas))
+    print("total video samples", len(vid_metas))
 
     # dump metas
     if args.test_mode:
