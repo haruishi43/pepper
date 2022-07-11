@@ -1,4 +1,5 @@
 # credits: https://github.com/KaiyangZhou/deep-person-reid/blob/master/torchreid/metrics/rank.py
+# https://cysu.github.io/open-reid/notes/evaluation_metrics.html
 
 import warnings
 from collections import defaultdict
