@@ -16,6 +16,8 @@ class ImageDataset(BaseDataset):
             list[dict]: Annotation information from ReID api.
         """
 
+        # TODO: mode `_get_annotations` to another file so it can be extensible
+
         def _get_annotations(
             ann_file,
             data_prefix,
