@@ -1,8 +1,8 @@
 _base_ = [
-    "../_base_/models/basic_resnet50.py",
-    "../_base_/datasets/dukemtmcvid.py",
-    "../_base_/schedules/basic_schedule.py",
-    "../_base_/default_runtime.py",
+    "../../video/_base_/models/basic_resnet50.py",
+    "../../video/_base_/datasets/dukemtmcvid.py",
+    "../../video/_base_/schedules/basic_schedule.py",
+    "../../video/_base_/default_runtime.py",
 ]
 # batch size of 32 and num_frames=16 would use up ~8x7GB of memory
 # batch size 32 and num_frames=8 used around 20GB
