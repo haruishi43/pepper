@@ -21,9 +21,16 @@ __Notes__:
 ## Installation
 
 Clone the project:
+
 ```Bash
 git clone --recursive git@github.com:haruishi43/pepper.git
 cd pepper
+```
+
+You can install `pepper` as a module instead of following the rest of the installation:
+
+```Bash
+python setup.py develop
 ```
 
 ### Dependencies:
@@ -60,3 +67,4 @@ WIP
 - [ ] Documentation
 - [ ] Upload model weights
 - [ ] Test codes
+- [ ] PyPI installation
