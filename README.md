@@ -1,4 +1,4 @@
-# Pepper: Yet Another Framework for Image and Video Re-ID
+# 🌶️ Pepper: Yet Another Framework for Image and Video Re-ID
 
 ## Motivation
 
