@@ -59,10 +59,12 @@ if __name__ == "__main__":
 
     # save all images
     total_pids = 0
-    metas = []
+    img_metas = []
+    vid_metas = []
     for seq in SEQUENCES:
 
         meta = []
+        vid_data = {}
 
         gt_file = GT_FILE.format(
             root=args.root,
@@ -89,13 +91,10 @@ if __name__ == "__main__":
             frame = int(osp.split(frame_path)[-1].split(".")[0])
 
             # filter out
-            frame_gts = gts[
-                (gts.frame == frame)
-                & (gts.is_ped == 1)
-                & (
-                    gts.vis_ratio > 0.0
-                )  # make sure it's not completely occluded
-            ]
+            frame_gts = gts[(gts.frame == frame) & (gts.is_ped == 1)]
+            # for not, just save all (including vis_ratio==0)
+            # and refine it later
+            # the saved crops will be used for video dataset too
 
             for _, person_gt in frame_gts.iterrows():
                 # bbox: [x1, y1, w, h]
@@ -132,17 +131,7 @@ if __name__ == "__main__":
                 )
 
                 # crop and save
-                if args.test_mode:
-                    meta.append(
-                        dict(
-                            pid=pid,
-                            camid=None,
-                            img_path=img_save_path,
-                            seq=seq,
-                            vis_ratio=vis_ratio,
-                        )
-                    )
-                else:
+                if not args.test_mode:
                     mkdir_or_exist(osp.dirname(img_save_path))
                     cropped_img = crop_person(
                         img=frame_img,
@@ -150,36 +139,114 @@ if __name__ == "__main__":
                         save_path=img_save_path,
                     )
 
-                    if cropped_img is not None:
-                        meta.append(
-                            dict(
-                                pid=pid,
-                                camid=None,
-                                img_path=img_save_path,
-                                seq=seq,
-                                vis_ratio=vis_ratio,
-                            )
+                    if cropped_img is None:
+                        continue
+
+                meta.append(
+                    dict(
+                        pid=pid,
+                        camid=None,
+                        img_path=img_save_path,
+                        seq=seq,
+                        vis_ratio=vis_ratio,
+                        frame=frame,
+                    )
+                )
+
+                if pid in vid_data.keys():
+                    vid_data[pid].append(
+                        dict(
+                            frame=frame,
+                            img_path=img_save_path,
                         )
+                    )
+                else:
+                    vid_data[pid] = [
+                        dict(
+                            frame=frame,
+                            img_path=img_save_path,
+                        )
+                    ]
 
         num_unique = len(list(pids.keys()))
 
         total_pids += num_unique
-        metas += meta
+        img_metas += meta
 
         # checks
         print("seq", seq, num_unique)
-        assert total_pids == max(np.unique(np.array([m["pid"] for m in metas])))
+        assert total_pids == max(
+            np.unique(np.array([m["pid"] for m in img_metas]))
+        )
+
+        vid_meta = []
+
+        # parameters
+        max_gap = 16
+        min_track_len = 8
+        max_track_len = 128
+
+        # create video dataset
+        for pid, data in vid_data.items():
+            tracklets = []
+            tracklet = []
+
+            sorted_data = sorted(data, key=lambda d: d["frame"])
+
+            frame_ids = [d["frame"] for d in sorted_data]
+            img_paths = [d["img_path"] for d in sorted_data]
+
+            prev_fid = -1
+            for fid, img_path in zip(frame_ids, img_paths):
+                if len(tracklet) > 0:
+                    if fid - prev_fid > max_gap:
+                        if len(tracklet) >= min_track_len:
+                            tracklets.append(tracklet)
+                        tracklet = []
+                    if len(tracklet) >= max_track_len:
+                        tracklets.append(tracklet)
+                        tracklet = []
+
+                tracklet.append(img_path)
+                prev_fid = fid
+
+            # last tracklet
+            if len(tracklet) >= min_track_len:
+                tracklets.append(tracklet)
+
+            # add tracks to meta
+            for track in tracklets:
+                track = sorted(track)
+                vid_meta.append(
+                    dict(
+                        pid=pid,
+                        camid=None,
+                        img_paths=track,
+                    )
+                )
+
+        print(
+            "vid seq",
+            seq,
+            len(np.unique(np.array([m["pid"] for m in vid_meta]))),
+        )
+
+        vid_metas += vid_meta
 
     # do some checks!
-    assert total_pids == max(np.unique(np.array([m["pid"] for m in metas])))
+    assert total_pids == max(np.unique(np.array([m["pid"] for m in img_metas])))
     print("total pids", total_pids)
 
-    print("total samples", len(metas))
+    print("total samples", len(img_metas))
 
     # dump metas
     if args.test_mode:
         print(">>> skipped save")
     else:
-        save_fp = osp.join(args.root, args.out_dir, "train.json")
+        save_fp = osp.join(args.root, args.out_dir, "train_img.json")
         with open(save_fp, "w") as f:
-            json.dump(metas, f, indent=4)
+            json.dump(img_metas, f, indent=4)
+
+        save_fp = osp.join(args.root, args.out_dir, "train_vid.json")
+        with open(save_fp, "w") as f:
+            json.dump(vid_metas, f, indent=4)

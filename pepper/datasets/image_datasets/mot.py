@@ -24,6 +24,7 @@ class MOTImageDataset(ImageDataset):
     def __init__(
         self,
         train_seq,
+        vis_ratio=0.7,
         **kwargs,
     ):
         # Do some checks!
@@ -44,6 +45,9 @@ class MOTImageDataset(ImageDataset):
             ), f"ERR: {seq} is not in {self._mot_sequences}"
         self.train_seq = train_seq
 
+        assert 0 < vis_ratio <= 1
+        self.vis_ratio = vis_ratio
+
         super().__init__(
             eval_mode=eval_mode,
             num_camids=num_camids,
@@ -54,7 +58,8 @@ class MOTImageDataset(ImageDataset):
         def _get_annotations(
             ann_file,
             data_prefix,
-            train_seq,
+            train_seqs,
+            vis_ratio,
         ):
             assert isinstance(ann_file, str)
             with open(ann_file, "r") as f:
@@ -65,24 +70,34 @@ class MOTImageDataset(ImageDataset):
                 pid = d["pid"]
                 camid = d["camid"]
                 img_path = d["img_path"]
-                # TODO: filter out sequences that are not in train_seq
-                info = dict(
-                    img_prefix=data_prefix,
-                    img_info=dict(
-                        filename=img_path,
-                        pid=pid,
-                        camid=camid,
-                        split="train",
-                        debug_index=i,
-                    ),
-                    gt_label=np.array(pid, dtype=np.int64),
-                )
-                data_infos.append(info)
+
+                # mot specific:
+                seq = d["seq"]
+                vis_ratio = d["vis_ratio"]
+
+                # filter out some samples
+                if seq in train_seqs:
+                    if vis_ratio >= self.vis_ratio:
+                        info = dict(
+                            img_prefix=data_prefix,
+                            img_info=dict(
+                                filename=img_path,
+                                pid=pid,
+                                camid=camid,
+                                split="train",
+                                debug_index=i,
+                            ),
+                            gt_label=np.array(pid, dtype=np.int64),
+                        )
+                        data_infos.append(info)
             del tmp_data
             return data_infos
 
         data_infos = _get_annotations(
-            self.ann_file, self.data_prefix, self.train_seq
+            self.ann_file,
+            self.data_prefix,
+            self.train_seq,
+            self.vis_ratio,
         )
 
         return data_infos
@@ -99,24 +114,7 @@ class MOT16ImageDataset(MOTImageDataset):
 class MOT17ImageDataset(MOTImageDataset):
     """MOT17 Image Dataset"""
 
-    _det_methods = ("DPM", "SDP", "FRCNN")
     _mot_sequences = ("02", "04", "05", "09", "10", "11", "13")
-
-    def __init__(self, det_method, **kwargs):
-        if isinstance(det_method, "str"):
-            det_method = det_method
-
-        for dm in det_method:
-            assert (
-                dm in self._det_methods
-            ), f"ERR: {dm} is not in {self._det_methods}"
-        self.det_method = det_method
-
-        super().__init__(**kwargs)
-
-    def load_annotations(self):
-        # TODO: need to filter out sequences that are not in self.det_method
-        ...
 
 
 @DATASETS.register_module()
