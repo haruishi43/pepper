@@ -38,6 +38,9 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
     NUM_CAMIDS = None
     EVAL_KEYS = ("query", "gallery")
 
+    # flag to check if dataset is video (FIXME: want to remove this flag)
+    is_video = False
+
     # eval mode  (default: false)
     _is_eval = False
 

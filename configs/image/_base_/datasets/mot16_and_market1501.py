@@ -34,12 +34,17 @@ test_pipeline = [
     dict(type="ImageToTensor", keys=["img"]),
     dict(type="Collect", keys=["img"]),
 ]
-
-# use the whole dataset for market1501 as training data and evaluate on dukemtmc
 data = dict(
     samples_per_gpu=32,
     workers_per_gpu=6,
     train=[
+        dict(
+            type="MOT16ImageDataset",
+            data_prefix=None,
+            ann_file="data/MOT16/gtPepper/train_img.json",
+            pipeline=train_pipeline,
+            train_seq=("02", "04", "05", "09", "10"),
+        ),
         dict(
             type="Market1501Dataset",
             data_prefix="data/market1501/Market-1501-v15.09.15/"
@@ -48,44 +53,33 @@ data = dict(
             + "gtPepper/train.json",
             pipeline=train_pipeline,
         ),
-        dict(
-            type="Market1501Dataset",
-            data_prefix=dict(
-                query="data/market1501/Market-1501-v15.09.15/" + "query",
-                gallery="data/market1501/Market-1501-v15.09.15/"
-                + "bounding_box_test",
-            ),
-            ann_file=dict(
-                query="data/market1501/Market-1501-v15.09.15/"
-                + "gtPepper/query.json",
-                gallery="data/market1501/Market-1501-v15.09.15/"
-                + "gtPepper/gallery.json",
-            ),
-            pipeline=test_pipeline,
-        ),
     ],
     val=dict(
-        type="ImageDataset",
+        type="Market1501Dataset",
         data_prefix=dict(
-            query="data/dukemtmc-reid/DukeMTMC-reID/" + "query",
-            gallery="data/dukemtmc-reid/DukeMTMC-reID/" + "bounding_box_test",
+            query="data/market1501/Market-1501-v15.09.15/" + "query",
+            gallery="data/market1501/Market-1501-v15.09.15/"
+            + "bounding_box_test",
         ),
         ann_file=dict(
-            query="data/dukemtmc-reid/DukeMTMC-reID/" + "gtPepper/query.json",
-            gallery="data/dukemtmc-reid/DukeMTMC-reID/"
+            query="data/market1501/Market-1501-v15.09.15/"
+            + "gtPepper/query.json",
+            gallery="data/market1501/Market-1501-v15.09.15/"
             + "gtPepper/gallery.json",
         ),
         pipeline=test_pipeline,
     ),
     test=dict(
-        type="ImageDataset",
+        type="Market1501Dataset",
         data_prefix=dict(
-            query="data/dukemtmc-reid/DukeMTMC-reID/" + "query",
-            gallery="data/dukemtmc-reid/DukeMTMC-reID/" + "bounding_box_test",
+            query="data/market1501/Market-1501-v15.09.15/" + "query",
+            gallery="data/market1501/Market-1501-v15.09.15/"
+            + "bounding_box_test",
         ),
         ann_file=dict(
-            query="data/dukemtmc-reid/DukeMTMC-reID/" + "gtPepper/query.json",
-            gallery="data/dukemtmc-reid/DukeMTMC-reID/"
+            query="data/market1501/Market-1501-v15.09.15/"
+            + "gtPepper/query.json",
+            gallery="data/market1501/Market-1501-v15.09.15/"
             + "gtPepper/gallery.json",
         ),
         pipeline=test_pipeline,

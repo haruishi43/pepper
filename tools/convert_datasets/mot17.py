@@ -167,6 +167,7 @@ if __name__ == "__main__":
                         vid_data[pid].append(
                             dict(
                                 frame=frame,
+                                vis_ratio=vis_ratio,
                                 img_path=img_save_path,
                             )
                         )
@@ -174,6 +175,7 @@ if __name__ == "__main__":
                         vid_data[pid] = [
                             dict(
                                 frame=frame,
+                                vis_ratio=vis_ratio,
                                 img_path=img_save_path,
                             )
                         ]
@@ -205,9 +207,12 @@ if __name__ == "__main__":
 
                 frame_ids = [d["frame"] for d in sorted_data]
                 img_paths = [d["img_path"] for d in sorted_data]
+                vis_ratios = [d["vis_ratio"] for d in sorted_data]
 
                 prev_fid = -1
-                for fid, img_path in zip(frame_ids, img_paths):
+                for fid, img_path, vis_ratio in zip(
+                    frame_ids, img_paths, vis_ratios
+                ):
                     if len(tracklet) > 0:
                         if fid - prev_fid > max_gap:
                             if len(tracklet) >= min_track_len:
@@ -217,7 +222,9 @@ if __name__ == "__main__":
                             tracklets.append(tracklet)
                             tracklet = []
 
-                    tracklet.append(img_path)
+                    tracklet.append(
+                        dict(img_path=img_path, vis_ratio=vis_ratio)
+                    )
                     prev_fid = fid
 
                 # last tracklet
@@ -226,12 +233,16 @@ if __name__ == "__main__":
 
                 # add tracks to meta
                 for track in tracklets:
-                    track = sorted(track)
+                    sorted_track = sorted(track, key=lambda d: d["img_path"])
+                    tracks = [d["img_path"] for d in sorted_track]
+                    vrs = [d["vis_ratio"] for d in sorted_track]
                     vid_meta.append(
                         dict(
                             pid=pid,
                             camid=None,
-                            img_paths=track,
+                            seq=seq,
+                            img_paths=tracks,
+                            vis_ratios=vrs,
                         )
                     )
 

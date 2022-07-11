@@ -22,12 +22,16 @@ class ConcatTrainDataset(Dataset):
 
     pipeline = None
 
+    is_video = False
+
     def __init__(self, datasets):
         super(ConcatTrainDataset, self).__init__()
 
         assert (
             len(datasets) > 1
         ), f"ConcatDataset needs more than 1 dataset {len(datasets)}"
+
+        self.is_video = datasets[0].is_video
 
         # we can add pipeline to data_infos and pop them before we run the pipeline
         # self.pipeline = datasets[0].pipeline
@@ -70,14 +74,47 @@ class ConcatTrainDataset(Dataset):
 
         return data_infos
 
+    def prepare_video(self, data):
+        # FIXME: want to remove this function...
+        assert isinstance(data, dict)
+        img_prefix = data["img_prefix"]
+        img_info = data["img_info"]
+        gt_label = data["gt_label"]
+
+        # make a list of dicts
+        filenames = img_info["filenames"]
+        results = []
+        for i, fn in enumerate(filenames):
+            info = dict(
+                img_prefix=img_prefix,
+                img_info=dict(
+                    filename=fn,
+                    pid=img_info["pid"],
+                    camid=img_info["camid"],
+                    frame_id=i,
+                    is_video_data=True,
+                    split=img_info["split"],
+                    debug_index=img_info["debug_index"],
+                ),
+                gt_label=gt_label,
+            )
+            results.append(info)
+
+        return results
+
     def prepare_data(self, data):
         # NOTE: might need to prepare the sample before handing it to pipeline
         # different pipelines for each dataset
+
         if self.pipeline is None:
             pipeline = data.pop("pipeline")
-            return pipeline(data)
         else:
-            return self.pipeline(data)
+            pipeline = self.pipeline
+
+        if self.is_video:
+            data = self.prepare_video(data)
+
+        return pipeline(data)
 
     def __len__(self):
         return len(self.data_infos)

@@ -12,6 +12,8 @@ from ..base_dataset import BaseDataset
 
 @DATASETS.register_module()
 class VideoDataset(BaseDataset):
+    is_video = True
+
     def load_annotations(self):
         """Load annotations from ImageNet style annotation file.
         Returns:

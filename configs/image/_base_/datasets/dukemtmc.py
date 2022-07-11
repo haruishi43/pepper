@@ -4,10 +4,9 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type="LoadImageFromFile", to_float32=True),
     dict(
-        type="ProbRandomResizedCrop",
+        type="ResizeOrRandom2DTranslation",
         size=(256, 128),
-        scale=(0.5, 1.0),
-        crop_prob=0.5,
+        prob=0.5,
     ),
     dict(
         type="RandomFlip",
