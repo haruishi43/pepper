@@ -28,7 +28,12 @@ ext_modules = [
         "pepper.core.evaluation.rank_cylib.rank_cy",
         sources=["pepper/core/evaluation/rank_cylib/rank_cy.pyx"],
         include_dirs=[numpy_include()],
-    )
+    ),
+    Extension(
+        "pepper.core.evaluation.rank_cylib.roc_cy",
+        sources=["pepper/core/evaluation/rank_cylib/roc.pyx"],
+        include_dirs=[numpy_include()],
+    ),
 ]
 
 
@@ -60,5 +65,8 @@ setup(
     ),
     install_requires=get_requirements(),
     keywords=["Computer Vision", "Re-ID"],
-    ext_modules=cythonize(ext_modules),
+    ext_modules=cythonize(
+        ext_modules,
+        language_level="3",
+    ),
 )
