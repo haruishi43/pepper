@@ -14,6 +14,18 @@ lr_config = dict(
     warmup_ratio=1.0 / 3,
 )
 
+# actually BoT
+lr_config = dict(
+    # -> policy config
+    policy="step",
+    step=[2000, 3500, 6000],
+    gamma=0.1,
+    # -> warmup config
+    warmup="linear",
+    warmup_iters=500,
+    warmup_ratio=0.01,
+)
+
 # runner settings
 runner = dict(type="IterBasedRunner", max_iters=10000)
 

@@ -44,6 +44,7 @@ Results using `pepper`:
 | [+LS](bot_resnet/baseline_warmup_REA_LS_market1501.py)                      | 82.3 | 93.1   |
 | [+stride=1](bot_resnet/baseline_warmup_REA_LS_stride1_market1501.py)        | 84.3 | 94.0   |
 | [+BNNeck](bot_resnet/bot_market1501.py)                                     | 84.4 | 93.9   |
+| [-warmup](bot_resnet/bot_wo_warmup_market1501.py)                           | 85.0 | 94.2   |
 | +center loss                                                                | --   | --     |
 
 Results from the original paper:
@@ -58,6 +59,7 @@ Results from the original paper:
 | +BNNeck      | 85.7 | 94.1   |
 | +center loss | 85.9 | 94.5   |
 
+
 Notes:
 - Differences from the original implementation:
   - original paper uses `Padding` + `RandomCropping`; I used [`Random2DTranslation`](https://github.com/KaiyangZhou/deep-person-reid/blob/master/torchreid/data/transforms.py)
@@ -65,6 +67,7 @@ Notes:
 - "center loss" has not been implemented here yet
 - SyncBN is not used so batch sizes are essentially 1/2
 - `warmup` parameters might not be optimal since metrics are lower
+
 
 ---
 
