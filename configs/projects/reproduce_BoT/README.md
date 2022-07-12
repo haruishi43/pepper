@@ -26,15 +26,16 @@
 
 Results using `pepper`:
 
-| Model                                                                | mAP  | Rank-1 |
-|----------------------------------------------------------------------|------|--------|
-| [Baseline](bot_resnet/baseline_market1501.py)                        | 77.8 | 91.7   |
-| [+warmup](bot_resnet/baseline_warmup_market1501.py)                  | 77.9 | 91.2   |
-| [+REA](bot_resnet/baseline_warmup_REA_market1501.py)                 | 81.4 | 92.3   |
-| [+LS](bot_resnet/baseline_warmup_REA_LS_market1501.py)               | 81.7 | 92.9   |
-| [+stride=1](bot_resnet/baseline_warmup_REA_LS_stride1_market1501.py) | 83.8 | 93.9   |
-| [+BNNeck](bot_resnet/bot_market1501.py)                              | 82.3 | 92.8   |
-| +center loss                                                         | --   | --     |
+| Model                                                                       | mAP  | Rank-1 |
+|-----------------------------------------------------------------------------|------|--------|
+| [Baseline](bot_resnet/baseline_market1501.py)                               | 77.8 | 91.7   |
+| [+warmup](bot_resnet/baseline_warmup_market1501.py)                         | 77.9 | 91.2   |
+| [+REA](bot_resnet/baseline_warmup_REA_market1501.py)                        | 81.4 | 92.3   |
+| [+LS](bot_resnet/baseline_warmup_REA_LS_market1501.py)                      | 81.7 | 92.9   |
+| [+stride=1](bot_resnet/baseline_warmup_REA_LS_stride1_market1501.py)        | 83.8 | 93.9   |
+| [+stride=1,bs=64](bot_resnet/baseline_warmup_REA_LS_stride1_market1501.py)  | 83.8 | 93.9   |
+| [+BNNeck](bot_resnet/bot_market1501.py)                                     | 82.3 | 92.8   |
+| +center loss                                                                | --   | --     |
 
 Results from the original paper:
 

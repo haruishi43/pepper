@@ -19,7 +19,6 @@ evaluation = dict(
     interval=2500,
     gpu_collect=True,
     metric=["metric", "CMC", "mAP"],
-    normalize_features=False,
     dist_metric="cosine",
     use_metric_cuhk03=False,
     rerank=False,

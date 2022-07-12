@@ -8,7 +8,6 @@ from os import PathLike
 
 import numpy as np
 import torch
-from torch.nn import functional as F
 from torch.utils.data import Dataset
 
 from pepper.core.evaluation import evaluate
@@ -162,7 +161,6 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         results,
         metric=["metric", "mAP", "CMC"],
         metric_options=None,
-        normalize_features=False,
         dist_metric="euclidean",
         use_metric_cuhk03=False,
         use_aqe=False,
@@ -207,11 +205,6 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         g_pids = pids[self._num_query :]
         q_camids = camids[: self._num_query]
         g_camids = camids[self._num_query :]
-
-        if normalize_features:
-            # L2 normalization
-            q_feat = F.normalize(q_feat, p=2, dim=-1)
-            g_feat = F.normalize(g_feat, p=2, dim=-1)
 
         # results contains the keys:
         # 'CMC', 'mAP', 'mINP', 'metric', 'TPR@FPR', and 'Rank-#'
