@@ -28,7 +28,7 @@ lr_config = dict(
     gamma=0.1,
     # -> warmup config
     warmup="linear",
-    warmup_iters=1000,
+    warmup_iters=750,
     warmup_ratio=0.1,
 )
 
