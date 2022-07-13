@@ -21,17 +21,17 @@ lr_config = dict(
     step=[2000, 3500, 6000],
     gamma=0.1,
     # -> warmup config
-    warmup="linear",
-    warmup_iters=500,
-    warmup_ratio=0.1,
+    # warmup="linear",
+    # warmup_iters=500,
+    # warmup_ratio=0.1,
 )
 
 # runner settings
-runner = dict(type="IterBasedRunner", max_iters=10000)
+runner = dict(type="IterBasedRunner", max_iters=6000)
 
 # evaluation
 evaluation = dict(
-    interval=2500,
+    interval=2000,
     gpu_collect=True,
     metric=["metric", "CMC", "mAP"],
     dist_metric="cosine",
@@ -40,4 +40,4 @@ evaluation = dict(
 )
 
 # checkpoint
-checkpoint_config = dict(interval=2500)
+checkpoint_config = dict(interval=2000)
