@@ -96,7 +96,9 @@ class BoTReIDHead(BaseHead):
     def _init_layers(self):
         """Initialize fc layers."""
         if self.loss_cls:
-            self.classifier = nn.Linear(self.in_channels, self.num_classes, bias=False)
+            self.classifier = nn.Linear(
+                self.in_channels, self.num_classes, bias=False
+            )
             self.classifier.apply(weights_init_classifier)
 
     @auto_fp16()

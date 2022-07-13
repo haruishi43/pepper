@@ -43,8 +43,8 @@ Results using `pepper`:
 | [+REA](bot_resnet/baseline_warmup_REA_market1501.py)                        | 82.3 | 92.8   |
 | [+LS](bot_resnet/baseline_warmup_REA_LS_market1501.py)                      | 82.3 | 93.1   |
 | [+stride=1](bot_resnet/baseline_warmup_REA_LS_stride1_market1501.py)        | 84.3 | 94.0   |
-| [+BNNeck](bot_resnet/bot_market1501.py)                                     | 84.4 | 93.9   |
-| [-warmup](bot_resnet/bot_wo_warmup_market1501.py)                           | 85.0 | 94.2   |
+| [+BNNeck](bot_resnet/bot_market1501.py)                                     | 84.6 | 93.9   |
+| [-warmup](bot_resnet/bot_wo_warmup_market1501.py)                           | 85.4 | 94.3   |
 | +center loss                                                                | --   | --     |
 
 Results from the original paper:
@@ -66,7 +66,7 @@ Notes:
 - `BNNeck` should be the same as the original implementation, but there are not much improvements.
 - "center loss" has not been implemented here yet
 - SyncBN is not used so batch sizes are essentially 1/2
-- `warmup` parameters might not be optimal since metrics are lower
+- need to tune `warmup` parameters (mAP is a tad lower than the paper)
 
 
 ---

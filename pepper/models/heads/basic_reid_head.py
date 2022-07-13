@@ -85,7 +85,9 @@ class BasicReIDHead(BaseHead):
         if self.loss_cls:
             self.bn = nn.BatchNorm1d(self.in_channels)
             self.bn.bias.requires_grad_(False)  # no shift (BoT)
-            self.classifier = nn.Linear(self.in_channels, self.num_classes, bias=False)
+            self.classifier = nn.Linear(
+                self.in_channels, self.num_classes, bias=False
+            )
 
             self.bn.apply(weights_init_kaiming)
             self.classifier.apply(weights_init_classifier)

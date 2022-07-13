@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+"""MOT* preprocess script (* generally the same with other MOT datasets)
+
+- no validation or testing splits (if you have some proposals, please send me a PR!)
+- outputs both image and video ReID dataset splits
+- MOTImageDataset and MOTVideoDataset provides ways to filter out based on criterias
+  (which sequences, what vis_ratio, etc...)
+"""
+
 import argparse
 import json
 import os.path as osp

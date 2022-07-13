@@ -13,7 +13,7 @@ Inspired by [OpenMMLab's projects](https://github.com/open-mmlab), I created my 
 Key points:
 
 - __Customisable__: experiments can be configured easily with the help of `mmcv`; no more bloated configs!
-- __Extensible__: add modules easily with "registries" and implement new ideas quickly without the hassle of breaking things
+- __Scalable__: add modules easily with "registries" and implement new ideas quickly without the hassle of breaking things
 - __Fast__: training and evaluations are done using distributed processing
 - __Robust__: borrows and implements techniques from other projects
 
