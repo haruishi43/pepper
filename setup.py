@@ -31,7 +31,7 @@ ext_modules = [
     ),
     Extension(
         "pepper.core.evaluation.rank_cylib.roc_cy",
-        sources=["pepper/core/evaluation/rank_cylib/roc.pyx"],
+        sources=["pepper/core/evaluation/rank_cylib/roc_cy.pyx"],
         include_dirs=[numpy_include()],
     ),
 ]
