@@ -84,7 +84,7 @@ class BasicReIDHead(BaseHead):
         if self.loss_cls:
             self.bn = nn.BatchNorm1d(self.in_channels)
             self.bn.bias.requires_grad_(False)  # no shift (BoT)
-            self.classifier = nn.Linear(self.in_channels, self.num_classes)
+            self.classifier = nn.Linear(self.in_channels, self.num_classes, bias=False)
 
     @auto_fp16()
     def pre_logits(self, x):

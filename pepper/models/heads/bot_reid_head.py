@@ -94,7 +94,7 @@ class BoTReIDHead(BaseHead):
     def _init_layers(self):
         """Initialize fc layers."""
         if self.loss_cls:
-            self.classifier = nn.Linear(self.in_channels, self.num_classes)
+            self.classifier = nn.Linear(self.in_channels, self.num_classes, bias=False)
 
     @auto_fp16()
     def pre_logits(self, x):
