@@ -8,27 +8,17 @@ model = dict(
         out_indices=(3,),
         style="pytorch",
         plugins=[
-            # dict(
-            #     cfg=dict(type='NonLocalBlock', num_layers=2),
-            #     stages=(False, True, False, False),
-            #     position='after_conv3'
-            # ),
-            # dict(
-            #     cfg=dict(type='NonLocalBlock', num_layers=3),
-            #     stages=(False, False, True, False),
-            #     position='after_conv3'
-            # ),
-            dict(
+            dict(  # 2nd
                 cfg=dict(type='NonLocal2d', mode="dot_product"),
                 stages=(False, True, False, False),
                 layers=(2, 3),
-                position='after_conv3'
+                position='after_conv3',
             ),
-            dict(
+            dict(  # 3rd
                 cfg=dict(type='NonLocal2d', mode="dot_product"),
                 stages=(False, False, True, False),
                 layers=(3, 4, 5),
-                position='after_conv3'
+                position='after_conv3',
             ),
         ],
     ),
@@ -40,7 +30,7 @@ model = dict(
         loss=dict(
             type="LabelSmoothLoss", label_smooth_val=0.1, loss_weight=1.0
         ),
-        loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=1.0),
+        loss_pairwise=dict(type="TripletLoss", margin=0.0, hard_mining=False, loss_weight=1.0),
         norm_cfg=dict(type="BN1d"),
         act_cfg=dict(type="ReLU"),
     ),
