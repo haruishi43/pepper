@@ -23,6 +23,8 @@ class NonLocalBlock(nn.Module):
         """Reproduce Non-Local blocks for FastReid
 
         - needed `num_layers` since there are more than 1 non local layers per stage
+
+        # FIXME: remove this since we don't use this
         """
         super().__init__()
 
