@@ -8,12 +8,17 @@ from .inverted_residual import InvertedResidual
 from .make_divisible import make_divisible
 from .position_encoding import ConditionalPositionEncoding
 from .se_layer import SELayer
+from .res_layer import ResLayer
+
+# custom plugins
+from .nonlocal_block import NonLocalBlock
 
 __all__ = [
     "channel_shuffle",
     "make_divisible",
     "InvertedResidual",
     "SELayer",
+    "ResLayer",
     "to_ntuple",
     "to_2tuple",
     "to_3tuple",
@@ -26,4 +31,5 @@ __all__ = [
     "MultiheadAttention",
     "ConditionalPositionEncoding",
     "resize_pos_embed",
+    "NonLocalBlock",
 ]

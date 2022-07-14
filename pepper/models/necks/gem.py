@@ -32,7 +32,7 @@ class GeneralizedMeanPooling(nn.Module):
     def __init__(self, p=3.0, eps=1e-6, clamp=True):
         assert p >= 1, "'p' must be a value greater then 1"
         super(GeneralizedMeanPooling, self).__init__()
-        self.p = Parameter(torch.ones(1) * p)
+        self.p = Parameter(torch.ones(1) * p)  # norm is trainable
         self.eps = eps
         self.clamp = clamp
 

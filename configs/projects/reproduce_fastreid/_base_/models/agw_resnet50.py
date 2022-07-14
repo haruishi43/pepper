@@ -7,8 +7,20 @@ model = dict(
         strides=(1, 2, 2, 1),  # increases final features by x2
         out_indices=(3,),
         style="pytorch",
+        plugins=[
+            dict(
+                cfg=dict(type='NonLocalBlock', num_layers=2),
+                stages=(False, True, False, False),
+                position='after_conv3'
+            ),
+            dict(
+                cfg=dict(type='NonLocalBlock', num_layers=3),
+                stages=(False, False, True, False),
+                position='after_conv3'
+            ),
+        ],
     ),
-    neck=dict(type="GlobalAveragePooling", dim=2),
+    neck=dict(type="GeneralizedMeanPooling"),
     head=dict(
         type="BoTReIDHead",
         in_channels=2048,
