@@ -2,23 +2,11 @@
 optimizer = dict(type="Adam", lr=0.00035, weight_decay=5e-04, betas=(0.9, 0.99))
 optimizer_config = dict(grad_clip=dict(max_norm=5.0, norm_type=2))
 
-# configs based on BoT
-# lr_config = dict(
-#     # -> policy config
-#     policy="step",
-#     step=[2000, 3500, 6000],
-#     gamma=0.1,
-#     # -> warmup config
-#     warmup="linear",
-#     warmup_iters=500,
-#     warmup_ratio=1.0 / 3,
-# )
-
-# actually BoT
+# BoT schedule
 lr_config = dict(
     # -> policy config
     policy="step",
-    step=[2000, 3500, 6000],
+    step=[2000, 3500],
     gamma=0.1,
     # -> warmup config
     warmup="linear",
@@ -27,11 +15,11 @@ lr_config = dict(
 )
 
 # runner settings
-runner = dict(type="IterBasedRunner", max_iters=10000)
+runner = dict(type="IterBasedRunner", max_iters=6000)
 
 # evaluation
 evaluation = dict(
-    interval=2500,
+    interval=2000,
     gpu_collect=True,
     metric=["metric", "CMC", "mAP"],
     dist_metric="cosine",
@@ -40,4 +28,4 @@ evaluation = dict(
 )
 
 # checkpoint
-checkpoint_config = dict(interval=2500)
+checkpoint_config = dict(interval=2000)

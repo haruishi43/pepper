@@ -7,16 +7,16 @@ optimizer_config = dict(grad_clip=dict(max_norm=5.0, norm_type=2))
 lr_config = dict(
     # -> policy config
     policy="step",
-    step=[2000, 3500, 6000],
+    step=[2000, 3500],
     gamma=0.1,
 )
 
 # runner settings
-runner = dict(type="IterBasedRunner", max_iters=10000)
+runner = dict(type="IterBasedRunner", max_iters=6000)
 
 # evaluation
 evaluation = dict(
-    interval=2500,
+    interval=2000,
     gpu_collect=True,
     metric=["metric", "CMC", "mAP"],
     dist_metric="cosine",
@@ -25,4 +25,4 @@ evaluation = dict(
 )
 
 # checkpoint
-checkpoint_config = dict(interval=2500)
+checkpoint_config = dict(interval=2000)

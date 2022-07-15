@@ -96,16 +96,10 @@ class TripletLoss(nn.Module):
         super(TripletLoss, self).__init__()
         self.margin = margin
         self.norm_feat = norm_feat
-        # self.ranking_loss = nn.MarginRankingLoss(margin=margin)
         self.loss_weight = loss_weight
         self.hard_mining = hard_mining
 
     def forward(self, inputs, targets, **kwargs):
-        # if self.hard_mining:
-        #     return self.hard_mining_triplet_loss_forward(inputs, targets)
-        # else:
-        #     raise NotImplementedError()
-
         """Modified from Tong Xiao's open-reid (https://github.com/Cysu/open-reid).
         Related Triplet Loss theory can be found in paper 'In Defense of the Triplet
         Loss for Person Re-Identification'."""
@@ -114,14 +108,6 @@ class TripletLoss(nn.Module):
             dist_mat = cosine_dist(inputs, inputs)
         else:
             dist_mat = euclidean_dist(inputs, inputs)
-
-        # For distributed training, gather all features from different process.
-        # if comm.get_world_size() > 1:
-        #     all_embedding = torch.cat(GatherLayer.apply(embedding), dim=0)
-        #     all_targets = concat_all_gather(targets)
-        # else:
-        #     all_embedding = embedding
-        #     all_targets = targets
 
         N = dist_mat.size(0)
         is_pos = (

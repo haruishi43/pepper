@@ -41,6 +41,8 @@ class BoTReIDHead(BaseHead):
         num_classes=None,
         loss=None,
         loss_pairwise=None,
+        loss_circle=None,
+        loss_cosface=None,
         loss_center=None,
         topk=(1,),
         init_cfg=dict(type="Normal", layer="Linear", mean=0, std=0.01, bias=0),
@@ -71,6 +73,8 @@ class BoTReIDHead(BaseHead):
             )
         self.loss_cls = build_loss(loss) if loss else None
         self.loss_triplet = build_loss(loss_pairwise) if loss_pairwise else None
+        self.loss_circle = build_loss(loss_circle) if loss_circle else None
+        self.loss_cosface = build_loss(loss_cosface) if loss_cosface else None
         if loss_center:
             # TODO: implement center loss here
             loss_center.num_classes = num_classes
@@ -137,6 +141,12 @@ class BoTReIDHead(BaseHead):
 
         if self.loss_triplet:
             losses["triplet_loss"] = self.loss_triplet(feats, gt_label)
+
+        if self.loss_circle:
+            losses["circle_loss"] = self.loss_circle(feats, gt_label)
+
+        if self.loss_cosface:
+            losses["cosface"] = self.loss_cosface(feats, gt_label)
 
         if self.loss_center:
             assert cls_score is not None
