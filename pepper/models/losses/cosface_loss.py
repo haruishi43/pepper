@@ -52,14 +52,14 @@ def pairwise_cosface(
 
 
 @LOSSES.register_module()
-class CosFaceLoss(nn.Module):
+class CosFace(nn.Module):
     def __init__(
         self,
         margin=0.25,
         gamma=128,
         loss_weight=1.0,
     ):
-        super(CosFaceLoss, self).__init__()
+        super(CosFace, self).__init__()
         self.cosface_loss = partial(
             pairwise_cosface,
             margin=margin,
