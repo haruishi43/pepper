@@ -51,6 +51,8 @@ data = dict(
     workers_per_gpu=8,
 )
 sampler = dict(
+    type="InfiniteBalancedIdentityDistributedSampler",
     batch_size=64,
     num_instances=4,
+    shuffle=True,
 )
