@@ -11,11 +11,10 @@ model = dict(
     neck=dict(type="GlobalAveragePooling", dim=2),
     temporal=dict(type="TemporalPooling"),
     head=dict(
-        type="BasicReIDHead",
+        type="BasicHead",
         in_channels=2048,
         num_classes=380,
-        # loss=dict(type="CrossEntropyLoss", loss_weight=1.0),
-        loss=dict(
+        loss_cls=dict(
             type="LabelSmoothLoss", label_smooth_val=0.1, loss_weight=1.0
         ),
         loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=1.0),

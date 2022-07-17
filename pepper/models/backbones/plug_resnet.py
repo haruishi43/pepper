@@ -165,7 +165,9 @@ class CustomResLayer(Sequential):
 
 
 @BACKBONES.register_module()
-class BetterPlugResNet(ResNet):
+class PluginResNet(ResNet):
+    """Plugin-compatible ResNet"""
+
     def make_stage_plugins(self, plugins, stage_idx):
         """Make plugins for ResNet ``stage_idx`` th stage.
         Currently we support to insert ``context_block``,

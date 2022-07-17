@@ -6,7 +6,7 @@ _base_ = [
 ]
 model = dict(
     head=dict(
-        loss_circle=dict(type="CosFace", margin=0.25, gamma=128, loss_weight=1.0 / 64),
+        loss_cosface=dict(type="CosFace", margin=0.25, gamma=128, loss_weight=1.0 / 64),
     )
 )
 data = dict(

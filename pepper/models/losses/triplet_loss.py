@@ -86,6 +86,8 @@ class TripletLoss(nn.Module):
         loss_weight (float, optional): Weight of the loss. Default to 1.0.
     """
 
+    loss_name = "triplet_loss"
+
     def __init__(
         self,
         margin=0.3,
@@ -99,7 +101,12 @@ class TripletLoss(nn.Module):
         self.loss_weight = loss_weight
         self.hard_mining = hard_mining
 
-    def forward(self, inputs, targets, **kwargs):
+    def forward(
+        self,
+        inputs,
+        targets,
+        **kwargs,
+    ):
         """Modified from Tong Xiao's open-reid (https://github.com/Cysu/open-reid).
         Related Triplet Loss theory can be found in paper 'In Defense of the Triplet
         Loss for Person Re-Identification'."""

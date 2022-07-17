@@ -58,6 +58,9 @@ def pairwise_circleloss(
 
 @LOSSES.register_module()
 class CircleLoss(nn.Module):
+
+    loss_name = "circle_loss"
+
     def __init__(
         self,
         margin=0.25,

@@ -38,8 +38,8 @@ test_pipeline = [
 
 # use the whole dataset for market1501 as training data and evaluate on dukemtmc
 data = dict(
-    samples_per_gpu=32,
-    workers_per_gpu=6,
+    samples_per_gpu=128,
+    workers_per_gpu=8,
     train=[
         dict(
             type="Market1501Dataset",

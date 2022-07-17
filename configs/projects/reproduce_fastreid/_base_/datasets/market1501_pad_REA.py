@@ -4,10 +4,14 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type="LoadImageFromFile", to_float32=True),
     dict(
-        type="ProbRandomResizedCrop",
+        type="Resize",
+        size=(256, 128),  # (h, w)
+        interpolation="bilinear",
+    ),
+    dict(
+        type="RandomCrop",
         size=(256, 128),
-        scale=(0.5, 1.0),
-        crop_prob=0.5,
+        padding=(10, 10, 10, 10),
     ),
     dict(
         type="RandomFlip",
@@ -35,11 +39,11 @@ test_pipeline = [
     dict(type="ImageToTensor", keys=["img"]),
     dict(type="Collect", keys=["img"]),
 ]
-data_type = "ImageDataset"
-data_root = "data/dukemtmc-reid/DukeMTMC-reID/"
+data_type = "Market1501Dataset"
+data_root = "data/market1501/Market-1501-v15.09.15/"
 data = dict(
     samples_per_gpu=128,
-    workers_per_gpu=6,
+    workers_per_gpu=8,
     train=dict(
         type=data_type,
         data_prefix=data_root + "bounding_box_train",

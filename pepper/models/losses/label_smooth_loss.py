@@ -43,6 +43,8 @@ class LabelSmoothLoss(nn.Module):
             (1-2\epsilon)\delta_{k, y} + \epsilon
     """
 
+    loss_name = "ls_loss"
+
     def __init__(
         self,
         label_smooth_val,

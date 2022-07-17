@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import warnings
-
 import torch
 import torch.nn as nn
 
@@ -14,7 +12,7 @@ from ..losses import Accuracy
 
 
 @HEADS.register_module()
-class BasicReIDHead(BaseHead):
+class BasicHead(BaseHead):
     """Basic head for re-identification.
     Args:
         in_channels (int): Number of channels in the input.
@@ -23,9 +21,9 @@ class BasicReIDHead(BaseHead):
         act_cfg (dict, optional): Configuration of activation method after fc.
             Defaults to None.
         num_classes (int, optional): Number of the identities. Default to None.
-        loss (dict, optional): Cross entropy loss to train the
+        loss_cls (list, tuple, dict, optional): Cross entropy loss to train the
             re-identificaiton module.
-        loss_pairwise (dict, optional): Triplet loss to train the
+        loss_pairwise (list, tuple, dict, optional): Triplet loss to train the
             re-identificaiton module.
         topk (int, optional): Calculate topk accuracy. Default to False.
         init_cfg (dict or list[dict], optional): Initialization config dict.
@@ -39,12 +37,12 @@ class BasicReIDHead(BaseHead):
         norm_cfg=None,
         act_cfg=None,
         num_classes=None,
-        loss=None,
+        loss_cls=None,
         loss_pairwise=None,
         topk=(1,),
         init_cfg=dict(type="Normal", layer="Linear", mean=0, std=0.01, bias=0),
     ):
-        super(BasicReIDHead, self).__init__(init_cfg)
+        super(BasicHead, self).__init__(init_cfg)
         assert isinstance(topk, (int, tuple))
         if isinstance(topk, int):
             topk = (topk,)
@@ -52,24 +50,47 @@ class BasicReIDHead(BaseHead):
             assert _topk > 0, "Top-k should be larger than 0"
         self.topk = topk
 
-        if not loss:
-            if isinstance(num_classes, int):
-                warnings.warn(
-                    "Since cross entropy is not set, "
-                    "the num_classes will be ignored."
+        # Setup losses
+        if not loss_cls:
+            self.loss_cls = None
+        else:
+            if not isinstance(num_classes, int):
+                raise TypeError(
+                    "The num_classes must be a current number, "
+                    "if there is cross entropy loss."
                 )
             if not loss_pairwise:
                 raise ValueError(
                     "Please choose at least one loss in "
                     "triplet loss and cross entropy loss."
                 )
-        elif not isinstance(num_classes, int):
-            raise TypeError(
-                "The num_classes must be a current number, "
-                "if there is cross entropy loss."
-            )
-        self.loss_cls = build_loss(loss) if loss else None
-        self.loss_triplet = build_loss(loss_pairwise) if loss_pairwise else None
+
+            if isinstance(loss_cls, dict):
+                self.loss_cls = build_loss(loss_cls)
+            elif isinstance(loss_cls, (list, tuple)):
+                self.loss_cls = nn.ModuleList()
+                for loss in loss_cls:
+                    self.loss_cls.append(build_loss(loss))
+            else:
+                raise TypeError(
+                    f"loss_cls must be a dict or sequence of dict,\
+                    but got {type(loss_cls)}"
+                )
+
+        if not loss_pairwise:
+            self.loss_pairwise = None
+        else:
+            if isinstance(loss_pairwise, dict):
+                self.loss_pairwise = build_loss(loss_pairwise)
+            elif isinstance(loss_pairwise, (list, tuple)):
+                self.loss_pairwise = nn.ModuleList()
+                for loss in loss_pairwise:
+                    self.loss_pairwise.append(build_loss(loss))
+            else:
+                raise TypeError(
+                    f"loss_pairwise must be a dict or sequence of dict,\
+                    but got {type(loss_pairwise)}"
+                )
 
         self.in_channels = in_channels
         self.norm_cfg = norm_cfg
@@ -84,7 +105,7 @@ class BasicReIDHead(BaseHead):
         """Initialize fc layers."""
         if self.loss_cls:
             self.bn = nn.BatchNorm1d(self.in_channels)
-            self.bn.bias.requires_grad_(False)  # no shift (BoT)
+            self.bn.bias.requires_grad_(False)
             self.classifier = nn.Linear(
                 self.in_channels, self.num_classes, bias=False
             )
@@ -111,8 +132,6 @@ class BasicReIDHead(BaseHead):
     def forward_train(self, x):
         """Model forward."""
 
-        # feats = self.pre_logits(x)
-
         if self.loss_cls:
             feats_bn = self.bn(x)
             cls_score = self.classifier(feats_bn)
@@ -124,15 +143,46 @@ class BasicReIDHead(BaseHead):
         """Compute losses."""
         losses = dict()
 
-        if self.loss_triplet:
-            losses["triplet_loss"] = self.loss_triplet(feats, gt_label)
-
+        # Classification (softmax) losses
         if self.loss_cls:
             assert cls_score is not None
-            losses["ce_loss"] = self.loss_cls(cls_score, gt_label)
+            if not isinstance(self.loss_cls, nn.ModuleList):
+                loss_cls = [self.loss_cls]
+            else:
+                loss_cls = self.loss_cls
+            for loss in loss_cls:
+                if loss.loss_name not in losses:
+                    losses[loss.loss_name] = loss(
+                        cls_score=cls_score,
+                        label=gt_label,
+                    )
+                else:
+                    losses[loss.loss_name] += loss(
+                        cls_score=cls_score,
+                        label=gt_label,
+                    )
+
             # compute accuracy
             acc = self.accuracy(cls_score, gt_label)
             assert len(acc) == len(self.topk)
             losses["accuracy"] = {f"top-{k}": a for k, a in zip(self.topk, acc)}
+
+        # Metric (distance) losses
+        if self.loss_pairwise:
+            if not isinstance(self.loss_pairwise, nn.ModuleList):
+                loss_pairwise = [self.loss_pairwise]
+            else:
+                loss_pairwise = self.loss_pairwise
+            for loss in loss_pairwise:
+                if loss.loss_name not in losses:
+                    losses[loss.loss_name] = loss(
+                        inputs=feats,
+                        targets=gt_label,
+                    )
+                else:
+                    losses[loss.loss_name] += loss(
+                        inputs=feats,
+                        targets=gt_label,
+                    )
 
         return losses

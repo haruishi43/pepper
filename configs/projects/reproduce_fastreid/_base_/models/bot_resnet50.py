@@ -10,10 +10,10 @@ model = dict(
     ),
     neck=dict(type="GlobalAveragePooling", dim=2),
     head=dict(
-        type="BoTReIDHead",
+        type="BoTHead",
         in_channels=2048,
         num_classes=380,
-        loss=dict(
+        loss_cls=dict(
             type="LabelSmoothLoss", label_smooth_val=0.1, loss_weight=1.0
         ),
         loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=1.0),
@@ -25,10 +25,4 @@ model = dict(
         checkpoint="https://download.openmmlab.com/mmclassification/v0/resnet/resnet50_batch256_imagenet_20200708-cfb998bf.pth",  # noqa: E251  # noqa: E501
     ),
     inference_stage="pre_logits",
-)
-sampler = dict(
-    type="InfiniteBalancedIdentityDistributedSampler",
-    batch_size=32,
-    num_instances=4,
-    shuffle=True,
 )

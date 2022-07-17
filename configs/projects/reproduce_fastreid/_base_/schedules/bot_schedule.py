@@ -11,7 +11,7 @@ lr_config = dict(
     # -> warmup config
     warmup="linear",
     warmup_iters=500,
-    warmup_ratio=0.1,
+    warmup_ratio=0.01,
 )
 
 # runner settings

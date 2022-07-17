@@ -137,6 +137,9 @@ def binary_cross_entropy(
 
 @LOSSES.register_module()
 class CrossEntropyLoss(nn.Module):
+
+    loss_name = "ce_loss"
+
     """Cross entropy loss.
     Args:
         use_sigmoid (bool): Whether the prediction uses sigmoid

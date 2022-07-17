@@ -8,6 +8,8 @@ data = dict(
     samples_per_gpu=64,
     workers_per_gpu=8,
 )
+
+# NOTE: for MOT, we don't have camids so we must use the naive sampler
 sampler = dict(
     type="InfiniteNaiveIdentityDistributedSampler",
     batch_size=64,

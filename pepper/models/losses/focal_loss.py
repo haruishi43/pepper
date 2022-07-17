@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 
+from functools import partial
+
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
+
+from ..builder import LOSSES
 
 
 # based on:
 # https://github.com/kornia/kornia/blob/master/kornia/losses/focal.py
+
+# should be useful for imbalanced classification, but seems like there are no improvements
 
 
 def focal_loss(
@@ -14,25 +21,26 @@ def focal_loss(
     alpha: float,
     gamma: float = 2.0,
     reduction: str = "mean",
+    loss_weight: float = 1.0,
 ) -> torch.Tensor:
-    r"""Criterion that computes Focal loss.
+    """Criterion that computes Focal loss.
     See :class:`fastreid.modeling.losses.FocalLoss` for details.
     According to [1], the Focal loss is computed as follows:
     .. math::
         \text{FL}(p_t) = -\alpha_t (1 - p_t)^{\gamma} \, \text{log}(p_t)
     where:
-       - :math:`p_t` is the model's estimated probability for each class.
+        - :math:`p_t` is the model's estimated probability for each class.
     Arguments:
         alpha (float): Weighting factor :math:`\alpha \in [0, 1]`.
         gamma (float): Focusing parameter :math:`\gamma >= 0`.
         reduction (str, optional): Specifies the reduction to apply to the
-         output: ‘none’ | ‘mean’ | ‘sum’. ‘none’: no reduction will be applied,
-         ‘mean’: the sum of the output will be divided by the number of elements
-         in the output, ‘sum’: the output will be summed. Default: ‘none’.
+            output: ‘none’ | ‘mean’ | ‘sum’. ‘none’: no reduction will be applied,
+            ‘mean’: the sum of the output will be divided by the number of elements
+            in the output, ‘sum’: the output will be summed. Default: ‘none’.
     Shape:
         - Input: :math:`(N, C, *)` where C = number of classes.
         - Target: :math:`(N, *)` where each value is
-          :math:`0 ≤ targets[i] ≤ C−1`.
+            :math:`0 ≤ targets[i] ≤ C−1`.
     Examples:
         >>> N = 5  # num_classes
         >>> loss = FocalLoss(cfg)
@@ -69,7 +77,7 @@ def focal_loss(
 
     if not input.device == target.device:
         raise ValueError(
-            "input and target must be in the same device. Got: {}".format(
+            "input and target must be in the same device. Got: {} and {}".format(
                 input.device, target.device
             )
         )
@@ -96,4 +104,33 @@ def focal_loss(
         raise NotImplementedError(
             "Invalid reduction mode: {}".format(reduction)
         )
-    return loss
+    return loss_weight * loss
+
+
+@LOSSES.register_module()
+class FocalLoss(nn.Module):
+
+    loss_name = "focal_loss"
+
+    def __init__(
+        self,
+        alpha=0.25,
+        gamma=2.0,
+        reduction="mean",
+        loss_weight=1.0,
+    ):
+        self.loss = partial(
+            focal_loss,
+            alpha=alpha,
+            gamma=gamma,
+            reduction=reduction,
+            loss_weight=loss_weight,
+        )
+
+    def forward(
+        self,
+        inputs,
+        targets,
+        **kwargs,
+    ):
+        return self.loss(inputs, targets)

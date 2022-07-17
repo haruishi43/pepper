@@ -53,6 +53,9 @@ def pairwise_cosface(
 
 @LOSSES.register_module()
 class CosFace(nn.Module):
+
+    loss_name = "cosface_loss"
+
     def __init__(
         self,
         margin=0.25,
