@@ -6,7 +6,7 @@ _base_ = [
 ]
 model = dict(
     head=dict(
-        loss_circle=dict(type="CircleLoss", margin=0.25, gamma=128, loss_weight=1.0),
+        loss_circle=dict(type="CircleLoss", margin=0.25, gamma=128, loss_weight=1.0 / 64),
     )
 )
 data = dict(
