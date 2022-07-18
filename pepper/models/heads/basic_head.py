@@ -102,7 +102,7 @@ class BasicHead(BaseHead):
         self._init_layers()
 
     def _init_layers(self):
-        """Initialize fc layers."""
+        """Initialize layers"""
         if self.loss_cls:
             self.bn = nn.BatchNorm1d(self.in_channels)
             self.bn.bias.requires_grad_(False)

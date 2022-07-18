@@ -7,6 +7,7 @@ from mmcv.runner import BaseModule, auto_fp16
 from mmcv.cnn import build_activation_layer, build_norm_layer
 
 from .basic_head import BasicHead
+from .utils import weights_init_classifier, weights_init_kaiming
 from ..builder import HEADS
 
 
@@ -47,6 +48,8 @@ class FcModule(BaseModule):
         # build normalization layers
         if self.with_norm:
             self.norm_name, norm = build_norm_layer(norm_cfg, out_channels)
+            # NOTE: we assume its batch norm
+            norm.apply(weights_init_kaiming)
             self.add_module(self.norm_name, norm)
 
         # build activation layer
@@ -62,6 +65,8 @@ class FcModule(BaseModule):
             ]:
                 act_cfg_.setdefault("inplace", inplace)
             self.activate = build_activation_layer(act_cfg_)
+
+        self.fc.apply(weights_init_classifier)
 
     @property
     def norm(self):
@@ -101,7 +106,7 @@ class LinearHead(BasicHead):
         super(LinearHead, self).__init__(**kwargs)
 
     def _init_layers(self):
-        """Initialize fc layers."""
+        """Initialize fc layers"""
         self.fcs = nn.ModuleList()
 
         for i in range(self.num_fcs):
