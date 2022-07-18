@@ -82,6 +82,8 @@ def evaluate(
         )
         max_rank = g_pids.shape[0]
 
+    # FIXME: cuhk03 will not return all_INP
+    # FIXME: cuhk03 will return mAP instead
     cmc, all_AP, all_INP = evaluate_rank(
         dist,
         q_pids=q_pids,

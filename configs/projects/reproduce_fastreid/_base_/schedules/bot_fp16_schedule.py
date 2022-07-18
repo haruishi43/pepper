@@ -21,7 +21,7 @@ runner = dict(type="IterBasedRunner", max_iters=6000)
 evaluation = dict(
     interval=2000,
     gpu_collect=True,
-    metric=["metric", "CMC", "mAP"],
+    metric=["metric", "CMC", "mAP", "mINP"],
     dist_metric="cosine",
     use_metric_cuhk03=False,
     rerank=False,
