@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+from functools import partial
+
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -218,3 +221,48 @@ class CrossEntropyLoss(nn.Module):
             **kwargs
         )
         return loss_cls
+
+
+def cross_entropy_loss(pred_class_outputs, gt_classes, eps, alpha=0.2):
+    num_classes = pred_class_outputs.size(1)
+
+    if eps >= 0:
+        smooth_param = eps
+    else:
+        # Adaptive label smooth regularization
+        soft_label = F.softmax(pred_class_outputs, dim=1)
+        smooth_param = alpha * soft_label[
+            torch.arange(soft_label.size(0)), gt_classes
+        ].unsqueeze(1)
+
+    log_probs = F.log_softmax(pred_class_outputs, dim=1)
+    with torch.no_grad():
+        targets = torch.ones_like(log_probs)
+        targets *= smooth_param / (num_classes - 1)
+        targets.scatter_(1, gt_classes.data.unsqueeze(1), (1 - smooth_param))
+
+    loss = (-targets * log_probs).sum(dim=1)
+
+    with torch.no_grad():
+        non_zero_cnt = max(loss.nonzero(as_tuple=False).size(0), 1)
+
+    loss = loss.sum() / non_zero_cnt
+
+    return loss
+
+
+@LOSSES.register_module()
+class FastReIDCrossEntropyLoss(nn.Module):
+
+    loss_name = "fce_loss"
+
+    def __init__(self, eps=0.0, alpha=0.2, loss_weight=1.0):
+        """
+        - eps > 0 enables label smoothing
+        """
+        super(FastReIDCrossEntropyLoss, self).__init__()
+        self.loss = partial(cross_entropy_loss, eps=eps, alpha=alpha)
+        self.loss_weight = loss_weight
+
+    def forward(self, cls_score, label, **kwargs):
+        return self.loss_weight * self.loss(cls_score, label)

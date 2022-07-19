@@ -150,14 +150,14 @@ class BasicHead(BaseHead):
                 loss_cls = [self.loss_cls]
             else:
                 loss_cls = self.loss_cls
-            for loss in loss_cls:
-                if loss.loss_name not in losses:
-                    losses[loss.loss_name] = loss(
+            for lc in loss_cls:
+                if lc.loss_name not in losses:
+                    losses[lc.loss_name] = lc(
                         cls_score=cls_score,
                         label=gt_label,
                     )
                 else:
-                    losses[loss.loss_name] += loss(
+                    losses[lc.loss_name] += lc(
                         cls_score=cls_score,
                         label=gt_label,
                     )
@@ -173,14 +173,14 @@ class BasicHead(BaseHead):
                 loss_pairwise = [self.loss_pairwise]
             else:
                 loss_pairwise = self.loss_pairwise
-            for loss in loss_pairwise:
-                if loss.loss_name not in losses:
-                    losses[loss.loss_name] = loss(
+            for lp in loss_pairwise:
+                if lp.loss_name not in losses:
+                    losses[lp.loss_name] = lp(
                         inputs=feats,
                         targets=gt_label,
                     )
                 else:
-                    losses[loss.loss_name] += loss(
+                    losses[lp.loss_name] += lp(
                         inputs=feats,
                         targets=gt_label,
                     )

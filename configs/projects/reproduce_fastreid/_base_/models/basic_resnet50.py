@@ -8,14 +8,14 @@ model = dict(
         num_stages=4,
         out_indices=(3,),
         style="pytorch",
-        # init_cfg=dict(
-        #     type="Pretrained",
-        #     checkpoint="torchvision://resnet50",
-        # ),
         init_cfg=dict(
             type="Pretrained",
-            checkpoint="mmcls://resnet50",
+            checkpoint="torchvision://resnet50",
         ),
+        # init_cfg=dict(
+        #     type="Pretrained",
+        #     checkpoint="mmcls://resnet50",
+        # ),
     ),
     neck=dict(type="GlobalAveragePooling", dim=2),
     head=dict(
@@ -24,6 +24,7 @@ model = dict(
         in_channels=2048,
         num_classes=380,
         loss_cls=dict(type="CrossEntropyLoss", loss_weight=1.0),
+        # loss_cls=dict(type="FastReIDCrossEntropyLoss", loss_weight=1.0),
         loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=1.0),
         norm_cfg=dict(type="BN1d"),
         act_cfg=dict(type="ReLU"),
