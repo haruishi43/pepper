@@ -318,7 +318,7 @@ class InfiniteNaiveIdentityDistributedSampler(BaseInfiniteDistributedSampler):
 
                     avl_idxs = batch_idxs_dict[pid]
                     for _ in range(self.num_instances):
-                        batch_indices.append(avl_idxs.pop(0))
+                        batch_indices.append(avl_idxs.pop())
 
                     if len(avl_idxs) < self.num_instances:
                         avl_pids.remove(pid)

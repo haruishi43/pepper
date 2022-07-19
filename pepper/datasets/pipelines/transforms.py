@@ -1278,7 +1278,7 @@ class SeqResize(Resize):
 
 @PIPELINES.register_module()
 class CenterCrop(object):
-    r"""Center crop the image.
+    """Center crop the image.
     Args:
         crop_size (int | tuple): Expected size after cropping with the format
             of (h, w).

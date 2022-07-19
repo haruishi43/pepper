@@ -53,16 +53,16 @@ class BasicHead(BaseHead):
         # Setup losses
         if not loss_cls:
             self.loss_cls = None
+            if not loss_pairwise:
+                raise ValueError(
+                    "Please choose at least one loss in "
+                    "loss_cls and loss_pairwise."
+                )
         else:
             if not isinstance(num_classes, int):
                 raise TypeError(
                     "The num_classes must be a current number, "
                     "if there is cross entropy loss."
-                )
-            if not loss_pairwise:
-                raise ValueError(
-                    "Please choose at least one loss in "
-                    "triplet loss and cross entropy loss."
                 )
 
             if isinstance(loss_cls, dict):
