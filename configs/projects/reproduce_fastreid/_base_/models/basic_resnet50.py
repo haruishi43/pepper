@@ -25,7 +25,7 @@ model = dict(
         num_classes=380,
         loss_cls=dict(type="CrossEntropyLoss", loss_weight=1.0),
         # loss_cls=dict(type="FastReIDCrossEntropyLoss", loss_weight=1.0),
-        loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=1.0),
+        # loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=1.0),
         norm_cfg=dict(type="BN1d"),
         act_cfg=dict(type="ReLU"),
         init_cfg=dict(type="Normal", layer="Linear", mean=0, std=0.001, bias=0),
