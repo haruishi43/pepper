@@ -1,12 +1,12 @@
 _base_ = [
     "../_base_/models/basic_resnet50.py",
     "../_base_/samplers/default_sampler.py",
-    "../_base_/datasets/market1501_REA.py",
+    "../_base_/datasets/market1501_pad_REA.py",
     "../_base_/schedules/default_schedule.py",
     "../_base_/default_runtime.py",
 ]
 # baseline-s + warmup + REA
-optimizer = dict(lr=3.5e-8)
+optimizer = dict(lr=3.5e-4)
 lr_config = dict(
     # -> policy config
     policy="step",

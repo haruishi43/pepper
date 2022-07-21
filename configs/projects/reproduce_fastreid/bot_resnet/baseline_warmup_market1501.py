@@ -6,6 +6,7 @@ _base_ = [
     "../_base_/default_runtime.py",
 ]
 # baseline-s + warmup
+optimizer = dict(lr=3.5e-6)
 lr_config = dict(
     # -> policy config
     policy="step",
@@ -13,7 +14,6 @@ lr_config = dict(
     gamma=0.1,
     # -> warmup config
     warmup="linear",
-    warmup_iters=1000,
-    # warmup_iters=500,
+    warmup_iters=500,
     warmup_ratio=0.01,
 )

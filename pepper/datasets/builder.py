@@ -96,6 +96,7 @@ def build_dataloader(
             # overwrite
             sampler_cfg.update(shuffle=shuffle)
             if seed is not None:
+                # sampler seeds should be shared between processes
                 sampler_cfg.update(seed=seed)
 
             # some sampler-specific arguments that needs to be overwriten before

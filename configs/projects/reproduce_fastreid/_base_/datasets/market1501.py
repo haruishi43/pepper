@@ -48,8 +48,6 @@ data = dict(
         data_prefix=data_root + "bounding_box_train",
         ann_file=data_root + "gtPepper/train.json",
         pipeline=train_pipeline,
-        num_pids=751,
-        num_camids=6,
     ),
     val=dict(
         type=data_type,
@@ -62,8 +60,6 @@ data = dict(
             gallery=data_root + "gtPepper/gallery.json",
         ),
         pipeline=test_pipeline,
-        num_pids=750,
-        num_camids=6,
     ),
     test=dict(
         type=data_type,
@@ -76,7 +72,5 @@ data = dict(
             gallery=data_root + "gtPepper/gallery.json",
         ),
         pipeline=test_pipeline,
-        num_pids=750,
-        num_camids=6,
     ),
 )

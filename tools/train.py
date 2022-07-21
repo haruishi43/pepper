@@ -144,6 +144,7 @@ def main():
 
     # initialize models
     cfg.model.head.num_classes = datasets[0].NUM_PIDS
+    logger.info(f"Changed number of classes to {datasets[0].NUM_PIDS}")
     if cfg.get("train_cfg", False):
         model = build_reid(
             cfg.model,
