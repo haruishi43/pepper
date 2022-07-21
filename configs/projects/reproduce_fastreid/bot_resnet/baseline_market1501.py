@@ -5,4 +5,4 @@ _base_ = [
     "../_base_/schedules/default_schedule.py",
     "../_base_/default_runtime.py",
 ]
-optimizer = dict(lr=3.5e-4)
+optimizer = dict(lr=3.5e-5)  # trains!
