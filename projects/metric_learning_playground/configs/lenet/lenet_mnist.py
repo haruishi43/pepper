@@ -82,7 +82,7 @@ log_config = dict(
 runner = dict(type='IterBasedRunner', max_iters=6000)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-# work_dir = './work_dirs/mnist/'
+work_dir = './work_dirs/lenet_mnist_2/'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
