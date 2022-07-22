@@ -6,7 +6,7 @@ _base_ = [
     "../_base_/default_runtime.py",
 ]
 # baseline-s + warmup + REA
-optimizer = dict(lr=3.5e-8)
+optimizer = dict(lr=3.5e-5)
 lr_config = dict(
     # -> policy config
     policy="step",
