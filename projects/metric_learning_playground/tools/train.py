@@ -196,6 +196,9 @@ def main():
     model = build_classifier(cfg.model)
     model.init_weights()
 
+    # print(model)
+    # print(dict(model.named_parameters()).keys())
+
     # initialize the dataset(s)
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:

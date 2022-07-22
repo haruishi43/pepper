@@ -2,6 +2,17 @@ _base_ = [
     "../_base_/models/lenetplusplus.py",
 ]
 
+model = dict(
+    head=dict(
+        type="VisualizeFeatureHead",
+        vis_dim=2,
+        loss_pairwise=[
+            # dict(type='TripletLoss', margin=0.3, loss_weight=1.0),
+            dict(type="CenterLoss", num_classes=10, feat_dim=2),
+        ],
+    )
+)
+
 dataset_type = 'MNIST'
 img_norm_cfg = dict(mean=[33.46], std=[78.87], to_rgb=True)
 
@@ -29,29 +40,49 @@ data = dict(
         type=dataset_type, data_prefix='data/mnist', pipeline=test_pipeline,),
 )
 
-
 evaluation = dict(
-    interval=5, metric='accuracy', metric_options={'topk': (1, )})
+    interval=500, metric='accuracy', metric_options={'topk': (1, )}
+)
+
 # optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+# optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)  # no triplet
+optimizer = dict(
+    type='SGD',
+    lr=0.01,
+    momentum=0.9,
+    weight_decay=5e-4,
+    paramwise_cfg={  # center-loss has parameters which needs to be scheduled differently
+        "head.loss_pairwise.0.centers": dict(lr_mult=10, decay_mult=0.0),
+    },
+)  # with triplet
+
 optimizer_config = dict(grad_clip=None)
+
 # learning policy
-lr_config = dict(policy='step', step=[15])
+lr_config = dict(
+    policy='step',
+    step=[2000],
+    gamma=0.1,
+    warmup="linear",
+    warmup_iters=1000,
+    warmup_ratio=0.01,
+)
+
 # checkpoint saving
-checkpoint_config = dict(interval=1)
+checkpoint_config = dict(interval=2000)
 # yapf:disable
 log_config = dict(
-    interval=150,
+    interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=5)
+runner = dict(type='IterBasedRunner', max_iters=6000)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mnist/'
+# work_dir = './work_dirs/mnist/'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

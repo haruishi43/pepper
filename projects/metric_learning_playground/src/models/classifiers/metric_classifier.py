@@ -57,6 +57,7 @@ class MetricImageClassifier(BaseClassifier):
 
         if self.with_head and hasattr(self.head, "pre_logits"):
             x = self.head.pre_logits(x)
+
         return x
 
     def forward_train(self, img, gt_label, **kwargs):
@@ -82,11 +83,17 @@ class MetricImageClassifier(BaseClassifier):
 
         return losses
 
-    def simple_test(self, img, img_metas=None, **kwargs):
+    def simple_test(
+        self,
+        img,
+        img_metas=None,
+        return_feats=False,
+        **kwargs,
+    ):
         """Test without augmentation."""
         x = self.extract_feat(img)
 
         # TODO: might want to add options for extracting features
-        res = self.head.simple_test(x, **kwargs)
+        res = self.head.simple_test(x, return_feats=return_feats, **kwargs)
 
         return res

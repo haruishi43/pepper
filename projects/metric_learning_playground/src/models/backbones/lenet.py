@@ -36,11 +36,7 @@ class LeNetPlusPlus(BaseBackbone):
         self.prelu3_2 = nn.PReLU()
 
         if self.num_classes > 0:
-            self.classifier = nn.Sequential(
-                nn.Linear(128 * 3 * 3, 2),
-                nn.PReLU(),
-                nn.Linear(2, num_classes),
-            )
+            self.classifier = nn.Linear(128 * 3 * 3, num_classes)
 
         # out channel = 128 * 3 * 3 = 1152
         # self.init_weights()

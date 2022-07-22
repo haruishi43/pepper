@@ -11,7 +11,7 @@ from mmcls.models.builder import HEADS
 from mmcls.models.utils import is_tracing
 from mmcls.models.heads.base_head import BaseHead
 
-# NOTE: attributes for losses are different!
+# NOTE: attributes for losses are different! (don't build mmcls losses)
 from pepper.models.builder import build_loss
 
 
@@ -92,12 +92,12 @@ class MetricHead(BaseHead):
 
     def _init_layers(self):
         """Initialize layers"""
-        if self.loss_cls:
-            self.bn = nn.BatchNorm1d(self.in_channels)
-            self.bn.bias.requires_grad_(False)
-            self.classifier = nn.Linear(
-                self.in_channels, self.num_classes, bias=False
-            )
+
+        self.bn = nn.BatchNorm1d(self.in_channels)
+        self.bn.bias.requires_grad_(False)
+        self.classifier = nn.Linear(
+            self.in_channels, self.num_classes, bias=False
+        )
 
     @auto_fp16()
     def pre_logits(self, x):
@@ -112,20 +112,32 @@ class MetricHead(BaseHead):
 
         assert isinstance(x, torch.Tensor)
 
-        return x
-
-    @auto_fp16()
-    def common(self, x):
         feats_bn = self.bn(x)
         cls_score = self.classifier(feats_bn)
-        return (x, cls_score)
+
+        return dict(
+            cls_score=cls_score,
+            feats=x,
+        )
 
     def forward_train(self, x, gt_label, **kwargs):
         """Model forward."""
 
-        x, cls_score = self.common(x)
+        if isinstance(x, dict):
+            # for metric learning we use dict
+            cls_score = x.get("cls_score", None)
+            feats = x.get("feats", None)
+        else:
+            # assert that cls_score is the main output
+            # backward compatibility
+            cls_score = x
 
-        return self.loss(gt_label=gt_label, cls_score=cls_score, feats=x)
+        if isinstance(cls_score, (tuple, list)):
+            cls_score = cls_score[-1]
+        if isinstance(feats, (tuple, list)):
+            feats = feats[-1]
+
+        return self.loss(gt_label=gt_label, cls_score=cls_score, feats=feats)
 
     @force_fp32(apply_to=("feats", "cls_score"))
     def loss(self, gt_label, cls_score, feats=None):
@@ -178,26 +190,22 @@ class MetricHead(BaseHead):
 
         return losses
 
-    def simple_test(self, x, softmax=True, post_process=True):
-        """Inference without augmentation.
-        Args:
-            cls_score (tuple[Tensor]): The input classification score logits.
-                Multi-stage inputs are acceptable but only the last stage will
-                be used to classify. The shape of every item should be
-                ``(num_samples, num_classes)``.
-            softmax (bool): Whether to softmax the classification score.
-            post_process (bool): Whether to do post processing the
-                inference results. It will convert the output to a list.
-        Returns:
-            Tensor | list: The inference results.
-                - If no post processing, the output is a tensor with shape
-                  ``(num_samples, num_classes)``.
-                - If post processing, the output is a multi-dimentional list of
-                  float and the dimensions are ``(num_samples, num_classes)``.
-        """
+    def simple_test(
+        self,
+        x,
+        softmax=True,
+        post_process=True,
+        return_feats=False,
+        **kwargs,
+    ):
+        if isinstance(x, dict):
+            cls_score = x.get("cls_score", None)
+            feats = x.get("feats", None)
 
-        # HACK:
-        _, cls_score = self.common(x)
+            assert cls_score is not None, "could not return cls_score"
+        else:
+            cls_score = x
+            feats = None
 
         if isinstance(cls_score, tuple):
             cls_score = cls_score[-1]
@@ -210,7 +218,12 @@ class MetricHead(BaseHead):
             pred = cls_score
 
         if post_process:
-            return self.post_process(pred)
+            pred = self.post_process(pred)
+            if feats is not None:
+                feats = self.post_process(feats)
+
+        if return_feats:
+            return pred, feats
         else:
             return pred
 

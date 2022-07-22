@@ -119,4 +119,6 @@ class CustomMNIST(MNIST):
                     else:
                         eval_results[key] = values
 
+        # TODO: add visualizations
+
         return eval_results
