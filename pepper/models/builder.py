@@ -17,6 +17,8 @@ REID = MODELS
 
 ATTENTION = Registry("attention", parent=MMCV_ATTENTION)
 
+METRIC_LINEAR_LAYERS = Registry("linear layer")
+
 
 def build_backbone(cfg):
     """Build backbone."""

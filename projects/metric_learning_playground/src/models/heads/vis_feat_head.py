@@ -28,10 +28,15 @@ class VisualizeFeatureHead(MetricHead):
 
         self.fc1 = nn.Linear(self.in_channels, self.vis_dim, bias=False)
         self.act = nn.PReLU()
-        self.fc2 = nn.Linear(self.vis_dim, self.num_classes, bias=False)
+
+        self.fc2 = self.create_classification_layer(
+            in_channels=self.vis_dim,
+            num_classes=self.num_classes,
+            linear_cfg=self.linear_cfg,
+        )
 
     @auto_fp16()
-    def pre_logits(self, x):
+    def pre_logits(self, x, gt_label):
         # deals with tuple outputs from previous layers
         if isinstance(x, tuple):
             if len(x) > 1:
@@ -44,7 +49,11 @@ class VisualizeFeatureHead(MetricHead):
 
         x = self.bn(x)
         x = self.act(self.fc1(x))
-        cls_score = self.fc2(x)
+
+        if self.linear_cfg is None:
+            cls_score = self.fc2(x)
+        else:
+            cls_score = self.fc2(x, gt_label)
 
         return dict(
             cls_score=cls_score,

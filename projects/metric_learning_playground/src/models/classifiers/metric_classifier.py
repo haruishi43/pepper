@@ -39,7 +39,7 @@ class MetricImageClassifier(BaseClassifier):
             if augments_cfg is not None:
                 self.augments = Augments(augments_cfg)
 
-    def extract_feat(self, img, stage="pre_logits"):
+    def extract_feat(self, img, gt_label=None, stage="pre_logits"):
         assert stage in ["backbone", "neck", "pre_logits"], (
             f'Invalid output stage "{stage}", please choose from "backbone", '
             '"neck" and "pre_logits"'
@@ -56,7 +56,7 @@ class MetricImageClassifier(BaseClassifier):
             return x
 
         if self.with_head and hasattr(self.head, "pre_logits"):
-            x = self.head.pre_logits(x)
+            x = self.head.pre_logits(x, gt_label)
 
         return x
 
@@ -75,7 +75,7 @@ class MetricImageClassifier(BaseClassifier):
         if self.augments is not None:
             img, gt_label = self.augments(img, gt_label)
 
-        x = self.extract_feat(img)
+        x = self.extract_feat(img, gt_label)
 
         losses = dict()
         loss = self.head.forward_train(x, gt_label)
@@ -91,7 +91,7 @@ class MetricImageClassifier(BaseClassifier):
         **kwargs,
     ):
         """Test without augmentation."""
-        x = self.extract_feat(img)
+        x = self.extract_feat(img, gt_label=None)
 
         # TODO: might want to add options for extracting features
         res = self.head.simple_test(x, return_feats=return_feats, **kwargs)

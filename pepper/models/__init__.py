@@ -7,6 +7,7 @@ from .builder import (
     LOSSES,
     NECKS,
     REID,
+    METRIC_LINEAR_LAYERS,
     build_backbone,
     build_head,
     build_loss,
@@ -20,12 +21,15 @@ from .necks import *  # noqa: F401,F403
 from .temporal_necks import *  # noqa: F401,F403
 from .reid import *  # noqa: F401, F403
 
+from .layers import *  # noqa: F401, F403
+
 __all__ = [
     "BACKBONES",
     "HEADS",
     "NECKS",
     "LOSSES",
     "REID",
+    "METRIC_LINEAR_LAYERS",
     "build_backbone",
     "build_head",
     "build_neck",

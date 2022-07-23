@@ -12,7 +12,7 @@ from mmcls.models.utils import is_tracing
 from mmcls.models.heads.base_head import BaseHead
 
 # NOTE: attributes for losses are different! (don't build mmcls losses)
-from pepper.models.builder import build_loss
+from pepper.models.builder import METRIC_LINEAR_LAYERS, build_loss
 
 
 @HEADS.register_module()
@@ -34,6 +34,7 @@ class MetricHead(BaseHead):
         num_classes=None,
         loss_cls=None,
         loss_pairwise=None,
+        linear_layer=None,
         topk=(1,),
         init_cfg=dict(type="Normal", layer="Linear", mean=0, std=0.01, bias=0),
     ):
@@ -88,6 +89,9 @@ class MetricHead(BaseHead):
         self.accuracy = Accuracy(topk=self.topk)
         self.fp16_enabled = False
 
+        # should be set to None when we don't use metric learning
+        self.linear_cfg = linear_layer
+
         self._init_layers()
 
     def _init_layers(self):
@@ -95,12 +99,29 @@ class MetricHead(BaseHead):
 
         self.bn = nn.BatchNorm1d(self.in_channels)
         self.bn.bias.requires_grad_(False)
-        self.classifier = nn.Linear(
-            self.in_channels, self.num_classes, bias=False
+
+        self.classifier = self.create_classification_layer(
+            in_channels=self.in_channels,
+            num_classes=self.num_classes,
+            linear_cfg=self.linear_cfg,
         )
 
+    @staticmethod
+    def create_classification_layer(in_channels, num_classes, linear_cfg=None):
+        """Function for creating the last linear layer for classsification"""
+        if linear_cfg is None:
+            # if the recipe for the linear layer is not specified, we return the default nn.Linear
+            return nn.Linear(in_channels, num_classes, bias=False)
+        else:
+            defaults = dict(
+                in_channels=in_channels,
+                num_classes=num_classes,
+            )
+            linear_cfg.update(defaults)
+            return METRIC_LINEAR_LAYERS.build(linear_cfg)
+
     @auto_fp16()
-    def pre_logits(self, x):
+    def pre_logits(self, x, gt_label):
 
         # deals with tuple outputs from previous layers
         if isinstance(x, tuple):
@@ -113,7 +134,11 @@ class MetricHead(BaseHead):
         assert isinstance(x, torch.Tensor)
 
         feats_bn = self.bn(x)
-        cls_score = self.classifier(feats_bn)
+
+        if self.linear_cfg is None:
+            cls_score = self.classifier(feats_bn)
+        else:
+            cls_score = self.classifier(feats_bn, gt_label)
 
         return dict(
             cls_score=cls_score,

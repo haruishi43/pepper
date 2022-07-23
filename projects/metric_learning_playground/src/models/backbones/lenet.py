@@ -21,16 +21,21 @@ class LeNetPlusPlus(BaseBackbone):
         self.num_classes = num_classes
 
         self.conv1_1 = nn.Conv2d(1, 32, 5, stride=1, padding=2)
+        self.bn1_1 = nn.BatchNorm2d(32)
         self.prelu1_1 = nn.PReLU()
         self.conv1_2 = nn.Conv2d(32, 32, 5, stride=1, padding=2)
+        self.bn1_2 = nn.BatchNorm2d(32)
         self.prelu1_2 = nn.PReLU()
 
         self.conv2_1 = nn.Conv2d(32, 64, 5, stride=1, padding=2)
+        self.bn2_1 = nn.BatchNorm2d(64)
         self.prelu2_1 = nn.PReLU()
         self.conv2_2 = nn.Conv2d(64, 64, 5, stride=1, padding=2)
+        self.bn2_2 = nn.BatchNorm2d(64)
         self.prelu2_2 = nn.PReLU()
 
         self.conv3_1 = nn.Conv2d(64, 128, 5, stride=1, padding=2)
+        self.bn3_1 = nn.BatchNorm2d(128)
         self.prelu3_1 = nn.PReLU()
         self.conv3_2 = nn.Conv2d(128, 128, 5, stride=1, padding=2)
         self.prelu3_2 = nn.PReLU()
@@ -49,15 +54,15 @@ class LeNetPlusPlus(BaseBackbone):
         if isinstance(x, (tuple, list)):
             x = x[-1]
 
-        x = self.prelu1_1(self.conv1_1(x))
-        x = self.prelu1_2(self.conv1_2(x))
+        x = self.prelu1_1(self.bn1_1(self.conv1_1(x)))
+        x = self.prelu1_2(self.bn1_2(self.conv1_2(x)))
         x = F.max_pool2d(x, 2)
 
-        x = self.prelu2_1(self.conv2_1(x))
-        x = self.prelu2_2(self.conv2_2(x))
+        x = self.prelu2_1(self.bn2_1(self.conv2_1(x)))
+        x = self.prelu2_2(self.bn2_2(self.conv2_2(x)))
         x = F.max_pool2d(x, 2)
 
-        x = self.prelu3_1(self.conv3_1(x))
+        x = self.prelu3_1(self.bn3_1(self.conv3_1(x)))
         x = self.prelu3_2(self.conv3_2(x))
         x = F.max_pool2d(x, 2)
 

@@ -24,6 +24,8 @@ from mmcls.utils import collect_env, get_root_logger, setup_multi_processes
 # need to load modules
 from src import *  # noqa: F401,F403
 
+# torch.autograd.set_detect_anomaly(True)
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train a model")
