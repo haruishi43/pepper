@@ -85,6 +85,7 @@ CUDA_VISIBLE_DEVICES=<gpu_ids> ./tools/dist_train.sh <config> <num_gpus>
 
 - [Bag-of-Tricks](configs/projects/reproduce_BoT/README.md)
 - [Video-Person-ReID](configs/video/resnet/README.md)
+- [Metric Learning on MNIST](projects/metric_learning_playground/README.md)
 
 
 ## TODO:
