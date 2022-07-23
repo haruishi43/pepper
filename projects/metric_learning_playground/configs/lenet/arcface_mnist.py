@@ -17,8 +17,8 @@ model = dict(
         ],
         linear_layer=dict(
             type='ArcSoftmax',
-            scale=30,
-            margin=0.5,
+            scale=15,
+            margin=0.3,
         ),
     )
 )
@@ -26,14 +26,14 @@ model = dict(
 
 optimizer = dict(
     type='SGD',
-    lr=0.001,
+    lr=0.0001,
     momentum=0.9,
     weight_decay=5e-4,
 )
 
 # optimizer = dict(
 #     type='Adam',
-#     lr=3.5e-5,
+#     lr=3.5e-6,
 #     weight_decay=5e-4,
 # )
 
@@ -43,11 +43,11 @@ optimizer_config = dict(grad_clip=dict(max_norm=5.0, norm_type=2))
 lr_config = dict(
     policy='step',
     # step=[500, 1000, 1500, 2000, 4000],
-    step=1000,
+    step=[1500, 3000, 4500],
     gamma=0.1,
-    # warmup="linear",
-    # warmup_iters=1000,
-    # warmup_ratio=0.01,
+    warmup="linear",
+    warmup_iters=1000,
+    warmup_ratio=0.1,
 )
 
 work_dir = './work_dirs/arcface_mnist/'
