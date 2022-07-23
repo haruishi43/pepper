@@ -56,4 +56,4 @@ lr_config = dict(
     # warmup_ratio=0.01,
 )
 
-work_dir = './work_dirs/cosface_mnist/'
+work_dir = './work_dirs/circleloss_mnist/'
