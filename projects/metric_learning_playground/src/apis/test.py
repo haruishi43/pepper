@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 import torch
-import mmcv
+
+# import mmcv
 
 
 def single_gpu_metric_test(
@@ -27,19 +28,19 @@ def single_gpu_metric_test(
     preds = []
     feats = []
 
-    dataset = data_loader.dataset
-    prog_bar = mmcv.ProgressBar(len(dataset))
+    # dataset = data_loader.dataset
+    # prog_bar = mmcv.ProgressBar(len(dataset))  # sometimes it crashes jupyter notebooks
     for i, data in enumerate(data_loader):
         with torch.no_grad():
             pred, feat = model(return_loss=False, return_feats=True, **data)
 
-        batch_size = len(pred)
+        # batch_size = len(pred)
         preds.extend(pred)
         feats.extend(feat)
 
-        batch_size = data["img"].size(0)
-        for _ in range(batch_size):
-            prog_bar.update()
+        # batch_size = data["img"].size(0)
+        # for _ in range(batch_size):
+        #     prog_bar.update()
 
     # TODO: could visualize after collecting everything
     return preds, feats

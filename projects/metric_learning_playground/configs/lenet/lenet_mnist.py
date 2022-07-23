@@ -69,7 +69,7 @@ lr_config = dict(
 )
 
 # checkpoint saving
-checkpoint_config = dict(interval=2000)
+checkpoint_config = dict(interval=500)
 # yapf:disable
 log_config = dict(
     interval=50,
@@ -79,10 +79,11 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-runner = dict(type='IterBasedRunner', max_iters=6000)
+runner = dict(type='IterBasedRunner', max_iters=8000)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/lenet_mnist_2/'
+work_dir = './work_dirs/lenet_mnist/'
+# work_dir = './work_dirs/lenet_mnist_ce/'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
