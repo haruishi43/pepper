@@ -6,7 +6,7 @@ What I want to reproduce:
 - [x] center loss
 - [x] ArcFace
 - [x] CosFace
-- [ ] SphereFace
+- [x] SphereFace
 - [x] CircleLoss
 
 

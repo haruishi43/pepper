@@ -6,7 +6,13 @@ import torch.nn.functional as F
 
 from ..builder import METRIC_LINEAR_LAYERS
 
-__all__ = ["Linear", "ArcSoftmax", "CosSoftmax", "CircleSoftmax"]
+__all__ = [
+    "Linear",
+    "SphereSoftmax",
+    "ArcSoftmax",
+    "CosSoftmax",
+    "CircleSoftmax",
+]
 
 
 @METRIC_LINEAR_LAYERS.register_module()
@@ -28,6 +34,63 @@ class Linear(nn.Module):
         return (
             f"num_classes={self.num_classes}, scale={self.s}, margin={self.m}"
         )
+
+
+@METRIC_LINEAR_LAYERS.register_module()
+class SphereSoftmax(Linear):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.base = 1000.0
+        self.gamma = 0.12
+        self.power = 1
+        self.LambdaMin = 5.0
+        self.iter = 0
+
+        # duplication formula
+        self.mlambda = [
+            lambda x: x**0,
+            lambda x: x**1,
+            lambda x: 2 * x**2 - 1,
+            lambda x: 4 * x**3 - 3 * x,
+            lambda x: 8 * x**4 - 8 * x**2 + 1,
+            lambda x: 16 * x**5 - 20 * x**3 + 5 * x,
+        ]
+
+    def foward(self, logits, targets):
+        # lambda = max(lambda_min,base*(1+gamma*iteration)^(-power))
+        self.iter += 1
+        self.lamb = max(
+            self.LambdaMin,
+            self.base * (1 + self.gamma * self.iter) ** (-1 * self.power),
+        )
+
+        # --------------------------- cos(theta) & phi(theta) ---------------------------
+        cos_theta = F.linear(F.normalize(logits), F.normalize(self.weight))
+
+        if targets is None:
+            # NOTE: we don't have scale
+            return cos_theta
+
+        cos_theta = cos_theta.clamp(-1, 1)
+        cos_m_theta = self.mlambda[self.m](cos_theta)
+        theta = cos_theta.data.acos()
+        k = (self.m * theta / 3.14159265).floor()
+        phi_theta = ((-1.0) ** k) * cos_m_theta - 2 * k
+        NormOfFeature = torch.norm(input, 2, 1)
+
+        # --------------------------- convert label to one-hot ---------------------------
+        one_hot = torch.zeros(cos_theta.size())
+        one_hot = one_hot.cuda() if cos_theta.is_cuda else one_hot
+        one_hot.scatter_(1, targets.view(-1, 1), 1)
+
+        # --------------------------- Calculate output ---------------------------
+        output = (
+            one_hot * (phi_theta - cos_theta) / (1 + self.lamb)
+        ) + cos_theta
+        output *= NormOfFeature.view(-1, 1)
+
+        return output
 
 
 @METRIC_LINEAR_LAYERS.register_module()
