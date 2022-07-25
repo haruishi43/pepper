@@ -22,6 +22,8 @@ What I want to reproduce:
 
 # SphereFace
 
+- Not reproduced completely. Feature embedding seems buggy
+
 ## Results
 
 <div align="center">
@@ -34,6 +36,7 @@ What I want to reproduce:
 __NOTES__:
 - Embedding feature space must be more than 3 (doesn't train well with `vis_dim=2`).
 - `CosFace` is not that robust and needs good hyperparameters
+- The embedded features for `arcface` does not seem like it is well reproduced.
 
 ## Results
 

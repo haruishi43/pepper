@@ -58,6 +58,10 @@ class SphereSoftmax(Linear):
         ]
 
     def foward(self, logits, targets):
+
+        if targets is None:
+            return logits
+
         # lambda = max(lambda_min,base*(1+gamma*iteration)^(-power))
         self.iter += 1
         self.lamb = max(
@@ -68,9 +72,9 @@ class SphereSoftmax(Linear):
         # --------------------------- cos(theta) & phi(theta) ---------------------------
         cos_theta = F.linear(F.normalize(logits), F.normalize(self.weight))
 
-        if targets is None:
-            # NOTE: we don't have scale
-            return cos_theta
+        # if targets is None:
+        #     # NOTE: we don't have scale
+        #     return cos_theta
 
         cos_theta = cos_theta.clamp(-1, 1)
         cos_m_theta = self.mlambda[self.m](cos_theta)

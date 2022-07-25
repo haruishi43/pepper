@@ -48,12 +48,12 @@ class VisualizeFeatureHead(MetricHead):
         assert isinstance(x, torch.Tensor)
 
         x = self.bn(x)
-        x = self.act(self.fc1(x))
+        x = self.fc1(x)
 
         if self.linear_cfg is None:
-            cls_score = self.fc2(x)
+            cls_score = self.fc2(self.act(x))
         else:
-            cls_score = self.fc2(x, gt_label)
+            cls_score = self.fc2(self.act(x), gt_label)
 
         return dict(
             cls_score=cls_score,

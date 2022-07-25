@@ -16,7 +16,7 @@ model = dict(
         # ],
         linear_layer=dict(
             type='SphereSoftmax',
-            margin=4,
+            margin=2,
         ),
     )
 )
