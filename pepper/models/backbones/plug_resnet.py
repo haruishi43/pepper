@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+"""
+ResNet with plugins (with more control)
+
+- added `layers` key to specify which layer inside the block to add the plugin
+"""
+
 from torch import nn as nn
 
 from mmcv.cnn import build_conv_layer, build_norm_layer
