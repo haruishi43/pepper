@@ -18,12 +18,22 @@ model = dict(
 
 optimizer = dict(
     type='SGD',
-    lr=0.01,
+    lr=0.005,  # 0.01
     momentum=0.9,
     weight_decay=5e-4,
     paramwise_cfg={  # center-loss has parameters which needs to be scheduled differently
         "head.loss_pairwise.0.centers": dict(lr_mult=10, decay_mult=0.0),
     },
 )  # with triplet
+
+# learning policy
+lr_config = dict(
+    policy='step',
+    step=[2000],
+    gamma=0.1,
+    warmup="linear",
+    warmup_iters=1000,
+    warmup_ratio=0.01,
+)
 
 work_dir = './work_dirs/center_loss_mnist/'

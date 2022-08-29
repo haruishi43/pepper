@@ -20,7 +20,7 @@ from mmcv.runner import (
 from mmcls.apis import multi_gpu_test, single_gpu_test
 from mmcls.datasets import build_dataloader, build_dataset
 from mmcls.models import build_classifier
-from mmcls.utils import get_root_logger, setup_multi_processes
+from mmcls.utils import auto_select_device, get_root_logger, setup_multi_processes
 
 # need to load modules
 from src import *  # noqa: F401,F403
@@ -152,6 +152,8 @@ def main():
     else:
         cfg.gpu_ids = [args.gpu_id]
 
+    cfg.device = args.device or auto_select_device()
+
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == "none":
         distributed = False
@@ -165,7 +167,7 @@ def main():
     # The default loader config
     loader_cfg = dict(
         # cfg.gpus will be ignored if distributed
-        num_gpus=1 if args.device == "ipu" else len(cfg.gpu_ids),
+        num_gpus=1 if cfg.device == "ipu" else len(cfg.gpu_ids),
         dist=distributed,
         round_up=True,
     )
