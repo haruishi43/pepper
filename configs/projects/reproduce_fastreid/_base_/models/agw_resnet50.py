@@ -1,7 +1,7 @@
 model = dict(
     type="ImageReID",
     backbone=dict(
-        type="BetterPlugResNet",
+        type="PluginResNet",
         depth=50,
         num_stages=4,
         strides=(1, 2, 2, 1),  # increases final features by x2
