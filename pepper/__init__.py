@@ -9,7 +9,7 @@ from .version import __version__, version_info
 
 # depends on mmcv
 MMCV_MIN = "1.3.17"
-MMCV_MAX = "1.5.0"
+MMCV_MAX = "1.7.0"
 
 
 def digit_version(version_str: str, length: int = 4):

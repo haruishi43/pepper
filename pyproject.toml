@@ -4,6 +4,9 @@ requires = [
   "Cython",
   "setuptools",
   "wheel",
+  "packaging",
+  "mmcv",
+  "opencv-python",
 ]
 
 [tool.black]

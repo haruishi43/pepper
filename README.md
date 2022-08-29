@@ -61,9 +61,9 @@ Two options:
 
 ```Bash
 python setup.py develop
+# or
+pip install -e .
 ```
-
-__Note__: `pip` installable module comming soon.
 
 2. Install locally:
 
