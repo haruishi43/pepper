@@ -133,6 +133,7 @@ dmypy.json
 tmp/
 
 # proj
+/work_dirs
 work_dirs/
 example.py
 .dist_test/
