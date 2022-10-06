@@ -95,3 +95,4 @@ CUDA_VISIBLE_DEVICES=<gpu_ids> ./tools/dist_train.sh <config> <num_gpus>
 - [ ] Upload model weights
 - [ ] Test codes
 - [ ] PyPI installation
+- [ ] Update to 1.0

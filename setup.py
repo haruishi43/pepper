@@ -61,10 +61,11 @@ setup(
             "tests",
             "tools",
             "work_dirs",
+            "projects",
         ],
     ),
     install_requires=get_requirements(),
-    keywords=["Computer Vision", "Re-ID"],
+    keywords=["Computer Vision", "Re-ID", "Metric Learning"],
     ext_modules=cythonize(
         ext_modules,
         language_level="3",
