@@ -20,7 +20,11 @@ from mmcv.runner import (
 from mmcls.apis import multi_gpu_test, single_gpu_test
 from mmcls.datasets import build_dataloader, build_dataset
 from mmcls.models import build_classifier
-from mmcls.utils import auto_select_device, get_root_logger, setup_multi_processes
+from mmcls.utils import (
+    auto_select_device,
+    get_root_logger,
+    setup_multi_processes,
+)
 
 # need to load modules
 from src import *  # noqa: F401,F403

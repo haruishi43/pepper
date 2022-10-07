@@ -19,7 +19,12 @@ from mmcls import __version__
 from mmcls.apis import init_random_seed, set_random_seed, train_model
 from mmcls.datasets import build_dataset
 from mmcls.models import build_classifier
-from mmcls.utils import auto_select_device, collect_env, get_root_logger, setup_multi_processes
+from mmcls.utils import (
+    auto_select_device,
+    collect_env,
+    get_root_logger,
+    setup_multi_processes,
+)
 
 # need to load modules
 from src import *  # noqa: F401,F403

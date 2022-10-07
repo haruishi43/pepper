@@ -17,35 +17,49 @@ from mmcls.datasets.utils import rm_suffix
 
 @DATASETS.register_module()
 class CustomMNIST(MNIST):
-
     def load_annotations(self):
         train_image_file = osp.join(
-            self.data_prefix, rm_suffix(self.resources['train_image_file'][0]))
+            self.data_prefix, rm_suffix(self.resources["train_image_file"][0])
+        )
         train_label_file = osp.join(
-            self.data_prefix, rm_suffix(self.resources['train_label_file'][0]))
+            self.data_prefix, rm_suffix(self.resources["train_label_file"][0])
+        )
         test_image_file = osp.join(
-            self.data_prefix, rm_suffix(self.resources['test_image_file'][0]))
+            self.data_prefix, rm_suffix(self.resources["test_image_file"][0])
+        )
         test_label_file = osp.join(
-            self.data_prefix, rm_suffix(self.resources['test_label_file'][0]))
+            self.data_prefix, rm_suffix(self.resources["test_label_file"][0])
+        )
 
-        if not osp.exists(train_image_file) or not osp.exists(
-                train_label_file) or not osp.exists(
-                    test_image_file) or not osp.exists(test_label_file):
+        if (
+            not osp.exists(train_image_file)
+            or not osp.exists(train_label_file)
+            or not osp.exists(test_image_file)
+            or not osp.exists(test_label_file)
+        ):
             self.download()
 
         _, world_size = get_dist_info()
         if world_size > 1:
             dist.barrier()
-            assert osp.exists(train_image_file) and osp.exists(
-                train_label_file) and osp.exists(
-                    test_image_file) and osp.exists(test_label_file), \
-                'Shared storage seems unavailable. Please download dataset ' \
-                f'manually through {self.resource_prefix}.'
+            assert (
+                osp.exists(train_image_file)
+                and osp.exists(train_label_file)
+                and osp.exists(test_image_file)
+                and osp.exists(test_label_file)
+            ), (
+                "Shared storage seems unavailable. Please download dataset "
+                f"manually through {self.resource_prefix}."
+            )
 
-        train_set = (read_image_file(train_image_file),
-                     read_label_file(train_label_file))
-        test_set = (read_image_file(test_image_file),
-                    read_label_file(test_label_file))
+        train_set = (
+            read_image_file(train_image_file),
+            read_label_file(train_label_file),
+        )
+        test_set = (
+            read_image_file(test_image_file),
+            read_label_file(test_label_file),
+        )
 
         if not self.test_mode:
             imgs, gt_labels = train_set
@@ -55,7 +69,7 @@ class CustomMNIST(MNIST):
         data_infos = []
         for img, gt_label in zip(imgs, gt_labels):
             gt_label = np.array(gt_label, dtype=np.int64)
-            info = {'img': img.numpy(), 'gt_label': gt_label}
+            info = {"img": img.numpy(), "gt_label": gt_label}
             data_infos.append(info)
         return data_infos
 
@@ -174,7 +188,7 @@ class CustomMNIST(MNIST):
 
 
 def get_int(b):
-    return int(codecs.encode(b, 'hex'), 16)
+    return int(codecs.encode(b, "hex"), 16)
 
 
 def open_maybe_compressed_file(path):
@@ -184,13 +198,15 @@ def open_maybe_compressed_file(path):
     """
     if not isinstance(path, str):
         return path
-    if path.endswith('.gz'):
+    if path.endswith(".gz"):
         import gzip
-        return gzip.open(path, 'rb')
-    if path.endswith('.xz'):
+
+        return gzip.open(path, "rb")
+    if path.endswith(".xz"):
         import lzma
-        return lzma.open(path, 'rb')
-    return open(path, 'rb')
+
+        return lzma.open(path, "rb")
+    return open(path, "rb")
 
 
 def read_sn3_pascalvincent_tensor(path, strict=True):
@@ -199,14 +215,14 @@ def read_sn3_pascalvincent_tensor(path, strict=True):
     Argument may be a filename, compressed filename, or file object.
     """
     # typemap
-    if not hasattr(read_sn3_pascalvincent_tensor, 'typemap'):
+    if not hasattr(read_sn3_pascalvincent_tensor, "typemap"):
         read_sn3_pascalvincent_tensor.typemap = {
             8: (torch.uint8, np.uint8, np.uint8),
             9: (torch.int8, np.int8, np.int8),
-            11: (torch.int16, np.dtype('>i2'), 'i2'),
-            12: (torch.int32, np.dtype('>i4'), 'i4'),
-            13: (torch.float32, np.dtype('>f4'), 'f4'),
-            14: (torch.float64, np.dtype('>f8'), 'f8')
+            11: (torch.int16, np.dtype(">i2"), "i2"),
+            12: (torch.int32, np.dtype(">i4"), "i4"),
+            13: (torch.float32, np.dtype(">f4"), "f4"),
+            14: (torch.float64, np.dtype(">f8"), "f8"),
         }
     # read
     with open_maybe_compressed_file(path) as f:
@@ -218,7 +234,7 @@ def read_sn3_pascalvincent_tensor(path, strict=True):
     assert nd >= 1 and nd <= 3
     assert ty >= 8 and ty <= 14
     m = read_sn3_pascalvincent_tensor.typemap[ty]
-    s = [get_int(data[4 * (i + 1):4 * (i + 2)]) for i in range(nd)]
+    s = [get_int(data[4 * (i + 1) : 4 * (i + 2)]) for i in range(nd)]
     parsed = np.frombuffer(data, dtype=m[1], offset=(4 * (nd + 1)))
     assert parsed.shape[0] == np.prod(s) or not strict
     # return torch.from_numpy(parsed.astype(m[2], copy=False)).view(*s)
@@ -227,16 +243,16 @@ def read_sn3_pascalvincent_tensor(path, strict=True):
 
 
 def read_label_file(path):
-    with open(path, 'rb') as f:
+    with open(path, "rb") as f:
         x = read_sn3_pascalvincent_tensor(f, strict=False)
-    assert (x.dtype == torch.uint8)
-    assert (x.ndimension() == 1)
+    assert x.dtype == torch.uint8
+    assert x.ndimension() == 1
     return x.long()
 
 
 def read_image_file(path):
-    with open(path, 'rb') as f:
+    with open(path, "rb") as f:
         x = read_sn3_pascalvincent_tensor(f, strict=False)
-    assert (x.dtype == torch.uint8)
-    assert (x.ndimension() == 3)
+    assert x.dtype == torch.uint8
+    assert x.ndimension() == 3
     return x
