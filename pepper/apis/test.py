@@ -22,8 +22,10 @@ def single_gpu_test(
         with torch.no_grad():
             result = model(return_loss=False, **data)
 
-        batch_size = len(result)
-        results.extend(result)
+        if isinstance(result, list):
+            results.extend(result)
+        else:
+            results.append(result)
 
         batch_size = data["img"].size(0)
         for _ in range(batch_size):
