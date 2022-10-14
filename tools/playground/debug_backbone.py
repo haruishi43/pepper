@@ -14,7 +14,7 @@ def debug_backbone(mode, use_gpu=False):
 
     if mode == "basic":
         # Basic backbone
-        # 1/4, 1/8, 1/16, 1/16
+        # 1/4, 1/8, 1/16, 1/32
         backbone_cfg = dict(
             type="ResNet",
             depth=50,
