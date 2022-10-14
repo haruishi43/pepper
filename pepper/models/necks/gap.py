@@ -18,7 +18,7 @@ class GlobalAveragePooling(nn.Module):
     """
 
     def __init__(self, dim=2):
-        super(GlobalAveragePooling, self).__init__()
+        super().__init__()
         assert dim in [1, 2, 3], (
             "GlobalAveragePooling dim only support "
             f"{1, 2, 3}, get {dim} instead."
@@ -56,7 +56,7 @@ class KernelGlobalAveragePooling(GlobalAveragePooling):
     """
 
     def __init__(self, kernel_size=None, stride=None):
-        super(KernelGlobalAveragePooling, self).__init__()
+        super().__init__()
         if kernel_size is None and stride is None:
             self.gap = nn.AdaptiveAvgPool2d((1, 1))
         else:

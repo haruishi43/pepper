@@ -21,18 +21,18 @@ def softmax_weights(dist, mask):
 def hard_example_mining(dist_mat, is_pos, is_neg):
     """For each anchor, find the hardest positive and negative sample.
     Args:
-      dist_mat: pair wise distance between samples, shape [N, M]
-      is_pos: positive index with shape [N, M]
-      is_neg: negative index with shape [N, M]
+        dist_mat: pair wise distance between samples, shape [N, M]
+        is_pos: positive index with shape [N, M]
+        is_neg: negative index with shape [N, M]
     Returns:
-      dist_ap: pytorch Variable, distance(anchor, positive); shape [N]
-      dist_an: pytorch Variable, distance(anchor, negative); shape [N]
-      p_inds: pytorch LongTensor, with shape [N];
-        indices of selected hard positive samples; 0 <= p_inds[i] <= N - 1
-      n_inds: pytorch LongTensor, with shape [N];
-        indices of selected hard negative samples; 0 <= n_inds[i] <= N - 1
+        dist_ap: pytorch Variable, distance(anchor, positive); shape [N]
+        dist_an: pytorch Variable, distance(anchor, negative); shape [N]
+        p_inds: pytorch LongTensor, with shape [N];
+            indices of selected hard positive samples; 0 <= p_inds[i] <= N - 1
+        n_inds: pytorch LongTensor, with shape [N];
+            indices of selected hard negative samples; 0 <= n_inds[i] <= N - 1
     NOTE: Only consider the case in which all labels have same num of samples,
-      thus we can cope with all anchors in parallel.
+        thus we can cope with all anchors in parallel.
     """
 
     assert len(dist_mat.size()) == 2
@@ -50,12 +50,12 @@ def hard_example_mining(dist_mat, is_pos, is_neg):
 def weighted_example_mining(dist_mat, is_pos, is_neg):
     """For each anchor, find the weighted positive and negative sample.
     Args:
-      dist_mat: pytorch Variable, pair wise distance between samples, shape [N, N]
-      is_pos:
-      is_neg:
+        dist_mat: pytorch Variable, pair wise distance between samples, shape [N, N]
+        is_pos:
+        is_neg:
     Returns:
-      dist_ap: pytorch Variable, distance(anchor, positive); shape [N]
-      dist_an: pytorch Variable, distance(anchor, negative); shape [N]
+        dist_ap: pytorch Variable, distance(anchor, positive); shape [N]
+        dist_an: pytorch Variable, distance(anchor, negative); shape [N]
     """
     assert len(dist_mat.size()) == 2
 

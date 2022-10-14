@@ -12,21 +12,28 @@ def debug_backbone(mode, use_gpu=False):
     bs = 32
     h, w = (256, 128)
 
-    if mode == "resnet":
+    if mode == "basic":
         # Basic backbone
         # 1/4, 1/8, 1/16, 1/16
         backbone_cfg = dict(
             type="ResNet",
             depth=50,
             num_stages=4,
-            strides=(1, 2, 2, 1),
-            dilations=(1, 1, 1, 1),
             out_indices=(0, 1, 2, 3),
-            norm_eval=False,
+            style="pytorch",
+        )
+    elif mode == "bot":
+        # BoT backbone
+        # 1/4, 1/8, 1/16, 1/16
+        backbone_cfg = dict(
+            type="ResNet",
+            depth=50,
+            num_stages=4,
+            strides=(1, 2, 2, 1),
+            out_indices=(0, 1, 2, 3),
             style="pytorch",
         )
     elif mode == "pcb":
-
         # PCB backbone
         # 1/4, 1/8, 1/16, 1/16
         backbone_cfg = dict(
@@ -34,9 +41,7 @@ def debug_backbone(mode, use_gpu=False):
             depth=50,
             num_stages=4,
             strides=(1, 2, 2, 1),
-            dilations=(1, 1, 1, 1),
             out_indices=(0, 1, 2, 3),
-            norm_eval=False,
             style="pytorch",
         )
         # need to change the input resolution to support 6 parts

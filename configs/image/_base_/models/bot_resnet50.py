@@ -7,6 +7,11 @@ model = dict(
         strides=(1, 2, 2, 1),  # increases final features by x2
         out_indices=(3,),
         style="pytorch",
+        init_cfg=dict(
+            type="Pretrained",
+            checkpoint="https://download.openmmlab.com/mmclassification/v0/resnet/resnet50_batch256_imagenet_20200708-cfb998bf.pth",  # noqa: E251  # noqa: E501
+            prefix="backbone.",
+        ),
     ),
     neck=dict(type="GlobalAveragePooling", dim=2),
     head=dict(
@@ -19,10 +24,6 @@ model = dict(
         loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=1.0),
         norm_cfg=dict(type="BN1d"),
         act_cfg=dict(type="ReLU"),
-    ),
-    init_cfg=dict(
-        type="Pretrained",
-        checkpoint="https://download.openmmlab.com/mmclassification/v0/resnet/resnet50_batch256_imagenet_20200708-cfb998bf.pth",  # noqa: E251  # noqa: E501
     ),
     inference_stage="pre_logits",
 )

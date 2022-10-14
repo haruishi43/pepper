@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-mmdet: resnet
+Modified ResNet Backbones from MMDet
 
 - with plugins
 """

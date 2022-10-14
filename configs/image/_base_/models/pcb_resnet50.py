@@ -1,9 +1,12 @@
+num_parts = 6
+in_channels = 2048
 model = dict(
     type="ImageReID",
     backbone=dict(
         type="ResNet",
         depth=50,
         num_stages=4,
+        strides=(1, 2, 2, 1),  # increases final features by x2
         out_indices=(3,),
         style="pytorch",
         init_cfg=dict(
@@ -12,23 +15,25 @@ model = dict(
             prefix="backbone.",
         ),
     ),
-    # neck=dict(type="KernelGlobalAveragePooling", kernel_size=(8, 4), stride=1),
-    neck=dict(type="GlobalAveragePooling", dim=2),
+    # neck=dict(type="PartPooling", num_parts=num_parts),
+    neck=dict(
+        type="RefinedPartPooling",
+        num_parts=num_parts,
+        in_channels=in_channels,
+    ),
     head=dict(
-        type="LinearHead",
-        num_fcs=1,
-        in_channels=2048,
-        fc_channels=2048,
-        # out_channels=128,
-        out_channels=2048,  # match BoT Baseline
+        type="PCBHead",
+        num_parts=num_parts,
+        in_channels=in_channels,
+        mid_channels=256,
         num_classes=380,
-        # loss=dict(type="CrossEntropyLoss", loss_weight=1.0),
         loss_cls=dict(
-            type="LabelSmoothLoss", label_smooth_val=0.1, loss_weight=1.0
+            type="LabelSmoothLoss", label_smooth_val=0.1, loss_weight=1.0 / num_parts
         ),
-        loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=1.0),
+        loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=1.0 / num_parts),
         norm_cfg=dict(type="BN1d"),
         act_cfg=dict(type="ReLU"),
     ),
+
     inference_stage="pre_logits",
 )
