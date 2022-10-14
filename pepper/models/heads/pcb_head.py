@@ -3,12 +3,43 @@
 import torch
 import torch.nn as nn
 
-from mmcv.cnn import ConvModule
+from mmcv.cnn import build_activation_layer, build_norm_layer
 from mmcv.runner import auto_fp16, force_fp32
 
 from .basic_head import BasicHead
 from .utils import weights_init_classifier, weights_init_kaiming
 from ..builder import HEADS
+
+
+class PartFeatureBlock(nn.Module):
+    def __init__(
+        self,
+        in_channels,
+        mid_channels,
+        norm_cfg=dict(type="BN1d", requires_grad=True),
+        act_cfg=dict(type="ReLU"),
+    ):
+        super().__init__()
+        self.reduce = nn.Linear(
+            in_channels,
+            mid_channels,
+            bias=False,
+        )
+        _, self.bn = build_norm_layer(norm_cfg, mid_channels)
+        self.act = build_activation_layer(act_cfg)
+
+    def init_weights(self):
+        self.reduce.apply(weights_init_kaiming)
+        self.bn.apply(weights_init_kaiming)
+
+    def forward(self, x):
+        x = self.reduce(x)
+        x = self.bn(x)
+
+        if self.training:
+            return self.act(x)
+        else:
+            return x
 
 
 @HEADS.register_module()
@@ -25,26 +56,21 @@ class PCBHead(BasicHead):
         super().__init__(**kwargs)
 
     def _init_layers(self):
-        self.reduce_dim = ConvModule(
-            in_channels=self.in_channels,
-            out_channels=self.mid_channels,
-            kernel_size=1,
-        )
 
-        bns = []
-        for _ in range(self.num_parts):
-            bns.append(nn.BatchNorm1d(self.mid_channels))
+        blocks = []
         fcs = []
         for _ in range(self.num_parts):
+            blocks.append(PartFeatureBlock(self.in_channels, self.mid_channels))
             fcs.append(
                 nn.Linear(self.mid_channels, self.num_classes, bias=False)
             )
 
-        self.bns = nn.ModuleList(bns)
+        self.blocks = nn.ModuleList(blocks)
         self.fcs = nn.ModuleList(fcs)
 
-        for b in self.bns:
-            b.apply(weights_init_kaiming)
+    def init_weights(self):
+        for b in self.blocks:
+            b.init_weights()
         for f in self.fcs:
             f.apply(weights_init_classifier)
 
@@ -61,14 +87,10 @@ class PCBHead(BasicHead):
 
         assert isinstance(x, torch.Tensor)
 
-        # reduce
-        x = x.unsqueeze(-1)
-        x = self.reduce_dim(x)
-        x = x.squeeze(-1)
-
         outs = []
-        for i in range(self.num_parts):
+        for i, block in enumerate(self.blocks):
             x_i = x[:, :, i]
+            x_i = block(x_i)
             outs.append(x_i)
 
         if self.training:
@@ -82,8 +104,7 @@ class PCBHead(BasicHead):
 
         if self.loss_cls:
             cls_scores = []
-            for x_i, bn, fc in zip(x, self.bns, self.fcs):
-                x_i = bn(x_i)
+            for x_i, fc in zip(x, self.fcs):
                 x_i = fc(x_i)
                 cls_scores.append(x_i)
             return (x, cls_scores)
