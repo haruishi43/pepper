@@ -149,7 +149,7 @@ class LabelSmoothLoss(nn.Module):
         )
 
         smoothed_label = self.smooth_label(one_hot_like_label)
-        return self.ce.forward(
+        return self.loss_weight * self.ce.forward(
             cls_score,
             smoothed_label,
             weight=weight,
