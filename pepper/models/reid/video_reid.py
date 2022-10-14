@@ -31,7 +31,7 @@ class VideoReID(BaseReID):
         init_cfg=None,
         inference_stage=None,
     ):
-        super(VideoReID, self).__init__(init_cfg)
+        super().__init__(init_cfg)
 
         # backbone -> pool (neck) -> temporal -> head
 

@@ -21,7 +21,7 @@ class ImageReID(BaseReID):
         init_cfg=None,
         inference_stage=None,
     ):
-        super(ImageReID, self).__init__(init_cfg)
+        super().__init__(init_cfg)
 
         if pretrained is not None:
             self.init_cfg = dict(type="Pretrained", checkpoint=pretrained)

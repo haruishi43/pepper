@@ -13,7 +13,7 @@ class BaseReID(BaseModule, metaclass=ABCMeta):
     """Base class for classifiers."""
 
     def __init__(self, init_cfg=None):
-        super(BaseReID, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         self.fp16_enabled = False
 
     @property

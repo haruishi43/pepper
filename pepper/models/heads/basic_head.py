@@ -42,7 +42,7 @@ class BasicHead(BaseHead):
         topk=(1,),
         init_cfg=dict(type="Normal", layer="Linear", mean=0, std=0.01, bias=0),
     ):
-        super(BasicHead, self).__init__(init_cfg)
+        super().__init__(init_cfg)
         assert isinstance(topk, (int, tuple))
         if isinstance(topk, int):
             topk = (topk,)
