@@ -62,7 +62,7 @@ class PCBHead(BasicHead):
         for _ in range(self.num_parts):
             blocks.append(PartFeatureBlock(self.in_channels, self.mid_channels))
             fcs.append(
-                nn.Linear(self.mid_channels, self.num_classes)  # , bias=False)
+                nn.Linear(self.mid_channels, self.num_classes, bias=False)
             )
 
         self.blocks = nn.ModuleList(blocks)
