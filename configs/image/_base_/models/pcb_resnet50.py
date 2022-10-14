@@ -15,12 +15,12 @@ model = dict(
             prefix="backbone.",
         ),
     ),
-    # neck=dict(type="PartPooling", num_parts=num_parts),
-    neck=dict(
-        type="RefinedPartPooling",
-        num_parts=num_parts,
-        in_channels=in_channels,
-    ),
+    neck=dict(type="PartPooling", num_parts=num_parts),
+    # neck=dict(
+    #     type="RefinedPartPooling",
+    #     num_parts=num_parts,
+    #     in_channels=in_channels,
+    # ),
     head=dict(
         type="PCBHead",
         num_parts=num_parts,

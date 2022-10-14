@@ -2,6 +2,8 @@
 optimizer = dict(type="Adam", lr=0.00035, weight_decay=5e-04, betas=(0.9, 0.99))
 optimizer_config = dict(type="Fp16OptimizerHook", grad_clip=dict(max_norm=5.0, norm_type=2), loss_scale=512.)
 
+fp16 = dict(loss_scale=512.)
+
 # BoT schedule
 lr_config = dict(
     # -> policy config
