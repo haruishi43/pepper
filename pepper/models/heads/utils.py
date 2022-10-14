@@ -16,7 +16,7 @@ def weights_init_kaiming(m):
         if m.bias is not None:
             nn.init.constant_(m.bias, 0.0)
     elif classname.find("BatchNorm") != -1:
-        if m.affine:
+        if m.affine is not None:
             nn.init.constant_(m.weight, 1.0)
             nn.init.constant_(m.bias, 0.0)
 
@@ -27,5 +27,5 @@ def weights_init_classifier(m):
 
     if classname.find("Linear") != -1:
         nn.init.normal_(m.weight, std=0.001)
-        if m.bias:
+        if m.bias is not None:
             nn.init.constant_(m.bias, 0.0)
