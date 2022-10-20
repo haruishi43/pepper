@@ -3,7 +3,6 @@ log_config = dict(
     interval=50,
     hooks=[
         dict(type="TextLoggerHook"),
-        # FIXME: add tensorboard after debugging everything!
         # dict(type='TensorboardLoggerHook'),
     ],
 )
