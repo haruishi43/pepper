@@ -25,7 +25,6 @@ model = dict(
         loss_cls=dict(
             type="LabelSmoothLoss", label_smooth_val=0.1, loss_weight=1.0 / num_parts
         ),
-        # loss_pairwise=dict(type="TripletLoss", margin=0.3, loss_weight=1.0 / num_parts),
         norm_cfg=dict(type="BN1d"),
         act_cfg=dict(type="ReLU"),
     ),
