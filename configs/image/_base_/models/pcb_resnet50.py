@@ -25,7 +25,7 @@ model = dict(
         loss_cls=dict(
             type="LabelSmoothLoss", label_smooth_val=0.1, loss_weight=1.0 / num_parts
         ),
-        norm_cfg=dict(type="BN1d"),
+        norm_cfg=dict(type="BN1d", requires_grad=True),
         act_cfg=dict(type="ReLU"),
     ),
     inference_stage="pre_logits",

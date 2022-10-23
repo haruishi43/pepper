@@ -143,7 +143,6 @@ class PCBHead(BasicHead):
                 acc = self.accuracy(cs, gt_label)
                 assert len(acc) == len(self.topk)
                 if "accuracy" not in losses:
-
                     losses["accuracy"] = {
                         f"part{i}_top-{k}": a for k, a in zip(self.topk, acc)
                     }

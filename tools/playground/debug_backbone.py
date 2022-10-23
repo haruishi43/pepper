@@ -46,6 +46,19 @@ def debug_backbone(mode, use_gpu=False):
         )
         # need to change the input resolution to support 6 parts
         h, w = (384, 128)
+
+    elif mode == "mgn":
+        backbone_cfg = dict(
+            type="MGNResNet",
+            depth=50,
+            resnet_init_cfg=dict(
+                type="Pretrained",
+                checkpoint="https://download.openmmlab.com/mmclassification/v0/resnet/resnet50_batch256_imagenet_20200708-cfb998bf.pth",  # noqa: E251  # noqa: E501
+                prefix="backbone.",
+            ),
+        )
+        # need to change the input resolution to support 6 parts
+        h, w = (384, 128)
     else:
         raise ValueError(f"mode {mode} is not supported")
 
