@@ -17,7 +17,7 @@ model = dict(
         in_channels=2048,
         out_channels=256,
         num_classes=380,
-        loss_cls=dict(type="LabelSmoothLoss", label_smooth_val=0.1, loss_weight=1.0),
+        loss_cls=dict(type="LabelSmoothLoss", label_smooth_val=0.1, loss_weight=1.0 / 8),
         loss_pairwise=[
             dict(type="TripletLoss", margin=0.3, loss_weight=1.0),
         ],
