@@ -18,6 +18,8 @@ class MGNResNet(BaseBackbone):
         self,
         depth,
         dilations=(1, 1, 1, 1),
+        num_globals=1,
+        num_parts=2,
         deep_stem=False,
         conv_cfg=None,
         norm_cfg=dict(type="BN", requires_grad=True),
@@ -28,6 +30,19 @@ class MGNResNet(BaseBackbone):
         ),
         init_cfg=None,
     ):
+        """
+        Args:
+            depth: int
+                ResNet depth (default=50)
+            dilaitons: Tuple(int)
+            num_globals: int
+                number of global branches (default=1)
+            num_parts: int
+                number of n-part branches (default=2)
+            resnet_init_cfg: dict
+                `init_cfg` for `pepper.models.backbones.resnet.ResNet`
+        """
+
         super().__init__(init_cfg)
 
         assert depth == 50, "only supports resnet50 for now"
@@ -110,9 +125,18 @@ class MGNResNet(BaseBackbone):
         )
         res_p_conv5.load_state_dict(resnet.layer4.state_dict())
 
-        self.part1 = nn.Sequential(deepcopy(res_conv4), deepcopy(res_g_conv5))
-        self.part2 = nn.Sequential(deepcopy(res_conv4), deepcopy(res_p_conv5))
-        self.part3 = nn.Sequential(deepcopy(res_conv4), deepcopy(res_p_conv5))
+        parts = []
+        for _ in range(num_globals):
+            parts.append(
+                nn.Sequential(deepcopy(res_conv4), deepcopy(res_g_conv5))
+            )
+        for _ in range(num_parts):
+            parts.append(
+                nn.Sequential(deepcopy(res_conv4), deepcopy(res_p_conv5))
+            )
+        self.parts = nn.ModuleList(parts)
+
+        del resnet, res_conv4, res_g_conv5, res_p_conv5
 
     def init_weights(self):
         # we don't need to initialize anything
@@ -120,7 +144,7 @@ class MGNResNet(BaseBackbone):
 
     def forward(self, x):
         x = self.backbone(x)
-        p1 = self.part1(x)
-        p2 = self.part2(x)
-        p3 = self.part3(x)
-        return (p1, p2, p3)
+        p = []
+        for part in self.parts:
+            p.append(part(x))
+        return tuple(p)

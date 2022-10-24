@@ -9,6 +9,7 @@ import torch
 
 import mmcv
 from mmcv import Config, DictAction
+from mmcv.cnn.utils import revert_sync_batchnorm
 from mmcv.runner import init_dist
 
 from pepper.apis import init_random_seed, set_random_seed, train_model
@@ -153,6 +154,12 @@ def main():
         )
     else:
         model = build_reid(cfg.model)
+
+    # SyncBN is not supported for DP
+    if not distributed:
+        model = revert_sync_batchnorm(model)
+
+    # initialize the weights
     model.init_weights()
 
     if cfg.checkpoint_config is not None:

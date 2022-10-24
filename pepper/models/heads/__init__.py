@@ -7,6 +7,7 @@ from .linear_head import LinearHead
 
 from .pcb_head import PCBHead
 from .mgn_head import MGNHead
+from .amgn_head import AMGNHead
 
 __all__ = [
     "BasicHead",
@@ -15,4 +16,5 @@ __all__ = [
     "LinearHead",
     "PCBHead",
     "MGNHead",
+    "AMGNHead",
 ]

@@ -8,6 +8,7 @@ import mmcv
 import numpy as np
 import torch
 from mmcv import DictAction
+from mmcv.cnn.utils import revert_sync_batchnorm
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (
     get_dist_info,
@@ -166,6 +167,9 @@ def main():
     model.head.num_classes = NUM_PIDS
 
     if not distributed:
+        # SyncBN is not supported for DP
+        model = revert_sync_batchnorm(model)
+
         if args.device == "cpu":
             model = model.cpu()
         else:

@@ -2,12 +2,80 @@
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from mmcv.cnn import build_activation_layer, build_norm_layer
 from mmcv.runner import auto_fp16, force_fp32
 
 from .basic_head import BasicHead
 from ..builder import HEADS
+
+EPSILON = 1e-12
+
+
+class AttentionAwareModule(nn.Module):
+    """Attention-Aware Module with Bilinear Attention Pooling"""
+
+    def __init__(
+        self,
+        in_channels,
+        att_channels=32,
+        pool="GAP",
+        norm_cfg=dict(type="BN1d", requires_grad=True),
+    ):
+        super().__init__()
+
+        self.reduce = nn.Conv2d(in_channels, in_channels, kernel_size=1)
+        self.att = nn.Conv2d(in_channels, att_channels, kernel_size=1)
+
+        assert pool in ["GAP", "GMP"]
+        if pool == "GAP":
+            self.pool = None
+        else:
+            self.pool = nn.AdaptiveMaxPool2d(1)
+
+        self.norm = build_norm_layer(norm_cfg, in_channels * att_channels)[1]
+
+    def init_weights(self):
+        # conv
+        nn.init.kaiming_normal_(self.reduce.weight, mode="fan_in")
+        nn.init.kaiming_normal_(self.att.weight, mode="fan_in")
+
+        # bn
+        nn.init.normal_(self.norm.weight, mean=1.0, std=0.02)
+        nn.init.constant_(self.norm.bias, 0.0)
+
+    def forward(self, x):
+        x = self.reduce(x)
+        attentions = self.att(x)
+        B, C, H, W = x.size()
+        _, M, AH, AW = attentions.size()
+
+        # match size
+        if AH != H or AW != W:
+            attentions = F.upsample_bilinear(attentions, size=(H, W))
+
+        # feature_matrix: (B, M, C) -> (B, M * C)
+        if self.pool is None:
+            feature = (
+                torch.einsum("imjk,injk->imn", (attentions, x)) / float(H * W)
+            ).view(B, -1)
+        else:
+            feature = []
+            for i in range(M):
+                AiF = self.pool(x * attentions[:, i : i + 1, ...]).view(B, -1)
+                feature.append(AiF)
+            feature = torch.cat(feature, dim=1)
+
+        # sign-sqrt
+        output = torch.sign(feature) * torch.sqrt(torch.abs(feature) + EPSILON)
+
+        # l2 normalization along dimension M and C
+        # feature = F.normalize(feature, dim=-1)
+
+        # normalize output
+        output = self.norm(output)
+        return output
 
 
 class Pruning(nn.Module):
@@ -95,7 +163,7 @@ class PartClassifier(nn.Module):
 
 
 @HEADS.register_module()
-class MGNHead(BasicHead):
+class AMGNHead(BasicHead):
     def __init__(
         self,
         out_channels=256,
@@ -136,6 +204,14 @@ class MGNHead(BasicHead):
             )
         self.part_convs = nn.ModuleList(part_convs)
 
+        # attention-aware module
+        self.atta = AttentionAwareModule(
+            in_channels=self.in_channels,
+            att_channels=32,
+            pool="GAP",
+            norm_cfg=dict(type="BN1d", requires_grad=True),
+        )
+
         # part2
         self.part2_classifier = PartClassifier(
             in_channels=self.out_channels,
@@ -152,6 +228,12 @@ class MGNHead(BasicHead):
             act_cfg=self.act_cfg,
         )
 
+        self.atta_classifier = Classifier(
+            self.in_channels * 32,
+            self.num_classes,
+            act_cfg=self.act_cfg,
+        )
+
     def init_weights(self):
         for conv in self.convs:
             conv.init_weights()
@@ -164,13 +246,14 @@ class MGNHead(BasicHead):
 
         self.part2_classifier.init_weights()
         self.part3_classifier.init_weights()
+        self.atta.init_weights()
 
     @auto_fp16()
     def pre_logits(self, x):
         assert isinstance(x, (list, tuple))
         assert len(x) == 5
 
-        (p1_global, p2_global, p3_global, p2_parts, p3_parts) = x
+        (p1_global, p2_global, p3_global, p2_parts, p3_parts, a1) = x
 
         b = p1_global.size(0)
 
@@ -189,6 +272,8 @@ class MGNHead(BasicHead):
         for i in range(3):
             p3_part_feat.append(p3_part_feats[:, :, i : (i + 1), :].view(b, -1))
 
+        a1_feat = self.atta(a1)
+
         if self.training:
             return (
                 p1_global.view(b, -1),
@@ -199,6 +284,7 @@ class MGNHead(BasicHead):
                 p3_feat,
                 p2_part_feat,
                 p3_part_feat,
+                a1_feat,
             )
         else:
             return torch.cat(
@@ -208,6 +294,7 @@ class MGNHead(BasicHead):
                     p3_feat,
                     *p2_part_feat,
                     *p3_part_feat,
+                    a1_feat,
                 ],
                 dim=-1,
             )
@@ -222,12 +309,14 @@ class MGNHead(BasicHead):
             p3_feat,
             p2_part_feat,
             p3_part_feat,
+            a1_feat,
         ) = x
 
         feats = dict(
             g1_feat=p1_feat,
             g2_feat=p2_feat,
             g3_feat=p3_feat,
+            a1_feat=a1_feat,
         )
 
         if self.loss_cls:
@@ -246,6 +335,8 @@ class MGNHead(BasicHead):
             preds = self.part3_classifier(p3_part_feat)
             for i, pred in enumerate(preds):
                 cls_scores[f"part3_{i}"] = pred
+
+            cls_scores["att"] = self.atta_classifier(a1_feat)
 
             return (feats, cls_scores)
 
