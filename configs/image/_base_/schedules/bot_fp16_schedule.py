@@ -8,7 +8,7 @@ fp16 = dict(loss_scale=512.)
 lr_config = dict(
     # -> policy config
     policy="step",
-    step=[2000, 3500],
+    step=[2000, 3500, 6000],
     gamma=0.1,
     # -> warmup config
     warmup="linear",
@@ -17,17 +17,17 @@ lr_config = dict(
 )
 
 # runner settings
-runner = dict(type="IterBasedRunner", max_iters=6000)
+runner = dict(type="IterBasedRunner", max_iters=10000)
 
 # evaluation
 evaluation = dict(
-    interval=2000,
+    interval=2500,
     gpu_collect=True,
-    metric=["metric", "CMC", "mAP", "mINP"],
+    metric=["metric", "CMC", "mAP"],
     dist_metric="cosine",
     use_metric_cuhk03=False,
     rerank=False,
 )
 
 # checkpoint
-checkpoint_config = dict(interval=2000)
+checkpoint_config = dict(interval=2500)

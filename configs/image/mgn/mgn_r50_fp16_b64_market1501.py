@@ -1,8 +1,8 @@
 _base_ = [
-    "../_base_/models/bot_resnet50.py",
+    "../_base_/models/mgn_r50.py",
     "../_base_/samplers/infinite_balanced.py",
-    "../_base_/datasets/market1501.py",
-    "../_base_/schedules/bot_schedule.py",
+    "../_base_/datasets/market1501_384x128.py",
+    "../_base_/schedules/bot_fp16_schedule.py",
     "../_base_/default_runtime.py",
 ]
 data = dict(
@@ -13,4 +13,3 @@ sampler = dict(
     batch_size=64,
     num_instances=4,
 )
-evaluation = dict(dist_metric="cosine")

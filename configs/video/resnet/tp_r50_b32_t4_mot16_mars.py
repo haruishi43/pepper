@@ -1,5 +1,5 @@
 _base_ = [
-    "../_base_/models/basic_resnet50.py",
+    "../_base_/models/basic_r50.py",
     "../_base_/datasets/mot16_and_mars.py",
     "../_base_/schedules/basic_schedule.py",
     "../_base_/default_runtime.py",

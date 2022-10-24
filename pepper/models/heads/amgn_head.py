@@ -7,7 +7,12 @@ from mmcv.runner import auto_fp16, force_fp32
 
 from .basic_head import BasicHead
 from ..builder import HEADS
-from ..utils.mgn_utils import Pruning, Classifier, PartClassifier, AttentionAwareModule
+from ..utils.mgn_utils import (
+    Pruning,
+    Classifier,
+    PartClassifier,
+    AttentionAwareModule,
+)
 
 
 @HEADS.register_module()

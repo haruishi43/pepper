@@ -47,7 +47,7 @@ evaluation = dict(
     interval=2500,
     gpu_collect=True,
     metric=["metric", "CMC", "mAP"],
-    dist_metric="euclidean",
+    dist_metric="cosine",  # "euclidean",
     use_metric_cuhk03=False,
     rerank=False,
 )
