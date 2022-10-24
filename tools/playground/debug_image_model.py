@@ -21,6 +21,11 @@ def main(mode, use_gpu=True, train_mode=True):
             "configs/image/mgn/mgn_resnet50_b64_market1501.py"
         )
         h, w = 384, 128
+    elif mode == "amgn":
+        cfg = Config.fromfile(
+            "configs/image/amgn/amgn_resnet50_b64_market1501.py"
+        )
+        h, w = 384, 128
     else:
         raise ValueError(f"{mode} is not a valid mode")
     print(cfg.pretty_text)
@@ -45,6 +50,9 @@ def main(mode, use_gpu=True, train_mode=True):
         net = net.cuda()
         img = img.cuda()
         gt_label = gt_label.cuda()
+
+    if not train_mode:
+        net = net.eval()
 
     # run model (reuturns loss for training mode)
     out = net(

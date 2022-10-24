@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import torch
+
 from mmcv.runner import auto_fp16
 
 from ..builder import REID, build_backbone, build_head, build_neck
@@ -155,7 +157,7 @@ class ImageReID(BaseReID):
 
         # FIXME: handle mutliple outputs
         # mainly features from various levels in the backbone
-        if isinstance(feats, tuple):
+        if isinstance(feats, (tuple, list)):
             if len(feats) > 1:
                 # if features from multiple layers are returned, we use the last feature
                 feats = feats[-1]
@@ -163,5 +165,6 @@ class ImageReID(BaseReID):
                 feats = feats[0]
 
         # need to convert to cpu before sending
+        assert isinstance(feats, torch.Tensor), type(feats)
         feats = feats.cpu().squeeze()
         return feats

@@ -19,14 +19,15 @@ class AttentionAwareModule(nn.Module):
     def __init__(
         self,
         in_channels,
+        out_channels,
         att_channels=32,
         pool="GAP",
         norm_cfg=dict(type="BN1d", requires_grad=True),
     ):
         super().__init__()
 
-        self.reduce = nn.Conv2d(in_channels, in_channels, kernel_size=1)
-        self.att = nn.Conv2d(in_channels, att_channels, kernel_size=1)
+        self.reduce = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+        self.att = nn.Conv2d(out_channels, att_channels, kernel_size=1)
 
         assert pool in ["GAP", "GMP"]
         if pool == "GAP":
@@ -34,7 +35,7 @@ class AttentionAwareModule(nn.Module):
         else:
             self.pool = nn.AdaptiveMaxPool2d(1)
 
-        self.norm = build_norm_layer(norm_cfg, in_channels * att_channels)[1]
+        self.norm = build_norm_layer(norm_cfg, out_channels * att_channels)[1]
 
     def init_weights(self):
         # conv
@@ -167,9 +168,11 @@ class AMGNHead(BasicHead):
     def __init__(
         self,
         out_channels=256,
+        att_channels=8,
         **kwargs,
     ):
         self.out_channels = out_channels
+        self.att_channels = att_channels
         super().__init__(**kwargs)
 
     def _init_layers(self):
@@ -207,7 +210,8 @@ class AMGNHead(BasicHead):
         # attention-aware module
         self.atta = AttentionAwareModule(
             in_channels=self.in_channels,
-            att_channels=32,
+            out_channels=self.out_channels,
+            att_channels=self.att_channels,
             pool="GAP",
             norm_cfg=dict(type="BN1d", requires_grad=True),
         )
@@ -229,7 +233,7 @@ class AMGNHead(BasicHead):
         )
 
         self.atta_classifier = Classifier(
-            self.in_channels * 32,
+            self.out_channels * self.att_channels,
             self.num_classes,
             act_cfg=self.act_cfg,
         )
@@ -251,7 +255,7 @@ class AMGNHead(BasicHead):
     @auto_fp16()
     def pre_logits(self, x):
         assert isinstance(x, (list, tuple))
-        assert len(x) == 5
+        assert len(x) == 6
 
         (p1_global, p2_global, p3_global, p2_parts, p3_parts, a1) = x
 
