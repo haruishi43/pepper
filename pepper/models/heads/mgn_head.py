@@ -28,6 +28,7 @@ class MGNHead(BasicHead):
                     self.in_channels,
                     self.out_channels,
                     norm_cfg=self.norm_cfg,
+                    act_cfg=self.act_cfg,
                 )
             )
         self.convs = nn.ModuleList(convs)
@@ -35,9 +36,7 @@ class MGNHead(BasicHead):
         global_classifiers = []
         for _ in range(3):
             global_classifiers.append(
-                Classifier(
-                    self.in_channels, self.num_classes, act_cfg=self.act_cfg
-                )
+                Classifier(self.in_channels, self.num_classes)
             )
         self.global_classifiers = nn.ModuleList(global_classifiers)
 
@@ -48,6 +47,7 @@ class MGNHead(BasicHead):
                     self.in_channels,
                     self.out_channels,
                     norm_cfg=self.norm_cfg,
+                    act_cfg=self.act_cfg,
                 )
             )
         self.part_convs = nn.ModuleList(part_convs)
@@ -57,7 +57,6 @@ class MGNHead(BasicHead):
             in_channels=self.out_channels,
             num_classes=self.num_classes,
             num_parts=2,
-            act_cfg=self.act_cfg,
         )
 
         # part3
@@ -65,7 +64,6 @@ class MGNHead(BasicHead):
             in_channels=self.out_channels,
             num_classes=self.num_classes,
             num_parts=3,
-            act_cfg=self.act_cfg,
         )
 
     def init_weights(self):

@@ -2,82 +2,12 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-from mmcv.cnn import build_norm_layer
 from mmcv.runner import auto_fp16, force_fp32
 
 from .basic_head import BasicHead
 from ..builder import HEADS
-from ..utils.mgn_utils import Pruning, Classifier, PartClassifier
-
-EPSILON = 1e-12
-
-
-class AttentionAwareModule(nn.Module):
-    """Attention-Aware Module with Bilinear Attention Pooling"""
-
-    def __init__(
-        self,
-        in_channels,
-        out_channels,
-        att_channels=32,
-        pool="GAP",
-        norm_cfg=dict(type="BN1d", requires_grad=True),
-    ):
-        super().__init__()
-
-        self.reduce = nn.Conv2d(in_channels, out_channels, kernel_size=1)
-        self.att = nn.Conv2d(out_channels, att_channels, kernel_size=1)
-
-        assert pool in ["GAP", "GMP"]
-        if pool == "GAP":
-            self.pool = None
-        else:
-            self.pool = nn.AdaptiveMaxPool2d(1)
-
-        self.norm = build_norm_layer(norm_cfg, out_channels * att_channels)[1]
-
-    def init_weights(self):
-        # conv
-        nn.init.kaiming_normal_(self.reduce.weight, mode="fan_in")
-        nn.init.kaiming_normal_(self.att.weight, mode="fan_in")
-
-        # bn
-        nn.init.normal_(self.norm.weight, mean=1.0, std=0.02)
-        nn.init.constant_(self.norm.bias, 0.0)
-
-    def forward(self, x):
-        x = self.reduce(x)
-        attentions = self.att(x)
-        B, C, H, W = x.size()
-        _, M, AH, AW = attentions.size()
-
-        # match size
-        if AH != H or AW != W:
-            attentions = F.upsample_bilinear(attentions, size=(H, W))
-
-        # feature_matrix: (B, M, C) -> (B, M * C)
-        if self.pool is None:
-            feature = (
-                torch.einsum("imjk,injk->imn", (attentions, x)) / float(H * W)
-            ).view(B, -1)
-        else:
-            feature = []
-            for i in range(M):
-                AiF = self.pool(x * attentions[:, i : i + 1, ...]).view(B, -1)
-                feature.append(AiF)
-            feature = torch.cat(feature, dim=1)
-
-        # sign-sqrt
-        output = torch.sign(feature) * torch.sqrt(torch.abs(feature) + EPSILON)
-
-        # l2 normalization along dimension M and C
-        # feature = F.normalize(feature, dim=-1)
-
-        # normalize output
-        output = self.norm(output)
-        return output
+from ..utils.mgn_utils import Pruning, Classifier, PartClassifier, AttentionAwareModule
 
 
 @HEADS.register_module()
@@ -100,6 +30,7 @@ class AMGNHead(BasicHead):
                     self.in_channels,
                     self.out_channels,
                     norm_cfg=self.norm_cfg,
+                    act_cfg=self.act_cfg,
                 )
             )
         self.convs = nn.ModuleList(convs)
@@ -107,9 +38,7 @@ class AMGNHead(BasicHead):
         global_classifiers = []
         for _ in range(3):
             global_classifiers.append(
-                Classifier(
-                    self.in_channels, self.num_classes, act_cfg=self.act_cfg
-                )
+                Classifier(self.in_channels, self.num_classes)
             )
         self.global_classifiers = nn.ModuleList(global_classifiers)
 
@@ -120,6 +49,7 @@ class AMGNHead(BasicHead):
                     self.in_channels,
                     self.out_channels,
                     norm_cfg=self.norm_cfg,
+                    act_cfg=self.act_cfg,
                 )
             )
         self.part_convs = nn.ModuleList(part_convs)
@@ -131,6 +61,7 @@ class AMGNHead(BasicHead):
             att_channels=self.att_channels,
             pool="GAP",
             norm_cfg=dict(type="BN1d", requires_grad=True),
+            act_cfg=self.act_cfg,
         )
 
         # part2
@@ -138,7 +69,6 @@ class AMGNHead(BasicHead):
             in_channels=self.out_channels,
             num_classes=self.num_classes,
             num_parts=2,
-            act_cfg=self.act_cfg,
         )
 
         # part3
@@ -146,13 +76,11 @@ class AMGNHead(BasicHead):
             in_channels=self.out_channels,
             num_classes=self.num_classes,
             num_parts=3,
-            act_cfg=self.act_cfg,
         )
 
         self.atta_classifier = Classifier(
             self.out_channels * self.att_channels,
             self.num_classes,
-            act_cfg=self.act_cfg,
         )
 
     def init_weights(self):
