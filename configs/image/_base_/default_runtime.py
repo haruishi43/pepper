@@ -4,6 +4,15 @@ log_config = dict(
     hooks=[
         dict(type="TextLoggerHook"),
         # dict(type='TensorboardLoggerHook'),
+        dict(
+            type="WandbLoggerHook",
+            init_kwargs={
+                "entity": "haruishi",
+                "project": "pepper_image",
+            },
+            by_epoch=False,
+            log_artifact=False,
+        )
     ],
 )
 # yapf:enable

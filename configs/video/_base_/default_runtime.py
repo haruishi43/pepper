@@ -5,6 +5,15 @@ log_config = dict(
         dict(type="TextLoggerHook"),
         # FIXME: add tensorboard after debugging everything!
         # dict(type='TensorboardLoggerHook'),
+        dict(
+            type="WandbLoggerHook",
+            init_kwargs={
+                "entity": "haruishi",
+                "project": "pepper_video",
+            },
+            by_epoch=False,
+            log_artifact=False,
+        )
     ],
 )
 # yapf:enable
