@@ -96,6 +96,11 @@ def main():
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
 
+    # log configs to wandb
+    for hook in cfg.log_config.hooks:
+        if hook["type"] in ["WandbHook", "PepperWandbHook"]:
+            hook["init_kwargs"].update({"config": cfg._cfg_dict.to_dict()})
+
     # create work_dir
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
 
