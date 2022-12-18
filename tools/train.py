@@ -98,7 +98,7 @@ def main():
 
     # log configs to wandb
     for hook in cfg.log_config.hooks:
-        if hook["type"] in ["WandbHook", "PepperWandbHook"]:
+        if hook["type"] in ["WandbLoggerHook", "PepperWandbHook"]:
             hook["init_kwargs"].update({"config": cfg._cfg_dict.to_dict()})
 
     # create work_dir
